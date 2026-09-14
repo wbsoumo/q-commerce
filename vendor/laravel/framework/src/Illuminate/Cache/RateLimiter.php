@@ -7,13 +7,12 @@ use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Redis\Connections\PhpRedisConnection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\InteractsWithTime;
-use Illuminate\Support\Traits\Macroable;
 
 use function Illuminate\Support\enum_value;
 
 class RateLimiter
 {
-    use InteractsWithTime, Macroable;
+    use InteractsWithTime;
 
     /**
      * The cache store implementation.
@@ -33,6 +32,7 @@ class RateLimiter
      * Create a new rate limiter instance.
      *
      * @param  \Illuminate\Contracts\Cache\Repository  $cache
+     * @return void
      */
     public function __construct(Cache $cache)
     {
@@ -40,9 +40,9 @@ class RateLimiter
     }
 
     /**
-     * Register a named rate limiter configuration.
+     * Register a named limiter configuration.
      *
-     * @param  \UnitEnum|string  $name
+     * @param  \BackedEnum|\UnitEnum|string  $name
      * @param  \Closure  $callback
      * @return $this
      */
@@ -58,7 +58,7 @@ class RateLimiter
     /**
      * Get the given named rate limiter.
      *
-     * @param  \UnitEnum|string  $name
+     * @param  \BackedEnum|\UnitEnum|string  $name
      * @return \Closure|null
      */
     public function limiter($name)
@@ -100,7 +100,7 @@ class RateLimiter
      * @param  string  $key
      * @param  int  $maxAttempts
      * @param  \Closure  $callback
-     * @param  \DateTimeInterface|\DateInterval|int  $decaySeconds
+     * @param  int  $decaySeconds
      * @return mixed
      */
     public function attempt($key, $maxAttempts, Closure $callback, $decaySeconds = 60)
@@ -142,7 +142,7 @@ class RateLimiter
      * Increment (by 1) the counter for a given key for a given decay time.
      *
      * @param  string  $key
-     * @param  \DateTimeInterface|\DateInterval|int  $decaySeconds
+     * @param  int  $decaySeconds
      * @return int
      */
     public function hit($key, $decaySeconds = 60)
@@ -154,7 +154,7 @@ class RateLimiter
      * Increment the counter for a given key for a given decay time by a given amount.
      *
      * @param  string  $key
-     * @param  \DateTimeInterface|\DateInterval|int  $decaySeconds
+     * @param  int  $decaySeconds
      * @param  int  $amount
      * @return int
      */
@@ -172,9 +172,9 @@ class RateLimiter
 
         $hits = (int) $this->cache->increment($key, $amount);
 
-        if (! $added && $hits == $amount) {
+        if (! $added && $hits == 1) {
             $this->withoutSerializationOrCompression(
-                fn () => $this->cache->put($key, $amount, $decaySeconds)
+                fn () => $this->cache->put($key, 1, $decaySeconds)
             );
         }
 
@@ -185,7 +185,7 @@ class RateLimiter
      * Decrement the counter for a given key for a given decay time by a given amount.
      *
      * @param  string  $key
-     * @param  \DateTimeInterface|\DateInterval|int  $decaySeconds
+     * @param  int  $decaySeconds
      * @param  int  $amount
      * @return int
      */
@@ -211,7 +211,7 @@ class RateLimiter
      * Reset the number of attempts for the given key.
      *
      * @param  string  $key
-     * @return bool
+     * @return mixed
      */
     public function resetAttempts($key)
     {
@@ -233,7 +233,7 @@ class RateLimiter
 
         $attempts = $this->attempts($key);
 
-        return max(0, $maxAttempts - $attempts);
+        return $maxAttempts - $attempts;
     }
 
     /**
@@ -290,10 +290,8 @@ class RateLimiter
     /**
      * Execute the given callback without serialization or compression when applicable.
      *
-     * @template TReturn
-     *
-     * @param  (callable(): TReturn)  $callback
-     * @return TReturn
+     * @param  callable  $callback
+     * @return mixed
      */
     protected function withoutSerializationOrCompression(callable $callback)
     {
@@ -315,7 +313,7 @@ class RateLimiter
     /**
      * Resolve the rate limiter name.
      *
-     * @param  \UnitEnum|string  $name
+     * @param  \BackedEnum|\UnitEnum|string  $name
      * @return string
      */
     private function resolveLimiterName($name): string

@@ -64,6 +64,7 @@ class MigrateCommand extends BaseCommand implements Isolatable
      *
      * @param  \Illuminate\Database\Migrations\Migrator  $migrator
      * @param  \Illuminate\Contracts\Events\Dispatcher  $dispatcher
+     * @return void
      */
     public function __construct(Migrator $migrator, Dispatcher $dispatcher)
     {
@@ -77,13 +78,11 @@ class MigrateCommand extends BaseCommand implements Isolatable
      * Execute the console command.
      *
      * @return int
-     *
-     * @throws \Throwable
      */
     public function handle()
     {
         if (! $this->confirmToProceed()) {
-            return self::FAILURE;
+            return 1;
         }
 
         try {
@@ -92,13 +91,13 @@ class MigrateCommand extends BaseCommand implements Isolatable
             if ($this->option('graceful')) {
                 $this->components->warn($e->getMessage());
 
-                return self::SUCCESS;
+                return 0;
             }
 
             throw $e;
         }
 
-        return self::SUCCESS;
+        return 0;
     }
 
     /**
@@ -145,7 +144,7 @@ class MigrateCommand extends BaseCommand implements Isolatable
             $this->components->task('Creating migration table', function () {
                 return $this->callSilent('migrate:install', array_filter([
                     '--database' => $this->option('database'),
-                ])) === 0;
+                ])) == 0;
             });
 
             $this->newLine();
@@ -192,7 +191,7 @@ class MigrateCommand extends BaseCommand implements Isolatable
 
         if (($e->getCode() === 1049 && in_array($connection->getDriverName(), ['mysql', 'mariadb'])) ||
             (($e->errorInfo[0] ?? null) == '08006' &&
-              $connection->getDriverName() === 'pgsql' &&
+              $connection->getDriverName() == 'pgsql' &&
               Str::contains($e->getMessage(), '"'.$connection->getDatabaseName().'"'))) {
             return $this->createMissingMySqlOrPgsqlDatabase($connection);
         }
@@ -239,10 +238,7 @@ class MigrateCommand extends BaseCommand implements Isolatable
      */
     protected function createMissingMySqlOrPgsqlDatabase($connection)
     {
-        $configKey = 'database.connections.'.Str::before($connection->getName(), '::');
-
-        if ($this->laravel['config']->get("{$configKey}.database") !==
-            $connection->getDatabaseName()) {
+        if ($this->laravel['config']->get("database.connections.{$connection->getName()}.database") !== $connection->getDatabaseName()) {
             return false;
         }
 
@@ -261,7 +257,7 @@ class MigrateCommand extends BaseCommand implements Isolatable
         }
         try {
             $this->laravel['config']->set(
-                "{$configKey}.database",
+                "database.connections.{$connection->getName()}.database",
                 match ($connection->getDriverName()) {
                     'mysql', 'mariadb' => null,
                     'pgsql' => 'postgres',
@@ -281,7 +277,7 @@ class MigrateCommand extends BaseCommand implements Isolatable
                 $this->laravel['db']->purge();
             });
         } finally {
-            $this->laravel['config']->set("{$configKey}.database", $connection->getDatabaseName());
+            $this->laravel['config']->set("database.connections.{$connection->getName()}.database", $connection->getDatabaseName());
         }
     }
 

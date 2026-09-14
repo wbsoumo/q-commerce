@@ -6,18 +6,17 @@ use Illuminate\Console\GeneratorCommand;
 use Illuminate\Support\Str;
 use Illuminate\Support\Stringable;
 use Symfony\Component\Console\Attribute\AsCommand;
+use Symfony\Component\Console\Input\InputOption;
 
 #[AsCommand(name: 'make:factory')]
 class FactoryMakeCommand extends GeneratorCommand
 {
     /**
-     * The name and signature of the console command.
+     * The console command name.
      *
      * @var string
      */
-    protected $signature = 'make:factory
-                    {name : The name of the factory}
-                    {--m|model= : The name of the model}';
+    protected $name = 'make:factory';
 
     /**
      * The console command description.
@@ -67,8 +66,8 @@ class FactoryMakeCommand extends GeneratorCommand
         $factory = class_basename(Str::ucfirst(str_replace('Factory', '', $name)));
 
         $namespaceModel = $this->option('model')
-            ? $this->qualifyModel($this->option('model'))
-            : $this->qualifyModel($this->guessModelName($name));
+                        ? $this->qualifyModel($this->option('model'))
+                        : $this->qualifyModel($this->guessModelName($name));
 
         $model = class_basename($namespaceModel);
 
@@ -129,5 +128,17 @@ class FactoryMakeCommand extends GeneratorCommand
         }
 
         return $this->rootNamespace().'Model';
+    }
+
+    /**
+     * Get the console command options.
+     *
+     * @return array
+     */
+    protected function getOptions()
+    {
+        return [
+            ['model', 'm', InputOption::VALUE_OPTIONAL, 'The name of the model'],
+        ];
     }
 }

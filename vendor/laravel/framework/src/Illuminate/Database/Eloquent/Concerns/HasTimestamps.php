@@ -2,10 +2,6 @@
 
 namespace Illuminate\Database\Eloquent\Concerns;
 
-use Illuminate\Database\Eloquent\Attributes\Initialize;
-use Illuminate\Database\Eloquent\Attributes\Table;
-use Illuminate\Database\Eloquent\Attributes\WithoutTimestamps;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Date;
 
 trait HasTimestamps
@@ -25,36 +21,15 @@ trait HasTimestamps
     protected static $ignoreTimestampsOn = [];
 
     /**
-     * Initialize the HasTimestamps trait.
-     *
-     * @return void
-     */
-    #[Initialize]
-    public function initializeHasTimestamps()
-    {
-        if ($this->timestamps === true) {
-            if (static::resolveClassAttribute(WithoutTimestamps::class) !== null) {
-                $this->timestamps = false;
-            } elseif (($table = static::resolveClassAttribute(Table::class)) && $table->timestamps !== null) {
-                $this->timestamps = $table->timestamps;
-            }
-        }
-    }
-
-    /**
      * Update the model's update timestamp.
      *
-     * @param  array|string|null  $attribute
+     * @param  string|null  $attribute
      * @return bool
      */
     public function touch($attribute = null)
     {
         if ($attribute) {
-            $time = $this->freshTimestamp();
-
-            foreach (Arr::wrap($attribute) as $column) {
-                $this->{$column} = $time;
-            }
+            $this->$attribute = $this->freshTimestamp();
 
             return $this->save();
         }
@@ -71,7 +46,7 @@ trait HasTimestamps
     /**
      * Update the model's update timestamp without raising any events.
      *
-     * @param  array|string|null  $attribute
+     * @param  string|null  $attribute
      * @return bool
      */
     public function touchQuietly($attribute = null)
@@ -180,7 +155,7 @@ trait HasTimestamps
     }
 
     /**
-     * Get the fully-qualified "created at" column.
+     * Get the fully qualified "created at" column.
      *
      * @return string|null
      */
@@ -192,7 +167,7 @@ trait HasTimestamps
     }
 
     /**
-     * Get the fully-qualified "updated at" column.
+     * Get the fully qualified "updated at" column.
      *
      * @return string|null
      */
@@ -206,10 +181,8 @@ trait HasTimestamps
     /**
      * Disable timestamps for the current class during the given callback scope.
      *
-     * @template TReturn
-     *
-     * @param  (callable(): TReturn)  $callback
-     * @return TReturn
+     * @param  callable  $callback
+     * @return mixed
      */
     public static function withoutTimestamps(callable $callback)
     {
@@ -219,11 +192,9 @@ trait HasTimestamps
     /**
      * Disable timestamps for the given model classes during the given callback scope.
      *
-     * @template TReturn
-     *
      * @param  array  $models
-     * @param  callable(): TReturn  $callback
-     * @return TReturn
+     * @param  callable  $callback
+     * @return mixed
      */
     public static function withoutTimestampsOn($models, $callback)
     {
@@ -250,6 +221,12 @@ trait HasTimestamps
     {
         $class ??= static::class;
 
-        return array_any(static::$ignoreTimestampsOn, fn ($ignoredClass) => $class === $ignoredClass || is_subclass_of($class, $ignoredClass));
+        foreach (static::$ignoreTimestampsOn as $ignoredClass) {
+            if ($class === $ignoredClass || is_subclass_of($class, $ignoredClass)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

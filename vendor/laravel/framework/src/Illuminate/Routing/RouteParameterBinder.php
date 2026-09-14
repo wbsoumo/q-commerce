@@ -17,6 +17,7 @@ class RouteParameterBinder
      * Create a new Route parameter binder instance.
      *
      * @param  \Illuminate\Routing\Route  $route
+     * @return void
      */
     public function __construct($route)
     {
@@ -89,7 +90,7 @@ class RouteParameterBinder
         $parameters = array_intersect_key($matches, array_flip($parameterNames));
 
         return array_filter($parameters, function ($value) {
-            return is_string($value) && $value !== '';
+            return is_string($value) && strlen($value) > 0;
         });
     }
 

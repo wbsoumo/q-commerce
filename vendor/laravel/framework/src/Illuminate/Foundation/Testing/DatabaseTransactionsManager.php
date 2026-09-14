@@ -15,6 +15,7 @@ class DatabaseTransactionsManager extends BaseManager
      * Create a new database transaction manager instance.
      *
      * @param  array  $connectionsTransacting
+     * @return void
      */
     public function __construct(array $connectionsTransacting)
     {
@@ -34,7 +35,7 @@ class DatabaseTransactionsManager extends BaseManager
         // If there are no transactions, we'll run the callbacks right away. Also, we'll run it
         // right away when we're in test mode and we only have the wrapping transaction. For
         // every other case, we'll queue up the callback to run after the commit happens.
-        if ($this->callbackApplicableTransactions()->isEmpty()) {
+        if ($this->callbackApplicableTransactions()->count() === 0) {
             return $callback();
         }
 

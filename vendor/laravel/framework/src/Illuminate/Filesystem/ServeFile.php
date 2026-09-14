@@ -44,7 +44,7 @@ class ServeFile
                     }
                 }
             );
-        } catch (PathTraversalDetected) {
+        } catch (PathTraversalDetected $e) {
             abort(404);
         }
     }
@@ -54,9 +54,7 @@ class ServeFile
      */
     protected function hasValidSignature(Request $request): bool
     {
-        return ! filter_var($request->query('upload', false), FILTER_VALIDATE_BOOLEAN) && (
-            ($this->config['visibility'] ?? 'private') === 'public' ||
-            $request->hasValidRelativeSignature()
-        );
+        return ($this->config['visibility'] ?? 'private') === 'public' ||
+               $request->hasValidRelativeSignature();
     }
 }

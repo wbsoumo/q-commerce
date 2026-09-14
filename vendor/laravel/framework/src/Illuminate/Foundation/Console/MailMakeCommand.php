@@ -5,10 +5,11 @@ namespace Illuminate\Foundation\Console;
 use Illuminate\Console\Concerns\CreatesMatchingTest;
 use Illuminate\Console\GeneratorCommand;
 use Illuminate\Foundation\Inspiring;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
-use Illuminate\Support\Stringable;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 use function Laravel\Prompts\select;
@@ -19,15 +20,11 @@ class MailMakeCommand extends GeneratorCommand
     use CreatesMatchingTest;
 
     /**
-     * The name and signature of the console command.
+     * The console command name.
      *
      * @var string
      */
-    protected $signature = 'make:mail
-                    {name : The name of the mailable}
-                    {--f|force : Create the class even if the mailable already exists}
-                    {--m|markdown= : Create a new Markdown template for the mailable}
-                    {--view= : Create a new Blade template for the mailable}';
+    protected $name = 'make:mail';
 
     /**
      * The console command description.
@@ -42,16 +39,6 @@ class MailMakeCommand extends GeneratorCommand
      * @var string
      */
     protected $type = 'Mailable';
-
-    #[\Override]
-    protected function configureDefaults(): void
-    {
-        // These default to false (not null) so that handle() can distinguish "not
-        // passed at all" from "passed with no value", which can't be expressed as a
-        // literal boolean default in the signature above.
-        $this->getDefinition()->getOption('markdown')->setDefault(false);
-        $this->getDefinition()->getOption('view')->setDefault(false);
-    }
 
     /**
      * Execute the console command.
@@ -80,14 +67,8 @@ class MailMakeCommand extends GeneratorCommand
      */
     protected function writeMarkdownTemplate()
     {
-        $separator = '/';
-
-        if (windows_os()) {
-            $separator = '\\';
-        }
-
         $path = $this->viewPath(
-            str_replace('.', $separator, $this->getView()).'.blade.php'
+            str_replace('.', '/', $this->getView()).'.blade.php'
         );
 
         if ($this->files->exists($path)) {
@@ -108,14 +89,8 @@ class MailMakeCommand extends GeneratorCommand
      */
     protected function writeView()
     {
-        $separator = '/';
-
-        if (windows_os()) {
-            $separator = '\\';
-        }
-
         $path = $this->viewPath(
-            str_replace('.', $separator, $this->getView()).'.blade.php'
+            str_replace('.', '/', $this->getView()).'.blade.php'
         );
 
         if ($this->files->exists($path)) {
@@ -168,7 +143,7 @@ class MailMakeCommand extends GeneratorCommand
         if (! $view) {
             $name = str_replace('\\', '/', $this->argument('name'));
 
-            $view = 'mail.'.(new Stringable($name))->explode('/')
+            $view = 'mail.'.(new Collection(explode('/', $name)))
                 ->map(fn ($part) => Str::kebab($part))
                 ->implode('.');
         }
@@ -216,6 +191,20 @@ class MailMakeCommand extends GeneratorCommand
     protected function getDefaultNamespace($rootNamespace)
     {
         return $rootNamespace.'\Mail';
+    }
+
+    /**
+     * Get the console command options.
+     *
+     * @return array
+     */
+    protected function getOptions()
+    {
+        return [
+            ['force', 'f', InputOption::VALUE_NONE, 'Create the class even if the mailable already exists'],
+            ['markdown', 'm', InputOption::VALUE_OPTIONAL, 'Create a new Markdown template for the mailable', false],
+            ['view', null, InputOption::VALUE_OPTIONAL, 'Create a new Blade template for the mailable', false],
+        ];
     }
 
     /**

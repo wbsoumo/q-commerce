@@ -8,7 +8,7 @@ use Throwable;
 class AuthorizationException extends Exception
 {
     /**
-     * The authorization response returned by the gate.
+     * The response from the gate.
      *
      * @var \Illuminate\Auth\Access\Response
      */
@@ -27,6 +27,7 @@ class AuthorizationException extends Exception
      * @param  string|null  $message
      * @param  mixed  $code
      * @param  \Throwable|null  $previous
+     * @return void
      */
     public function __construct($message = null, $code = null, ?Throwable $previous = null)
     {

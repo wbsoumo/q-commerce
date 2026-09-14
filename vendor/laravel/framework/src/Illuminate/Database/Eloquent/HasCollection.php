@@ -27,13 +27,7 @@ trait HasCollection
     {
         static::$resolvedCollectionClasses[static::class] ??= ($this->resolveCollectionFromAttribute() ?? static::$collectionClass);
 
-        $collection = new static::$resolvedCollectionClasses[static::class]($models);
-
-        if (Model::isAutomaticallyEagerLoadingRelationships()) {
-            $collection->withRelationshipAutoloading();
-        }
-
-        return $collection;
+        return new static::$resolvedCollectionClasses[static::class]($models);
     }
 
     /**
@@ -43,16 +37,14 @@ trait HasCollection
      */
     public function resolveCollectionFromAttribute()
     {
-        $reflection = new ReflectionClass(static::class);
+        $reflectionClass = new ReflectionClass(static::class);
 
-        do {
-            $attributes = $reflection->getAttributes(CollectedBy::class);
+        $attributes = $reflectionClass->getAttributes(CollectedBy::class);
 
-            if (isset($attributes[0], $attributes[0]->getArguments()[0])) {
-                return $attributes[0]->getArguments()[0];
-            }
-        } while ($reflection = $reflection->getParentClass());
+        if (! isset($attributes[0]) || ! isset($attributes[0]->getArguments()[0])) {
+            return;
+        }
 
-        return null;
+        return $attributes[0]->getArguments()[0];
     }
 }

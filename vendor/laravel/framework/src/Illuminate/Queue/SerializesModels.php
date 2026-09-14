@@ -3,7 +3,6 @@
 namespace Illuminate\Queue;
 
 use Illuminate\Queue\Attributes\WithoutRelations;
-use Illuminate\Support\Reflector;
 use ReflectionClass;
 use ReflectionProperty;
 
@@ -25,7 +24,7 @@ trait SerializesModels
         [$class, $properties, $classLevelWithoutRelations] = [
             get_class($this),
             $reflectionClass->getProperties(),
-            ! is_null(Reflector::getClassAttribute($this, WithoutRelations::class, ascend: true)),
+            ! empty($reflectionClass->getAttributes(WithoutRelations::class)),
         ];
 
         foreach ($properties as $property) {
@@ -34,10 +33,6 @@ trait SerializesModels
             }
 
             if (! $property->isInitialized($this)) {
-                continue;
-            }
-
-            if (method_exists($property, 'isVirtual') && $property->isVirtual()) {
                 continue;
             }
 

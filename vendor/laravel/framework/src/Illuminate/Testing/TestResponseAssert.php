@@ -4,7 +4,6 @@ namespace Illuminate\Testing;
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
-use Illuminate\Support\ViewErrorBag;
 use PHPUnit\Framework\ExpectationFailedException;
 use ReflectionProperty;
 
@@ -26,7 +25,7 @@ class TestResponseAssert
     /**
      * Create a new TestResponse assertion helper.
      */
-    public static function withResponse(TestResponse $response): static
+    public static function withResponse(TestResponse $response): self
     {
         return new static($response);
     }
@@ -79,17 +78,7 @@ class TestResponseAssert
             $session = $this->response->baseResponse->getSession();
 
             if (! is_null($session) && $session->has('errors')) {
-                $errors = $session->get('errors');
-
-                if (! $errors instanceof ViewErrorBag && ! $session->isStarted()) {
-                    $session->start();
-
-                    $errors = $session->get('errors');
-                }
-
-                if ($errors instanceof ViewErrorBag) {
-                    return $this->appendErrorsToException($errors->all(), $exception);
-                }
+                return $this->appendErrorsToException($session->get('errors')->all(), $exception);
             }
         }
 

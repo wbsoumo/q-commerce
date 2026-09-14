@@ -6,20 +6,17 @@ use Illuminate\Database\Migrations\Migrator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Stringable;
 use Symfony\Component\Console\Attribute\AsCommand;
+use Symfony\Component\Console\Input\InputOption;
 
 #[AsCommand(name: 'migrate:status')]
 class StatusCommand extends BaseCommand
 {
     /**
-     * The name and signature of the console command.
+     * The console command name.
      *
      * @var string
      */
-    protected $signature = 'migrate:status
-                    {--database= : The database connection to use}
-                    {--pending= : Only list pending migrations}
-                    {--path=* : The path(s) to the migrations files to use}
-                    {--realpath : Indicate any provided migration file paths are pre-resolved absolute paths}';
+    protected $name = 'migrate:status';
 
     /**
      * The console command description.
@@ -39,21 +36,13 @@ class StatusCommand extends BaseCommand
      * Create a new migration rollback command instance.
      *
      * @param  \Illuminate\Database\Migrations\Migrator  $migrator
+     * @return void
      */
     public function __construct(Migrator $migrator)
     {
         parent::__construct();
 
         $this->migrator = $migrator;
-    }
-
-    #[\Override]
-    protected function configureDefaults(): void
-    {
-        // Defaults to false (not null) so that handle() can distinguish "not passed
-        // at all" from "passed with no value", which can't be expressed as a literal
-        // boolean default in the signature above.
-        $this->getDefinition()->getOption('pending')->setDefault(false);
     }
 
     /**
@@ -67,7 +56,7 @@ class StatusCommand extends BaseCommand
             if (! $this->migrator->repositoryExists()) {
                 $this->components->error('Migration table not found.');
 
-                return self::FAILURE;
+                return 1;
             }
 
             $ran = $this->migrator->getRepository()->getRan();
@@ -135,5 +124,20 @@ class StatusCommand extends BaseCommand
     protected function getAllMigrationFiles()
     {
         return $this->migrator->getMigrationFiles($this->getMigrationPaths());
+    }
+
+    /**
+     * Get the console command options.
+     *
+     * @return array
+     */
+    protected function getOptions()
+    {
+        return [
+            ['database', null, InputOption::VALUE_OPTIONAL, 'The database connection to use'],
+            ['pending', null, InputOption::VALUE_OPTIONAL, 'Only list pending migrations', false],
+            ['path', null, InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, 'The path(s) to the migrations files to use'],
+            ['realpath', null, InputOption::VALUE_NONE, 'Indicate any provided migration file paths are pre-resolved absolute paths'],
+        ];
     }
 }

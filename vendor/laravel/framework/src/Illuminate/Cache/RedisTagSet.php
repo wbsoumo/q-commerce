@@ -13,21 +13,18 @@ class RedisTagSet extends TagSet
      *
      * @param  string  $key
      * @param  int|null  $ttl
-     * @param  string|null  $updateWhen
+     * @param  string  $updateWhen
      * @return void
      */
     public function addEntry(string $key, ?int $ttl = null, $updateWhen = null)
     {
         $ttl = is_null($ttl) ? -1 : Carbon::now()->addSeconds($ttl)->getTimestamp();
 
-        $connection = $this->store->connection();
-        $prefix = $this->store->getPrefix();
-
         foreach ($this->tagIds() as $tagKey) {
             if ($updateWhen) {
-                $connection->zadd($prefix.$tagKey, $updateWhen, $ttl, $key);
+                $this->store->connection()->zadd($this->store->getPrefix().$tagKey, $updateWhen, $ttl, $key);
             } else {
-                $connection->zadd($prefix.$tagKey, $ttl, $key);
+                $this->store->connection()->zadd($this->store->getPrefix().$tagKey, $ttl, $key);
             }
         }
     }
@@ -47,23 +44,15 @@ class RedisTagSet extends TagSet
         };
 
         return new LazyCollection(function () use ($connection, $defaultCursorValue) {
-            $prefix = $this->store->getPrefix();
-
             foreach ($this->tagIds() as $tagKey) {
                 $cursor = $defaultCursorValue;
 
                 do {
-                    $results = $connection->zscan(
-                        $prefix.$tagKey,
+                    [$cursor, $entries] = $connection->zscan(
+                        $this->store->getPrefix().$tagKey,
                         $cursor,
                         ['match' => '*', 'count' => 1000]
                     );
-
-                    if (! is_array($results)) {
-                        break;
-                    }
-
-                    [$cursor, $entries] = $results;
 
                     if (! is_array($entries)) {
                         break;
@@ -71,14 +60,14 @@ class RedisTagSet extends TagSet
 
                     $entries = array_unique(array_keys($entries));
 
-                    if ($entries === []) {
+                    if (count($entries) === 0) {
                         continue;
                     }
 
                     foreach ($entries as $entry) {
                         yield $entry;
                     }
-                } while (((string) $cursor) !== ((string) $defaultCursorValue));
+                } while (((string) $cursor) !== $defaultCursorValue);
             }
         });
     }
@@ -90,29 +79,17 @@ class RedisTagSet extends TagSet
      */
     public function flushStaleEntries()
     {
-        $prefix = $this->store->getPrefix();
-        $now = Carbon::now()->getTimestamp();
-
-        $flushStaleEntries = function ($pipe) use ($prefix, $now) {
+        $this->store->connection()->pipeline(function ($pipe) {
             foreach ($this->tagIds() as $tagKey) {
-                $pipe->zremrangebyscore($prefix.$tagKey, 0, $now);
+                $pipe->zremrangebyscore($this->store->getPrefix().$tagKey, 0, Carbon::now()->getTimestamp());
             }
-        };
-
-        $connection = $this->store->connection();
-
-        if ($connection instanceof PhpRedisConnection) {
-            $flushStaleEntries($connection);
-        } else {
-            $connection->pipeline($flushStaleEntries);
-        }
+        });
     }
 
     /**
      * Flush the tag from the cache.
      *
      * @param  string  $name
-     * @return string
      */
     public function flushTag($name)
     {

@@ -11,11 +11,11 @@ use Symfony\Component\Console\Attribute\AsCommand;
 class ScheduleInterruptCommand extends Command
 {
     /**
-     * The name and signature of the console command.
+     * The console command name.
      *
      * @var string
      */
-    protected $signature = 'schedule:interrupt';
+    protected $name = 'schedule:interrupt';
 
     /**
      * The console command description.
@@ -35,6 +35,7 @@ class ScheduleInterruptCommand extends Command
      * Create a new schedule interrupt command.
      *
      * @param  \Illuminate\Contracts\Cache\Repository  $cache
+     * @return void
      */
     public function __construct(Cache $cache)
     {

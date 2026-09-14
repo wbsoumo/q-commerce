@@ -10,42 +10,6 @@ class PendingEventAttributes
     use ManagesAttributes, ManagesFrequencies;
 
     /**
-     * Event lifecycle and output methods that should be deferred and replayed on each event in the group.
-     *
-     * @var array<int, string>
-     */
-    public const DEFERRED_EVENT_METHODS = [
-        'before',
-        'after',
-        'then',
-        'thenWithOutput',
-        'onSuccess',
-        'onSuccessWithOutput',
-        'onFailure',
-        'onFailureWithOutput',
-        'pingBefore',
-        'pingBeforeIf',
-        'thenPing',
-        'thenPingIf',
-        'pingOnSuccess',
-        'pingOnSuccessIf',
-        'pingOnFailure',
-        'pingOnFailureIf',
-        'sendOutputTo',
-        'appendOutputTo',
-        'emailOutputTo',
-        'emailWrittenOutputTo',
-        'emailOutputOnFailure',
-    ];
-
-    /**
-     * The recorded macro and deferred method calls to replay on each event.
-     *
-     * @var array<int, array{string, array}>
-     */
-    protected array $macros = [];
-
-    /**
      * Create a new pending event attributes instance.
      */
     public function __construct(
@@ -59,16 +23,13 @@ class PendingEventAttributes
      * The expiration time of the underlying cache lock may be specified in minutes.
      *
      * @param  int  $expiresAt
-     * @param  bool  $releaseOnTerminationSignals
      * @return $this
      */
-    public function withoutOverlapping($expiresAt = 1440, $releaseOnTerminationSignals = true)
+    public function withoutOverlapping($expiresAt = 1440)
     {
         $this->withoutOverlapping = true;
 
         $this->expiresAt = $expiresAt;
-
-        $this->releaseOnTerminationSignals = $releaseOnTerminationSignals;
 
         return $this;
     }
@@ -83,10 +44,6 @@ class PendingEventAttributes
 
         if ($this->description !== null) {
             $event->name($this->description);
-        }
-
-        if ($this->attributes !== []) {
-            $event->attributes = $this->attributes;
         }
 
         if ($this->timezone !== null) {
@@ -105,12 +62,8 @@ class PendingEventAttributes
             $event->evenInMaintenanceMode();
         }
 
-        if ($this->evenWhenPaused) {
-            $event->evenWhenPaused();
-        }
-
         if ($this->withoutOverlapping) {
-            $event->withoutOverlapping($this->expiresAt, $this->releaseOnTerminationSignals);
+            $event->withoutOverlapping($this->expiresAt);
         }
 
         if ($this->onOneServer) {
@@ -128,10 +81,6 @@ class PendingEventAttributes
         foreach ($this->rejects as $reject) {
             $event->skip($reject);
         }
-
-        foreach ($this->macros as [$method, $parameters]) {
-            $event->{$method}(...$parameters);
-        }
     }
 
     /**
@@ -139,12 +88,6 @@ class PendingEventAttributes
      */
     public function __call(string $method, array $parameters): mixed
     {
-        if (Event::hasMacro($method) || in_array($method, static::DEFERRED_EVENT_METHODS, true)) {
-            $this->macros[] = [$method, $parameters];
-
-            return $this;
-        }
-
         return $this->schedule->{$method}(...$parameters);
     }
 }

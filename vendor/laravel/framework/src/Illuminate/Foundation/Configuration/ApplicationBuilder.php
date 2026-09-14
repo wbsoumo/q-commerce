@@ -13,8 +13,6 @@ use Illuminate\Foundation\Events\DiagnosingHealth;
 use Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as AppEventServiceProvider;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as AppRouteServiceProvider;
-use Illuminate\Http\Middleware\PrefersJsonResponses;
-use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Event;
@@ -94,12 +92,12 @@ class ApplicationBuilder
     /**
      * Register the core event service provider for the application.
      *
-     * @param  iterable<int, string>|bool  $discover
+     * @param  array|bool  $discover
      * @return $this
      */
-    public function withEvents(iterable|bool $discover = true)
+    public function withEvents(array|bool $discover = [])
     {
-        if (is_iterable($discover)) {
+        if (is_array($discover) && count($discover) > 0) {
             AppEventServiceProvider::setEventDiscoveryPaths($discover);
         }
 
@@ -147,7 +145,6 @@ class ApplicationBuilder
      * @param  string|null  $commands
      * @param  string|null  $channels
      * @param  string|null  $pages
-     * @param  string|null  $health
      * @param  string  $apiPrefix
      * @param  callable|null  $then
      * @return $this
@@ -197,8 +194,6 @@ class ApplicationBuilder
      * @param  string  $apiPrefix
      * @param  callable|null  $then
      * @return \Closure
-     *
-     * @throws \Throwable
      */
     protected function buildRoutingCallback(array|string|null $web,
         array|string|null $api,
@@ -221,7 +216,7 @@ class ApplicationBuilder
             }
 
             if (is_string($health)) {
-                Route::get($health, function (Request $request) {
+                Route::get($health, function () {
                     $exception = null;
 
                     try {
@@ -236,17 +231,9 @@ class ApplicationBuilder
                         $exception = $e->getMessage();
                     }
 
-                    $status = $exception ? 500 : 200;
-
-                    if ($request->expectsJson()) {
-                        return response()->json([
-                            'status' => $exception ? 'down' : 'up',
-                        ], $status);
-                    }
-
                     return response(View::file(__DIR__.'/../resources/health-up.blade.php', [
                         'exception' => $exception,
-                    ]), status: $status);
+                    ]), status: $exception ? 500 : 200);
                 });
             }
 
@@ -316,12 +303,6 @@ class ApplicationBuilder
             }
         });
 
-        $this->app->afterResolving(ConsoleKernel::class, function () use ($callback) {
-            if (! is_null($callback)) {
-                $callback(new Middleware);
-            }
-        });
-
         return $this;
     }
 
@@ -374,13 +355,7 @@ class ApplicationBuilder
      */
     public function withSchedule(callable $callback)
     {
-        Artisan::starting(function () use ($callback) {
-            $this->app->afterResolving(Schedule::class, fn ($schedule) => $callback($schedule));
-
-            if ($this->app->resolved(Schedule::class)) {
-                $callback($this->app->make(Schedule::class));
-            }
-        });
+        Artisan::starting(fn () => $callback($this->app->make(Schedule::class)));
 
         return $this;
     }
@@ -388,7 +363,7 @@ class ApplicationBuilder
     /**
      * Register and configure the application's exception handler.
      *
-     * @param  (callable(\Illuminate\Foundation\Configuration\Exceptions): mixed)|null  $using
+     * @param  callable|null  $using
      * @return $this
      */
     public function withExceptions(?callable $using = null)
@@ -398,12 +373,12 @@ class ApplicationBuilder
             \Illuminate\Foundation\Exceptions\Handler::class
         );
 
-        if ($using !== null) {
-            $this->app->afterResolving(
-                \Illuminate\Foundation\Exceptions\Handler::class,
-                fn ($handler) => $using(new Exceptions($handler)),
-            );
-        }
+        $using ??= fn () => true;
+
+        $this->app->afterResolving(
+            \Illuminate\Foundation\Exceptions\Handler::class,
+            fn ($handler) => $using(new Exceptions($handler)),
+        );
 
         return $this;
     }
@@ -440,44 +415,6 @@ class ApplicationBuilder
                 }
             }
         });
-    }
-
-    /**
-     * Register an array of scoped singleton container bindings to be bound when the application is booting.
-     *
-     * @param  array  $scopedSingletons
-     * @return $this
-     */
-    public function withScopedSingletons(array $scopedSingletons)
-    {
-        return $this->registered(function ($app) use ($scopedSingletons) {
-            foreach ($scopedSingletons as $abstract => $concrete) {
-                if (is_string($abstract)) {
-                    $app->scoped($abstract, $concrete);
-                } else {
-                    $app->scoped($concrete);
-                }
-            }
-        });
-    }
-
-    /**
-     * Globally prefer JSON responses when the incoming "Accept" header is broad.
-     *
-     * @param  bool  $prefer
-     * @return $this
-     */
-    public function prefersJsonResponses(bool $prefer = true)
-    {
-        if (! $prefer) {
-            return $this;
-        }
-
-        $this->app->booted(function () {
-            $this->app->make(HttpKernel::class)->prependMiddleware(PrefersJsonResponses::class);
-        });
-
-        return $this;
     }
 
     /**

@@ -63,13 +63,6 @@ abstract class Relation implements BuilderContract
     protected static $constraints = true;
 
     /**
-     * Indicates whether constraints should be enabled for nested relation attributes.
-     *
-     * @var bool
-     */
-    protected static $constraintsForNestedRelations = false;
-
-    /**
      * An array to map morph names to their class names in the database.
      *
      * @var array<string, class-string<\Illuminate\Database\Eloquent\Model>>
@@ -95,6 +88,7 @@ abstract class Relation implements BuilderContract
      *
      * @param  \Illuminate\Database\Eloquent\Builder<TRelatedModel>  $query
      * @param  TDeclaringModel  $parent
+     * @return void
      */
     public function __construct(Builder $query, Model $parent)
     {
@@ -115,38 +109,9 @@ abstract class Relation implements BuilderContract
      */
     public static function noConstraints(Closure $callback)
     {
-        return static::withoutConstraints($callback, false);
-    }
-
-    /**
-     * Run a callback without constraints while preserving them for nested relation attributes.
-     *
-     * @template TReturn of mixed
-     *
-     * @param  Closure(): TReturn  $callback
-     * @return TReturn
-     */
-    public static function noConstraintsForRelation(Closure $callback)
-    {
-        return static::withoutConstraints($callback, true);
-    }
-
-    /**
-     * Run a callback with the configured relation constraints.
-     *
-     * @template TReturn of mixed
-     *
-     * @param  Closure(): TReturn  $callback
-     * @param  bool  $constraintsForNestedRelations
-     * @return TReturn
-     */
-    protected static function withoutConstraints(Closure $callback, $constraintsForNestedRelations)
-    {
         $previous = static::$constraints;
-        $previousConstraintsForNestedRelations = static::$constraintsForNestedRelations;
 
         static::$constraints = false;
-        static::$constraintsForNestedRelations = $constraintsForNestedRelations;
 
         // When resetting the relation where clause, we want to shift the first element
         // off of the bindings, leaving only the constraints that the developers put
@@ -155,44 +120,7 @@ abstract class Relation implements BuilderContract
             return $callback();
         } finally {
             static::$constraints = $previous;
-            static::$constraintsForNestedRelations = $previousConstraintsForNestedRelations;
         }
-    }
-
-    /**
-     * Run a callback with constraints enabled on the relation.
-     *
-     * @template TReturn of mixed
-     *
-     * @param  Closure(): TReturn  $callback
-     * @return TReturn
-     */
-    public static function withConstraints(Closure $callback)
-    {
-        $previous = static::$constraints;
-
-        static::$constraints = true;
-
-        try {
-            return $callback();
-        } finally {
-            static::$constraints = $previous;
-        }
-    }
-
-    /**
-     * Run a callback with constraints when resolving a nested relation attribute.
-     *
-     * @template TReturn of mixed
-     *
-     * @param  Closure(): TReturn  $callback
-     * @return TReturn
-     */
-    public static function withConstraintsForNestedRelation(Closure $callback)
-    {
-        return static::$constraintsForNestedRelations
-            ? static::withConstraints($callback)
-            : $callback();
     }
 
     /**
@@ -244,8 +172,8 @@ abstract class Relation implements BuilderContract
     public function getEager()
     {
         return $this->eagerKeysWereEmpty
-            ? $this->related->newCollection()
-            : $this->get();
+                    ? $this->query->getModel()->newCollection()
+                    : $this->get();
     }
 
     /**
@@ -259,7 +187,7 @@ abstract class Relation implements BuilderContract
      */
     public function sole($columns = ['*'])
     {
-        $result = $this->limit(2)->get($columns);
+        $result = $this->take(2)->get($columns);
 
         $count = $result->count();
 
@@ -333,7 +261,7 @@ abstract class Relation implements BuilderContract
      *
      * @param  \Illuminate\Database\Eloquent\Builder<TRelatedModel>  $query
      * @param  \Illuminate\Database\Eloquent\Builder<TDeclaringModel>  $parentQuery
-     * @param  mixed  $columns
+     * @param  array|mixed  $columns
      * @return \Illuminate\Database\Eloquent\Builder<TRelatedModel>
      */
     public function getRelationExistenceQuery(Builder $query, Builder $parentQuery, $columns = ['*'])
@@ -419,7 +347,7 @@ abstract class Relation implements BuilderContract
     }
 
     /**
-     * Get the fully-qualified parent key name.
+     * Get the fully qualified parent key name.
      *
      * @return string
      */
@@ -436,16 +364,6 @@ abstract class Relation implements BuilderContract
     public function getRelated()
     {
         return $this->related;
-    }
-
-    /**
-     * Get the class name of the related model.
-     *
-     * @return class-string<TRelatedModel>
-     */
-    public function getRelatedClass()
-    {
-        return $this->related::class;
     }
 
     /**
@@ -506,9 +424,9 @@ abstract class Relation implements BuilderContract
     protected function whereInMethod(Model $model, $key)
     {
         return $model->getKeyName() === last(explode('.', $key))
-            && in_array($model->getKeyType(), ['int', 'integer'])
-                ? 'whereIntegerInRaw'
-                : 'whereIn';
+                    && in_array($model->getKeyType(), ['int', 'integer'])
+                        ? 'whereIntegerInRaw'
+                        : 'whereIn';
     }
 
     /**
@@ -535,7 +453,7 @@ abstract class Relation implements BuilderContract
     /**
      * Define the morph map for polymorphic relations and require all morphed models to be explicitly mapped.
      *
-     * @param  array<array-key, class-string<\Illuminate\Database\Eloquent\Model>>  $map
+     * @param  array<string, class-string<\Illuminate\Database\Eloquent\Model>>  $map
      * @param  bool  $merge
      * @return array
      */
@@ -549,7 +467,7 @@ abstract class Relation implements BuilderContract
     /**
      * Set or get the morph map for polymorphic relations.
      *
-     * @param  array<array-key, class-string<\Illuminate\Database\Eloquent\Model>>|null  $map
+     * @param  array<string, class-string<\Illuminate\Database\Eloquent\Model>>|null  $map
      * @param  bool  $merge
      * @return array<string, class-string<\Illuminate\Database\Eloquent\Model>>
      */
@@ -559,8 +477,7 @@ abstract class Relation implements BuilderContract
 
         if (is_array($map)) {
             static::$morphMap = $merge && static::$morphMap
-                ? $map + static::$morphMap
-                : $map;
+                            ? $map + static::$morphMap : $map;
         }
 
         return static::$morphMap;
@@ -569,7 +486,7 @@ abstract class Relation implements BuilderContract
     /**
      * Builds a table-keyed array from model class names.
      *
-     * @param  array<array-key, class-string<\Illuminate\Database\Eloquent\Model>>|null  $models
+     * @param  list<class-string<\Illuminate\Database\Eloquent\Model>>|null  $models
      * @return array<string, class-string<\Illuminate\Database\Eloquent\Model>>|null
      */
     protected static function buildMorphMapFromModels(?array $models = null)
@@ -586,15 +503,11 @@ abstract class Relation implements BuilderContract
     /**
      * Get the model associated with a custom polymorphic type.
      *
-     * @param  string|int|null  $alias
+     * @param  string  $alias
      * @return class-string<\Illuminate\Database\Eloquent\Model>|null
      */
     public static function getMorphedModel($alias)
     {
-        if (is_null($alias)) {
-            return null;
-        }
-
         return static::$morphMap[$alias] ?? null;
     }
 

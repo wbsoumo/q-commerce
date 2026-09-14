@@ -51,6 +51,7 @@ class EventFake implements Dispatcher, Fake
      *
      * @param  \Illuminate\Contracts\Events\Dispatcher  $dispatcher
      * @param  array|string  $eventsToFake
+     * @return void
      */
     public function __construct(Dispatcher $dispatcher, $eventsToFake = [])
     {
@@ -142,20 +143,9 @@ class EventFake implements Dispatcher, Fake
         }
 
         PHPUnit::assertTrue(
-            $this->dispatched($event, $callback)->isNotEmpty(),
+            $this->dispatched($event, $callback)->count() > 0,
             "The expected [{$event}] event was not dispatched."
         );
-    }
-
-    /**
-     * Assert if an event was dispatched exactly once.
-     *
-     * @param  string  $event
-     * @return void
-     */
-    public function assertDispatchedOnce($event)
-    {
-        $this->assertDispatchedTimes($event, 1);
     }
 
     /**
@@ -171,11 +161,7 @@ class EventFake implements Dispatcher, Fake
 
         PHPUnit::assertSame(
             $times, $count,
-            sprintf(
-                "The expected [{$event}] event was dispatched {$count} %s instead of {$times} %s.",
-                Str::plural('time', $count),
-                Str::plural('time', $times)
-            )
+            "The expected [{$event}] event was dispatched {$count} times instead of {$times} times."
         );
     }
 
@@ -347,11 +333,12 @@ class EventFake implements Dispatcher, Fake
         }
 
         return (new Collection($this->eventsToFake))
-            ->contains(function ($event) use ($eventName, $payload) {
+            ->filter(function ($event) use ($eventName, $payload) {
                 return $event instanceof Closure
-                    ? $event($eventName, $payload)
-                    : $event === $eventName;
-            });
+                            ? $event($eventName, $payload)
+                            : $event === $eventName;
+            })
+            ->isNotEmpty();
     }
 
     /**
@@ -386,11 +373,12 @@ class EventFake implements Dispatcher, Fake
         }
 
         return (new Collection($this->eventsToDispatch))
-            ->contains(function ($event) use ($eventName, $payload) {
+            ->filter(function ($event) use ($eventName, $payload) {
                 return $event instanceof Closure
                     ? $event($eventName, $payload)
                     : $event === $eventName;
-            });
+            })
+            ->isNotEmpty();
     }
 
     /**

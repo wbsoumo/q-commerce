@@ -2,7 +2,6 @@
 
 namespace Illuminate\Concurrency;
 
-use Carbon\CarbonInterval;
 use Closure;
 use Illuminate\Contracts\Concurrency\Driver;
 use Illuminate\Support\Arr;
@@ -16,19 +15,10 @@ class ForkDriver implements Driver
     /**
      * Run the given tasks concurrently and return an array containing the results.
      */
-    public function run(Closure|array $tasks, CarbonInterval|int|null $timeout = null): array
+    public function run(Closure|array $tasks): array
     {
-        $tasks = Arr::wrap($tasks);
-
-        $keys = array_keys($tasks);
-        $values = array_values($tasks);
-
-        /** @phpstan-ignore class.notFound (spatie/fork is not installed as it is practically incompatible with Windows) */
-        $results = Fork::new()->run(...$values);
-
-        ksort($results);
-
-        return array_combine($keys, $results);
+        /** @phpstan-ignore class.notFound */
+        return Fork::new()->run(...Arr::wrap($tasks));
     }
 
     /**

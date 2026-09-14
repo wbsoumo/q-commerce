@@ -13,11 +13,11 @@ class RestartCommand extends Command
     use InteractsWithTime;
 
     /**
-     * The name and signature of the console command.
+     * The console command name.
      *
      * @var string
      */
-    protected $signature = 'queue:restart';
+    protected $name = 'queue:restart';
 
     /**
      * The console command description.
@@ -37,6 +37,7 @@ class RestartCommand extends Command
      * Create a new queue restart command.
      *
      * @param  \Illuminate\Contracts\Cache\Repository  $cache
+     * @return void
      */
     public function __construct(Cache $cache)
     {

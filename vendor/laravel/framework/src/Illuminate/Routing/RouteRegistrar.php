@@ -7,7 +7,6 @@ use BadMethodCallException;
 use Closure;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Reflector;
-use Illuminate\Support\Traits\Macroable;
 use InvalidArgumentException;
 
 /**
@@ -22,7 +21,6 @@ use InvalidArgumentException;
  * @method \Illuminate\Routing\RouteRegistrar can(\UnitEnum|string  $ability, array|string $models = [])
  * @method \Illuminate\Routing\RouteRegistrar controller(string $controller)
  * @method \Illuminate\Routing\RouteRegistrar domain(\BackedEnum|string $value)
- * @method \Illuminate\Routing\RouteRegistrar metadata(array $metadata)
  * @method \Illuminate\Routing\RouteRegistrar middleware(array|string|null $middleware)
  * @method \Illuminate\Routing\RouteRegistrar missing(\Closure $missing)
  * @method \Illuminate\Routing\RouteRegistrar name(\BackedEnum|string $value)
@@ -36,9 +34,6 @@ use InvalidArgumentException;
 class RouteRegistrar
 {
     use CreatesRegularExpressionRouteConstraints;
-    use Macroable {
-        __call as macroCall;
-    }
 
     /**
      * The router instance.
@@ -73,7 +68,6 @@ class RouteRegistrar
         'can',
         'controller',
         'domain',
-        'metadata',
         'middleware',
         'missing',
         'name',
@@ -101,6 +95,7 @@ class RouteRegistrar
      * Create a new route registrar instance.
      *
      * @param  \Illuminate\Routing\Router  $router
+     * @return void
      */
     public function __construct(Router $router)
     {
@@ -123,21 +118,9 @@ class RouteRegistrar
         }
 
         if ($key === 'middleware') {
-            $value = array_filter(Arr::wrap($value));
-
             foreach ($value as $index => $middleware) {
                 $value[$index] = (string) $middleware;
             }
-        }
-
-        if ($key === 'metadata') {
-            if (! is_array($value)) {
-                throw new InvalidArgumentException('Attribute [metadata] expects an array.');
-            }
-
-            $value = RouteGroup::mergeMetadata(
-                $this->attributes['metadata'] ?? [], $value
-            );
         }
 
         $attributeKey = Arr::get($this->aliases, $key, $key);
@@ -240,17 +223,6 @@ class RouteRegistrar
     }
 
     /**
-     * Add metadata to routes registered by the registrar.
-     *
-     * @param  array  $metadata
-     * @return $this
-     */
-    public function metadata(array $metadata)
-    {
-        return $this->attribute('metadata', $metadata);
-    }
-
-    /**
      * Register a new route with the router.
      *
      * @param  string  $method
@@ -285,7 +257,7 @@ class RouteRegistrar
 
         if (is_array($action) &&
             array_is_list($action) &&
-            Reflector::isCallable($action, true)) {
+            Reflector::isCallable($action)) {
             if (strncmp($action[0], '\\', 1)) {
                 $action[0] = '\\'.$action[0];
             }
@@ -295,18 +267,7 @@ class RouteRegistrar
             ];
         }
 
-        $metadata = RouteGroup::mergeMetadata(
-            $this->attributes['metadata'] ?? [],
-            $action['metadata'] ?? []
-        );
-
-        $action = array_merge($this->attributes, $action);
-
-        if ($metadata !== []) {
-            $action['metadata'] = $metadata;
-        }
-
-        return $action;
+        return array_merge($this->attributes, $action);
     }
 
     /**
@@ -320,10 +281,6 @@ class RouteRegistrar
      */
     public function __call($method, $parameters)
     {
-        if (static::hasMacro($method)) {
-            return $this->macroCall($method, $parameters);
-        }
-
         if (in_array($method, $this->passthru)) {
             return $this->registerRoute($method, ...$parameters);
         }
@@ -331,10 +288,6 @@ class RouteRegistrar
         if (in_array($method, $this->allowedAttributes)) {
             if ($method === 'middleware') {
                 return $this->attribute($method, is_array($parameters[0]) ? $parameters[0] : $parameters);
-            }
-
-            if ($method === 'can') {
-                return $this->attribute($method, [$parameters]);
             }
 
             return $this->attribute($method, array_key_exists(0, $parameters) ? $parameters[0] : true);

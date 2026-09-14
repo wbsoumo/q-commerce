@@ -44,6 +44,7 @@ trait DatabaseRule
      *
      * @param  string  $table
      * @param  string  $column
+     * @return void
      */
     public function __construct($table, $column = 'NULL')
     {
@@ -102,7 +103,7 @@ trait DatabaseRule
 
         $value = enum_value($value);
 
-        $this->wheres[] = ['column' => $column, 'value' => $value];
+        $this->wheres[] = compact('column', 'value');
 
         return $this;
     }
@@ -111,7 +112,7 @@ trait DatabaseRule
      * Set a "where not" constraint on the query.
      *
      * @param  string  $column
-     * @param  \Illuminate\Contracts\Support\Arrayable|\UnitEnum|array|string|int  $value
+     * @param  \Illuminate\Contracts\Support\Arrayable|\UnitEnum|array|string  $value
      * @return $this
      */
     public function whereNot($column, $value)
@@ -231,8 +232,8 @@ trait DatabaseRule
      */
     protected function formatWheres()
     {
-        return (new Collection($this->wheres))
-            ->map(fn ($where) => $where['column'].','.'"'.str_replace('"', '""', $where['value']).'"')
-            ->implode(',');
+        return (new Collection($this->wheres))->map(function ($where) {
+            return $where['column'].','.'"'.str_replace('"', '""', $where['value']).'"';
+        })->implode(',');
     }
 }

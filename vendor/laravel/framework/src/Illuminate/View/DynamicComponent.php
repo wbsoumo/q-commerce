@@ -2,13 +2,10 @@
 
 namespace Illuminate\View;
 
-use BackedEnum;
 use Illuminate\Container\Container;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\View\Compilers\ComponentTagCompiler;
-
-use function Illuminate\Support\enum_value;
 
 class DynamicComponent extends Component
 {
@@ -22,7 +19,7 @@ class DynamicComponent extends Component
     /**
      * The component tag compiler instance.
      *
-     * @var \Illuminate\View\Compilers\ComponentTagCompiler
+     * @var \Illuminate\View\Compilers\BladeTagCompiler
      */
     protected static $compiler;
 
@@ -36,11 +33,12 @@ class DynamicComponent extends Component
     /**
      * Create a new component instance.
      *
-     * @param  \BackedEnum|string  $component
+     * @param  string  $component
+     * @return void
      */
-    public function __construct(BackedEnum|string $component)
+    public function __construct(string $component)
     {
-        $this->component = (string) enum_value($component);
+        $this->component = $component;
     }
 
     /**
@@ -123,8 +121,8 @@ EOF;
     protected function compileSlots(array $slots)
     {
         return (new Collection($slots))
-            ->reject(fn ($slot, $name) => $name === '__default')
-            ->map(fn ($slot, $name) => '<x-slot name="'.$name.'" '.((string) $slot->attributes).'>{{ $'.$name.' }}</x-slot>')
+            ->map(fn ($slot, $name) => $name === '__default' ? null : '<x-slot name="'.$name.'" '.((string) $slot->attributes).'>{{ $'.$name.' }}</x-slot>')
+            ->filter()
             ->implode(PHP_EOL);
     }
 
@@ -135,7 +133,11 @@ EOF;
      */
     protected function classForComponent()
     {
-        return static::$componentClasses[$this->component] ?? static::$componentClasses[$this->component] =
+        if (isset(static::$componentClasses[$this->component])) {
+            return static::$componentClasses[$this->component];
+        }
+
+        return static::$componentClasses[$this->component] =
                     $this->compiler()->componentClass($this->component);
     }
 
@@ -147,7 +149,7 @@ EOF;
      */
     protected function bindings(string $class)
     {
-        [$data] = $this->compiler()->partitionDataAndAttributes($class, $this->attributes->getAttributes());
+        [$data, $attributes] = $this->compiler()->partitionDataAndAttributes($class, $this->attributes->getAttributes());
 
         return array_keys($data->all());
     }

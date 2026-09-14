@@ -51,6 +51,7 @@ class PendingSingletonResourceRegistration
      * @param  string  $name
      * @param  string  $controller
      * @param  array  $options
+     * @return void
      */
     public function __construct(ResourceRegistrar $registrar, $name, $controller, array $options)
     {
@@ -63,7 +64,7 @@ class PendingSingletonResourceRegistration
     /**
      * Set the methods the controller should apply to.
      *
-     * @param  mixed  $methods
+     * @param  array|string|mixed  $methods
      * @return \Illuminate\Routing\PendingSingletonResourceRegistration
      */
     public function only($methods)
@@ -76,7 +77,7 @@ class PendingSingletonResourceRegistration
     /**
      * Set the methods the controller should exclude.
      *
-     * @param  mixed  $methods
+     * @param  array|string|mixed  $methods
      * @return \Illuminate\Routing\PendingSingletonResourceRegistration
      */
     public function except($methods)
@@ -222,7 +223,7 @@ class PendingSingletonResourceRegistration
      * Specify middleware that should be removed from the resource routes.
      *
      * @param  array|string  $middleware
-     * @return $this
+     * @return $this|array
      */
     public function withoutMiddleware($middleware)
     {
@@ -261,22 +262,6 @@ class PendingSingletonResourceRegistration
     public function where($wheres)
     {
         $this->options['wheres'] = $wheres;
-
-        return $this;
-    }
-
-    /**
-     * Add metadata to the registered singleton resource routes.
-     *
-     * @param  array  $metadata
-     * @return $this
-     */
-    public function metadata(array $metadata)
-    {
-        $this->options['metadata'] = RouteGroup::mergeMetadata(
-            $this->options['metadata'] ?? [],
-            $metadata
-        );
 
         return $this;
     }

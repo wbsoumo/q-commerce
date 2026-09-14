@@ -11,28 +11,21 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\Concerns\AsPivot;
 use Illuminate\Database\Eloquent\Relations\Concerns\InteractsWithDictionary;
 use Illuminate\Database\Eloquent\Relations\Concerns\InteractsWithPivotTable;
-use Illuminate\Database\Eloquent\Relations\Concerns\SupportsPivotInverseRelations;
 use Illuminate\Database\Query\Grammars\MySqlGrammar;
 use Illuminate\Database\UniqueConstraintViolationException;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Collection as BaseCollection;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
-use SortDirection;
 
 /**
  * @template TRelatedModel of \Illuminate\Database\Eloquent\Model
  * @template TDeclaringModel of \Illuminate\Database\Eloquent\Model
- * @template TPivotModel of \Illuminate\Database\Eloquent\Relations\Pivot = \Illuminate\Database\Eloquent\Relations\Pivot
- * @template TAccessor of string = 'pivot'
  *
- * @extends \Illuminate\Database\Eloquent\Relations\Relation<TRelatedModel, TDeclaringModel, \Illuminate\Database\Eloquent\Collection<int, TRelatedModel&object{pivot: TPivotModel}>>
- *
- * @todo use TAccessor when PHPStan bug is fixed: https://github.com/phpstan/phpstan/issues/12756
+ * @extends \Illuminate\Database\Eloquent\Relations\Relation<TRelatedModel, TDeclaringModel, \Illuminate\Database\Eloquent\Collection<int, TRelatedModel>>
  */
 class BelongsToMany extends Relation
 {
-    use InteractsWithDictionary, InteractsWithPivotTable, SupportsPivotInverseRelations;
+    use InteractsWithDictionary, InteractsWithPivotTable;
 
     /**
      * The intermediate table for the relation.
@@ -135,14 +128,14 @@ class BelongsToMany extends Relation
     /**
      * The class name of the custom pivot model to use for the relationship.
      *
-     * @var class-string<TPivotModel>
+     * @var string
      */
     protected $using;
 
     /**
      * The name of the accessor to use for the "pivot" relationship.
      *
-     * @var TAccessor
+     * @var string
      */
     protected $accessor = 'pivot';
 
@@ -157,6 +150,7 @@ class BelongsToMany extends Relation
      * @param  string  $parentKey
      * @param  string  $relatedKey
      * @param  string|null  $relationName
+     * @return void
      */
     public function __construct(
         Builder $query,
@@ -196,7 +190,7 @@ class BelongsToMany extends Relation
             return $table;
         }
 
-        if (isset(class_uses_recursive($model)[AsPivot::class])) {
+        if (in_array(AsPivot::class, class_uses_recursive($model))) {
             $this->using($table);
         }
 
@@ -287,20 +281,9 @@ class BelongsToMany extends Relation
         foreach ($models as $model) {
             $key = $this->getDictionaryKey($model->{$this->parentKey});
 
-            if ($key !== null && isset($dictionary[$key])) {
-                $items = $dictionary[$key];
-
-                // Correct $this->parent to the actual parent for each group of results...
-                if ($this->declaringInverseRelationship) {
-                    foreach ($items as $item) {
-                        $item->{$this->accessor}?->setRelation(
-                            $this->declaringInverseRelationship, $model
-                        );
-                    }
-                }
-
+            if (isset($dictionary[$key])) {
                 $model->setRelation(
-                    $relation, $this->related->newCollection($items)
+                    $relation, $this->related->newCollection($dictionary[$key])
                 );
             }
         }
@@ -312,7 +295,7 @@ class BelongsToMany extends Relation
      * Build model dictionary keyed by the relation's foreign key.
      *
      * @param  \Illuminate\Database\Eloquent\Collection<int, TRelatedModel>  $results
-     * @return array<array<array-key, TRelatedModel>>
+     * @return array<array<string, TRelatedModel>>
      */
     protected function buildDictionary(EloquentCollection $results)
     {
@@ -321,20 +304,10 @@ class BelongsToMany extends Relation
         // parents without having a possibly slow inner loop for every model.
         $dictionary = [];
 
-        $isAssociative = Arr::isAssoc($results->all());
-
-        foreach ($results as $key => $result) {
+        foreach ($results as $result) {
             $value = $this->getDictionaryKey($result->{$this->accessor}->{$this->foreignPivotKey});
 
-            if ($value === null) {
-                continue;
-            }
-
-            if ($isAssociative) {
-                $dictionary[$value][$key] = $result;
-            } else {
-                $dictionary[$value][] = $result;
-            }
+            $dictionary[$value][] = $result;
         }
 
         return $dictionary;
@@ -343,7 +316,7 @@ class BelongsToMany extends Relation
     /**
      * Get the class being used for pivot models.
      *
-     * @return class-string<TPivotModel>
+     * @return string
      */
     public function getPivotClass()
     {
@@ -353,12 +326,8 @@ class BelongsToMany extends Relation
     /**
      * Specify the custom pivot model to use for the relationship.
      *
-     * @template TNewPivotModel of \Illuminate\Database\Eloquent\Relations\Pivot
-     *
-     * @param  class-string<TNewPivotModel>  $class
+     * @param  string  $class
      * @return $this
-     *
-     * @phpstan-this-out static<TRelatedModel, TDeclaringModel, TNewPivotModel, TAccessor>
      */
     public function using($class)
     {
@@ -370,12 +339,8 @@ class BelongsToMany extends Relation
     /**
      * Specify the custom pivot accessor to use for the relationship.
      *
-     * @template TNewAccessor of string
-     *
-     * @param  TNewAccessor  $accessor
+     * @param  string  $accessor
      * @return $this
-     *
-     * @phpstan-this-out static<TRelatedModel, TDeclaringModel, TPivotModel, TNewAccessor>
      */
     public function as($accessor)
     {
@@ -387,7 +352,7 @@ class BelongsToMany extends Relation
     /**
      * Set a where clause for a pivot table column.
      *
-     * @param  (\Closure(\Illuminate\Database\Eloquent\Builder<TPivotModel>): mixed)|string|\Illuminate\Contracts\Database\Query\Expression  $column
+     * @param  string|\Illuminate\Contracts\Database\Query\Expression  $column
      * @param  mixed  $operator
      * @param  mixed  $value
      * @param  string  $boolean
@@ -395,25 +360,6 @@ class BelongsToMany extends Relation
      */
     public function wherePivot($column, $operator = null, $value = null, $boolean = 'and')
     {
-        if ($column instanceof Closure) {
-            $pivotQuery = (new ($this->getPivotClass()))
-                ->setTable($this->table)
-                ->newQueryWithoutRelationships();
-
-            $column($pivotQuery);
-
-            $this->pivotWheres[] = [
-                fn ($query) => $query->addNestedWhereQuery($pivotQuery->getQuery()),
-                null,
-                null,
-                $boolean,
-            ];
-
-            $this->query->getQuery()->addNestedWhereQuery($pivotQuery->getQuery(), $boolean);
-
-            return $this;
-        }
-
         $this->pivotWheres[] = func_get_args();
 
         return $this->where($this->qualifyPivotColumn($column), $operator, $value, $boolean);
@@ -489,7 +435,7 @@ class BelongsToMany extends Relation
     /**
      * Set an "or where" clause for a pivot table column.
      *
-     * @param  (\Closure(\Illuminate\Database\Eloquent\Builder<TPivotModel>): mixed)|string|\Illuminate\Contracts\Database\Query\Expression  $column
+     * @param  string|\Illuminate\Contracts\Database\Query\Expression  $column
      * @param  mixed  $operator
      * @param  mixed  $value
      * @return $this
@@ -524,7 +470,7 @@ class BelongsToMany extends Relation
             throw new InvalidArgumentException('The provided value may not be null.');
         }
 
-        $this->pivotValues[] = ['column' => $column, 'value' => $value];
+        $this->pivotValues[] = compact('column', 'value');
 
         return $this->wherePivot($column, '=', $value);
     }
@@ -620,23 +566,12 @@ class BelongsToMany extends Relation
      * Add an "order by" clause for a pivot table column.
      *
      * @param  string|\Illuminate\Contracts\Database\Query\Expression  $column
-     * @param  SortDirection|'asc'|'desc'  $direction
+     * @param  string  $direction
      * @return $this
      */
-    public function orderByPivot($column, $direction = SortDirection::Ascending)
+    public function orderByPivot($column, $direction = 'asc')
     {
         return $this->orderBy($this->qualifyPivotColumn($column), $direction);
-    }
-
-    /**
-     * Add an "order by desc" clause for a pivot table column.
-     *
-     * @param  string|\Illuminate\Contracts\Database\Query\Expression  $column
-     * @return $this
-     */
-    public function orderByPivotDesc($column)
-    {
-        return $this->orderBy($this->qualifyPivotColumn($column), SortDirection::Descending);
     }
 
     /**
@@ -644,11 +579,7 @@ class BelongsToMany extends Relation
      *
      * @param  mixed  $id
      * @param  array  $columns
-     * @return (
-     *     $id is (\Illuminate\Contracts\Support\Arrayable<array-key, mixed>|array<mixed>)
-     *     ? \Illuminate\Database\Eloquent\Collection<int, TRelatedModel&object{pivot: TPivotModel}>
-     *     : TRelatedModel&object{pivot: TPivotModel}
-     * )
+     * @return ($id is (\Illuminate\Contracts\Support\Arrayable<array-key, mixed>|array<mixed>) ? \Illuminate\Database\Eloquent\Collection<int, TRelatedModel> : TRelatedModel)
      */
     public function findOrNew($id, $columns = ['*'])
     {
@@ -663,13 +594,13 @@ class BelongsToMany extends Relation
      * Get the first related model record matching the attributes or instantiate it.
      *
      * @param  array  $attributes
-     * @param  (\Closure(): array)|array  $values
-     * @return TRelatedModel&object{pivot: TPivotModel}
+     * @param  array  $values
+     * @return TRelatedModel
      */
-    public function firstOrNew(array $attributes = [], Closure|array $values = [])
+    public function firstOrNew(array $attributes = [], array $values = [])
     {
         if (is_null($instance = $this->related->where($attributes)->first())) {
-            $instance = $this->related->newInstance(array_merge($attributes, value($values)));
+            $instance = $this->related->newInstance(array_merge($attributes, $values));
         }
 
         return $instance;
@@ -679,12 +610,12 @@ class BelongsToMany extends Relation
      * Get the first record matching the attributes. If the record is not found, create it.
      *
      * @param  array  $attributes
-     * @param  (\Closure(): array)|array  $values
+     * @param  array  $values
      * @param  array  $joining
      * @param  bool  $touch
-     * @return TRelatedModel&object{pivot: TPivotModel}
+     * @return TRelatedModel
      */
-    public function firstOrCreate(array $attributes = [], Closure|array $values = [], array $joining = [], $touch = true)
+    public function firstOrCreate(array $attributes = [], array $values = [], array $joining = [], $touch = true)
     {
         if (is_null($instance = (clone $this)->where($attributes)->first())) {
             if (is_null($instance = $this->related->where($attributes)->first())) {
@@ -705,17 +636,15 @@ class BelongsToMany extends Relation
      * Attempt to create the record. If a unique constraint violation occurs, attempt to find the matching record.
      *
      * @param  array  $attributes
-     * @param  (\Closure(): array)|array  $values
+     * @param  array  $values
      * @param  array  $joining
      * @param  bool  $touch
-     * @return TRelatedModel&object{pivot: TPivotModel}
-     *
-     * @throws \Illuminate\Database\UniqueConstraintViolationException
+     * @return TRelatedModel
      */
-    public function createOrFirst(array $attributes = [], Closure|array $values = [], array $joining = [], $touch = true)
+    public function createOrFirst(array $attributes = [], array $values = [], array $joining = [], $touch = true)
     {
         try {
-            return $this->getQuery()->withSavepointIfNeeded(fn () => $this->create(array_merge($attributes, value($values)), $joining, $touch));
+            return $this->getQuery()->withSavePointIfNeeded(fn () => $this->create(array_merge($attributes, $values), $joining, $touch));
         } catch (UniqueConstraintViolationException $e) {
             // ...
         }
@@ -733,16 +662,16 @@ class BelongsToMany extends Relation
      * Create or update a related record matching the attributes, and fill it with values.
      *
      * @param  array  $attributes
-     * @param  (\Closure(): array)|array  $values
+     * @param  array  $values
      * @param  array  $joining
      * @param  bool  $touch
-     * @return TRelatedModel&object{pivot: TPivotModel}
+     * @return TRelatedModel
      */
-    public function updateOrCreate(array $attributes, Closure|array $values = [], array $joining = [], $touch = true)
+    public function updateOrCreate(array $attributes, array $values = [], array $joining = [], $touch = true)
     {
         return tap($this->firstOrCreate($attributes, $values, $joining, $touch), function ($instance) use ($values) {
             if (! $instance->wasRecentlyCreated) {
-                $instance->fill(value($values));
+                $instance->fill($values);
 
                 $instance->save(['touch' => false]);
             }
@@ -754,11 +683,7 @@ class BelongsToMany extends Relation
      *
      * @param  mixed  $id
      * @param  array  $columns
-     * @return (
-     *     $id is (\Illuminate\Contracts\Support\Arrayable<array-key, mixed>|array<mixed>)
-     *     ? \Illuminate\Database\Eloquent\Collection<int, TRelatedModel&object{pivot: TPivotModel}>
-     *     : (TRelatedModel&object{pivot: TPivotModel})|null
-     * )
+     * @return ($id is (\Illuminate\Contracts\Support\Arrayable<array-key, mixed>|array<mixed>) ? \Illuminate\Database\Eloquent\Collection<int, TRelatedModel> : TRelatedModel|null)
      */
     public function find($id, $columns = ['*'])
     {
@@ -776,7 +701,7 @@ class BelongsToMany extends Relation
      *
      * @param  mixed  $id
      * @param  array  $columns
-     * @return TRelatedModel&object{pivot: TPivotModel}
+     * @return TRelatedModel
      *
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException<TRelatedModel>
      * @throws \Illuminate\Database\MultipleRecordsFoundException
@@ -793,7 +718,7 @@ class BelongsToMany extends Relation
      *
      * @param  \Illuminate\Contracts\Support\Arrayable|array  $ids
      * @param  array  $columns
-     * @return \Illuminate\Database\Eloquent\Collection<int, TRelatedModel&object{pivot: TPivotModel}>
+     * @return \Illuminate\Database\Eloquent\Collection<int, TRelatedModel>
      */
     public function findMany($ids, $columns = ['*'])
     {
@@ -813,11 +738,7 @@ class BelongsToMany extends Relation
      *
      * @param  mixed  $id
      * @param  array  $columns
-     * @return (
-     *     $id is (\Illuminate\Contracts\Support\Arrayable<array-key, mixed>|array<mixed>)
-     *     ? \Illuminate\Database\Eloquent\Collection<int, TRelatedModel&object{pivot: TPivotModel}>
-     *     : TRelatedModel&object{pivot: TPivotModel}
-     * )
+     * @return ($id is (\Illuminate\Contracts\Support\Arrayable<array-key, mixed>|array<mixed>) ? \Illuminate\Database\Eloquent\Collection<int, TRelatedModel> : TRelatedModel)
      *
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException<TRelatedModel>
      */
@@ -848,8 +769,8 @@ class BelongsToMany extends Relation
      * @param  (\Closure(): TValue)|null  $callback
      * @return (
      *     $id is (\Illuminate\Contracts\Support\Arrayable<array-key, mixed>|array<mixed>)
-     *     ? \Illuminate\Database\Eloquent\Collection<int, TRelatedModel&object{pivot: TPivotModel}>|TValue
-     *     : (TRelatedModel&object{pivot: TPivotModel})|TValue
+     *     ? \Illuminate\Database\Eloquent\Collection<int, TRelatedModel>|TValue
+     *     : TRelatedModel|TValue
      * )
      */
     public function findOr($id, $columns = ['*'], ?Closure $callback = null)
@@ -882,7 +803,7 @@ class BelongsToMany extends Relation
      * @param  mixed  $operator
      * @param  mixed  $value
      * @param  string  $boolean
-     * @return (TRelatedModel&object{pivot: TPivotModel})|null
+     * @return TRelatedModel|null
      */
     public function firstWhere($column, $operator = null, $value = null, $boolean = 'and')
     {
@@ -893,11 +814,11 @@ class BelongsToMany extends Relation
      * Execute the query and get the first result.
      *
      * @param  array  $columns
-     * @return (TRelatedModel&object{pivot: TPivotModel})|null
+     * @return TRelatedModel|null
      */
     public function first($columns = ['*'])
     {
-        $results = $this->limit(1)->get($columns);
+        $results = $this->take(1)->get($columns);
 
         return count($results) > 0 ? $results->first() : null;
     }
@@ -906,7 +827,7 @@ class BelongsToMany extends Relation
      * Execute the query and get the first result or throw an exception.
      *
      * @param  array  $columns
-     * @return TRelatedModel&object{pivot: TPivotModel}
+     * @return TRelatedModel
      *
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException<TRelatedModel>
      */
@@ -926,7 +847,7 @@ class BelongsToMany extends Relation
      *
      * @param  (\Closure(): TValue)|list<string>  $columns
      * @param  (\Closure(): TValue)|null  $callback
-     * @return (TRelatedModel&object{pivot: TPivotModel})|TValue
+     * @return TRelatedModel|TValue
      */
     public function firstOr($columns = ['*'], ?Closure $callback = null)
     {
@@ -947,8 +868,8 @@ class BelongsToMany extends Relation
     public function getResults()
     {
         return ! is_null($this->parent->{$this->parentKey})
-            ? $this->get()
-            : $this->related->newCollection();
+                ? $this->get()
+                : $this->related->newCollection();
     }
 
     /** @inheritDoc */
@@ -1003,14 +924,11 @@ class BelongsToMany extends Relation
      */
     protected function aliasedPivotColumns()
     {
-        return (new BaseCollection([
-            $this->foreignPivotKey,
-            $this->relatedPivotKey,
-            ...$this->pivotColumns,
-        ]))
-            ->map(fn ($column) => $this->qualifyPivotColumn($column).' as pivot_'.$column)
-            ->unique()
-            ->all();
+        $defaults = [$this->foreignPivotKey, $this->relatedPivotKey];
+
+        return (new BaseCollection(array_merge($defaults, $this->pivotColumns)))->map(function ($column) {
+            return $this->qualifyPivotColumn($column).' as pivot_'.$column;
+        })->unique()->all();
     }
 
     /**
@@ -1020,7 +938,7 @@ class BelongsToMany extends Relation
      * @param  array  $columns
      * @param  string  $pageName
      * @param  int|null  $page
-     * @return \Illuminate\Pagination\LengthAwarePaginator<int, TRelatedModel&object{pivot: TPivotModel}>
+     * @return \Illuminate\Pagination\LengthAwarePaginator
      */
     public function paginate($perPage = null, $columns = ['*'], $pageName = 'page', $page = null)
     {
@@ -1038,7 +956,7 @@ class BelongsToMany extends Relation
      * @param  array  $columns
      * @param  string  $pageName
      * @param  int|null  $page
-     * @return \Illuminate\Contracts\Pagination\Paginator<int, TRelatedModel&object{pivot: TPivotModel}>
+     * @return \Illuminate\Contracts\Pagination\Paginator
      */
     public function simplePaginate($perPage = null, $columns = ['*'], $pageName = 'page', $page = null)
     {
@@ -1056,7 +974,7 @@ class BelongsToMany extends Relation
      * @param  array  $columns
      * @param  string  $cursorName
      * @param  string|null  $cursor
-     * @return \Illuminate\Contracts\Pagination\CursorPaginator<int, TRelatedModel&object{pivot: TPivotModel}>
+     * @return \Illuminate\Contracts\Pagination\CursorPaginator
      */
     public function cursorPaginate($perPage = null, $columns = ['*'], $cursorName = 'cursor', $cursor = null)
     {
@@ -1108,7 +1026,7 @@ class BelongsToMany extends Relation
      */
     public function chunkByIdDesc($count, callable $callback, $column = null, $alias = null)
     {
-        return $this->orderedChunkById($count, $callback, $column, $alias, descending: SortDirection::Descending);
+        return $this->orderedChunkById($count, $callback, $column, $alias, descending: true);
     }
 
     /**
@@ -1138,7 +1056,7 @@ class BelongsToMany extends Relation
      * @param  callable  $callback
      * @param  string|null  $column
      * @param  string|null  $alias
-     * @param  SortDirection|bool  $descending
+     * @param  bool  $descending
      * @return bool
      */
     public function orderedChunkById($count, callable $callback, $column = null, $alias = null, $descending = false)
@@ -1178,7 +1096,7 @@ class BelongsToMany extends Relation
      * Query lazily, by chunks of the given size.
      *
      * @param  int  $chunkSize
-     * @return \Illuminate\Support\LazyCollection<int, TRelatedModel&object{pivot: TPivotModel}>
+     * @return \Illuminate\Support\LazyCollection<int, TRelatedModel>
      */
     public function lazy($chunkSize = 1000)
     {
@@ -1195,7 +1113,7 @@ class BelongsToMany extends Relation
      * @param  int  $chunkSize
      * @param  string|null  $column
      * @param  string|null  $alias
-     * @return \Illuminate\Support\LazyCollection<int, TRelatedModel&object{pivot: TPivotModel}>
+     * @return \Illuminate\Support\LazyCollection<int, TRelatedModel>
      */
     public function lazyById($chunkSize = 1000, $column = null, $alias = null)
     {
@@ -1218,7 +1136,7 @@ class BelongsToMany extends Relation
      * @param  int  $chunkSize
      * @param  string|null  $column
      * @param  string|null  $alias
-     * @return \Illuminate\Support\LazyCollection<int, TRelatedModel&object{pivot: TPivotModel}>
+     * @return \Illuminate\Support\LazyCollection<int, TRelatedModel>
      */
     public function lazyByIdDesc($chunkSize = 1000, $column = null, $alias = null)
     {
@@ -1238,7 +1156,7 @@ class BelongsToMany extends Relation
     /**
      * Get a lazy collection for the given query.
      *
-     * @return \Illuminate\Support\LazyCollection<int, TRelatedModel&object{pivot: TPivotModel}>
+     * @return \Illuminate\Support\LazyCollection<int, TRelatedModel>
      */
     public function cursor()
     {
@@ -1271,11 +1189,9 @@ class BelongsToMany extends Relation
         // and create a new Pivot model, which is basically a dynamic model that we
         // will set the attributes, table, and connections on it so it will work.
         foreach ($models as $model) {
-            $pivot = $this->newExistingPivot($this->migratePivotAttributes($model));
-
-            $this->applyChaperonesToPivot($pivot, $this->parent, $model);
-
-            $model->setRelation($this->accessor, $pivot);
+            $model->setRelation($this->accessor, $this->newExistingPivot(
+                $this->migratePivotAttributes($model)
+            ));
         }
     }
 
@@ -1360,7 +1276,7 @@ class BelongsToMany extends Relation
         // the related model's timestamps, to make sure these all reflect the changes
         // to the parent models. This will help us keep any caching synced up here.
         if (count($ids = $this->allRelatedIds()) > 0) {
-            $this->getRelated()->newQueryWithoutRelationships()->whereIn($this->getQualifiedRelatedKeyName(), $ids)->update($columns);
+            $this->getRelated()->newQueryWithoutRelationships()->whereKey($ids)->update($columns);
         }
     }
 
@@ -1380,7 +1296,7 @@ class BelongsToMany extends Relation
      * @param  TRelatedModel  $model
      * @param  array  $pivotAttributes
      * @param  bool  $touch
-     * @return TRelatedModel&object{pivot: TPivotModel}
+     * @return TRelatedModel
      */
     public function save(Model $model, array $pivotAttributes = [], $touch = true)
     {
@@ -1397,7 +1313,7 @@ class BelongsToMany extends Relation
      * @param  TRelatedModel  $model
      * @param  array  $pivotAttributes
      * @param  bool  $touch
-     * @return TRelatedModel&object{pivot: TPivotModel}
+     * @return TRelatedModel
      */
     public function saveQuietly(Model $model, array $pivotAttributes = [], $touch = true)
     {
@@ -1448,7 +1364,7 @@ class BelongsToMany extends Relation
      * @param  array  $attributes
      * @param  array  $joining
      * @param  bool  $touch
-     * @return TRelatedModel&object{pivot: TPivotModel}
+     * @return TRelatedModel
      */
     public function create(array $attributes = [], array $joining = [], $touch = true)
     {
@@ -1471,7 +1387,7 @@ class BelongsToMany extends Relation
      *
      * @param  iterable  $records
      * @param  array  $joinings
-     * @return array<int, TRelatedModel&object{pivot: TPivotModel}>
+     * @return array<int, TRelatedModel>
      */
     public function createMany(iterable $records, array $joinings = [])
     {
@@ -1503,7 +1419,7 @@ class BelongsToMany extends Relation
      *
      * @param  \Illuminate\Database\Eloquent\Builder<TRelatedModel>  $query
      * @param  \Illuminate\Database\Eloquent\Builder<TDeclaringModel>  $parentQuery
-     * @param  mixed  $columns
+     * @param  array|mixed  $columns
      * @return \Illuminate\Database\Eloquent\Builder<TRelatedModel>
      */
     public function getRelationExistenceQueryForSelfJoin(Builder $query, Builder $parentQuery, $columns = ['*'])
@@ -1568,23 +1484,18 @@ class BelongsToMany extends Relation
     /**
      * Specify that the pivot table has creation and update timestamps.
      *
-     * @param  string|null|false  $createdAt
-     * @param  string|null|false  $updatedAt
+     * @param  mixed  $createdAt
+     * @param  mixed  $updatedAt
      * @return $this
      */
     public function withTimestamps($createdAt = null, $updatedAt = null)
     {
-        $this->pivotCreatedAt = $createdAt !== false ? $createdAt : null;
-        $this->pivotUpdatedAt = $updatedAt !== false ? $updatedAt : null;
+        $this->withTimestamps = true;
 
-        $pivots = array_filter([
-            $createdAt !== false ? $this->createdAt() : null,
-            $updatedAt !== false ? $this->updatedAt() : null,
-        ]);
+        $this->pivotCreatedAt = $createdAt;
+        $this->pivotUpdatedAt = $updatedAt;
 
-        $this->withTimestamps = ! empty($pivots);
-
-        return $this->withTimestamps ? $this->withPivot($pivots) : $this;
+        return $this->withPivot($this->createdAt(), $this->updatedAt());
     }
 
     /**
@@ -1618,7 +1529,7 @@ class BelongsToMany extends Relation
     }
 
     /**
-     * Get the fully-qualified foreign key for the relation.
+     * Get the fully qualified foreign key for the relation.
      *
      * @return string
      */
@@ -1638,7 +1549,7 @@ class BelongsToMany extends Relation
     }
 
     /**
-     * Get the fully-qualified "related key" for the relation.
+     * Get the fully qualified "related key" for the relation.
      *
      * @return string
      */
@@ -1658,7 +1569,7 @@ class BelongsToMany extends Relation
     }
 
     /**
-     * Get the fully-qualified parent key name for the relation.
+     * Get the fully qualified parent key name for the relation.
      *
      * @return string
      */
@@ -1678,7 +1589,7 @@ class BelongsToMany extends Relation
     }
 
     /**
-     * Get the fully-qualified related key name for the relation.
+     * Get the fully qualified related key name for the relation.
      *
      * @return string
      */
@@ -1710,7 +1621,7 @@ class BelongsToMany extends Relation
     /**
      * Get the name of the pivot accessor for this relationship.
      *
-     * @return TAccessor
+     * @return string
      */
     public function getPivotAccessor()
     {
@@ -1720,7 +1631,7 @@ class BelongsToMany extends Relation
     /**
      * Get the pivot columns for this relationship.
      *
-     * @return array<string|\Illuminate\Contracts\Database\Query\Expression>
+     * @return array
      */
     public function getPivotColumns()
     {
@@ -1740,7 +1651,7 @@ class BelongsToMany extends Relation
         }
 
         return str_contains($column, '.')
-            ? $column
-            : $this->table.'.'.$column;
+                    ? $column
+                    : $this->table.'.'.$column;
     }
 }

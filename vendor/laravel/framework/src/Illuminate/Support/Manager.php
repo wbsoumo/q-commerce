@@ -5,13 +5,9 @@ namespace Illuminate\Support;
 use Closure;
 use Illuminate\Contracts\Container\Container;
 use InvalidArgumentException;
-use ReflectionException;
-use RuntimeException;
 
 abstract class Manager
 {
-    use RebindsCallbacksToSelf;
-
     /**
      * The container instance.
      *
@@ -29,14 +25,14 @@ abstract class Manager
     /**
      * The registered custom driver creators.
      *
-     * @var array<string, \Closure>
+     * @var array
      */
     protected $customCreators = [];
 
     /**
      * The array of created "drivers".
      *
-     * @var array<string, mixed>
+     * @var array
      */
     protected $drivers = [];
 
@@ -44,6 +40,7 @@ abstract class Manager
      * Create a new manager instance.
      *
      * @param  \Illuminate\Contracts\Container\Container  $container
+     * @return void
      */
     public function __construct(Container $container)
     {
@@ -54,21 +51,21 @@ abstract class Manager
     /**
      * Get the default driver name.
      *
-     * @return string|null
+     * @return string
      */
     abstract public function getDefaultDriver();
 
     /**
      * Get a driver instance.
      *
-     * @param  \UnitEnum|string|null  $driver
+     * @param  string|null  $driver
      * @return mixed
      *
      * @throws \InvalidArgumentException
      */
     public function driver($driver = null)
     {
-        $driver = enum_value($driver) ?: $this->getDefaultDriver();
+        $driver = $driver ?: $this->getDefaultDriver();
 
         if (is_null($driver)) {
             throw new InvalidArgumentException(sprintf(
@@ -79,7 +76,11 @@ abstract class Manager
         // If the given driver has not been created before, we will create the instances
         // here and cache it so we can return it next time very quickly. If there is
         // already a driver created by this name, we'll just return that instance.
-        return $this->drivers[$driver] ??= $this->createDriver($driver);
+        if (! isset($this->drivers[$driver])) {
+            $this->drivers[$driver] = $this->createDriver($driver);
+        }
+
+        return $this->drivers[$driver];
     }
 
     /**
@@ -123,19 +124,11 @@ abstract class Manager
      * Register a custom driver creator Closure.
      *
      * @param  string  $driver
-     *
-     * @param-closure-this  $this  $callback
-     *
+     * @param  \Closure  $callback
      * @return $this
      */
     public function extend($driver, Closure $callback)
     {
-        try {
-            $callback = $this->bindCallbackToSelf($callback) ?? throw new RuntimeException('Unable to bind custom driver callback');
-        } catch (ReflectionException $e) {
-            throw new RuntimeException('Unable to bind custom driver callback', previous: $e);
-        }
-
         $this->customCreators[$driver] = $callback;
 
         return $this;
@@ -144,7 +137,7 @@ abstract class Manager
     /**
      * Get all of the created "drivers".
      *
-     * @return array<string, mixed>
+     * @return array
      */
     public function getDrivers()
     {
@@ -190,7 +183,7 @@ abstract class Manager
      * Dynamically call the default driver instance.
      *
      * @param  string  $method
-     * @param  array<string, mixed>  $parameters
+     * @param  array  $parameters
      * @return mixed
      */
     public function __call($method, $parameters)

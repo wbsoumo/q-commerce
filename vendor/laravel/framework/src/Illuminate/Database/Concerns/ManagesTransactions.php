@@ -7,9 +7,6 @@ use Illuminate\Database\DeadlockException;
 use RuntimeException;
 use Throwable;
 
-/**
- * @mixin \Illuminate\Database\Connection
- */
 trait ManagesTransactions
 {
     /**
@@ -49,7 +46,7 @@ trait ManagesTransactions
             $levelBeingCommitted = $this->transactions;
 
             try {
-                if ($this->transactions === 1) {
+                if ($this->transactions == 1) {
                     $this->fireConnectionEvent('committing');
                     $this->getPdo()->commit();
                 }
@@ -147,11 +144,11 @@ trait ManagesTransactions
      */
     protected function createTransaction()
     {
-        if ($this->transactions === 0) {
+        if ($this->transactions == 0) {
             $this->reconnectIfMissingConnection();
 
             try {
-                $this->executeBeginTransactionStatement();
+                $this->getPdo()->beginTransaction();
             } catch (Throwable $e) {
                 $this->handleBeginTransactionException($e);
             }
@@ -187,7 +184,7 @@ trait ManagesTransactions
         if ($this->causedByLostConnection($e)) {
             $this->reconnect();
 
-            $this->executeBeginTransactionStatement();
+            $this->getPdo()->beginTransaction();
         } else {
             throw $e;
         }
@@ -202,7 +199,7 @@ trait ManagesTransactions
      */
     public function commit()
     {
-        if ($this->transactionLevel() === 1) {
+        if ($this->transactionLevel() == 1) {
             $this->fireConnectionEvent('committing');
             $this->getPdo()->commit();
         }
@@ -234,12 +231,6 @@ trait ManagesTransactions
         $this->transactions = max(0, $this->transactions - 1);
 
         if ($this->causedByConcurrencyError($e) && $currentAttempt < $maxAttempts) {
-            $pdo = $this->getPdo();
-
-            if ($pdo->inTransaction()) {
-                $pdo->rollBack();
-            }
-
             return;
         }
 
@@ -264,8 +255,8 @@ trait ManagesTransactions
         // that this given transaction level is valid before attempting to rollback to
         // that level. If it's not we will just return out and not attempt anything.
         $toLevel = is_null($toLevel)
-            ? $this->transactions - 1
-            : $toLevel;
+                    ? $this->transactions - 1
+                    : $toLevel;
 
         if ($toLevel < 0 || $toLevel >= $this->transactions) {
             return;
@@ -299,7 +290,7 @@ trait ManagesTransactions
      */
     protected function performRollBack($toLevel)
     {
-        if ($toLevel === 0) {
+        if ($toLevel == 0) {
             $pdo = $this->getPdo();
 
             if ($pdo->inTransaction()) {
@@ -355,23 +346,6 @@ trait ManagesTransactions
     {
         if ($this->transactionsManager) {
             return $this->transactionsManager->addCallback($callback);
-        }
-
-        throw new RuntimeException('Transactions Manager has not been set.');
-    }
-
-    /**
-     * Execute the callback after a transaction rolls back.
-     *
-     * @param  callable  $callback
-     * @return void
-     *
-     * @throws \RuntimeException
-     */
-    public function afterRollBack($callback)
-    {
-        if ($this->transactionsManager) {
-            return $this->transactionsManager->addCallbackForRollback($callback);
         }
 
         throw new RuntimeException('Transactions Manager has not been set.');

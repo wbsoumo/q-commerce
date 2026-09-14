@@ -5,8 +5,6 @@ namespace Illuminate\Auth\Passwords;
 use Illuminate\Contracts\Auth\PasswordBrokerFactory as FactoryContract;
 use InvalidArgumentException;
 
-use function Illuminate\Support\enum_value;
-
 /**
  * @mixin \Illuminate\Contracts\Auth\PasswordBroker
  */
@@ -30,6 +28,7 @@ class PasswordBrokerManager implements FactoryContract
      * Create a new PasswordBroker manager instance.
      *
      * @param  \Illuminate\Contracts\Foundation\Application  $app
+     * @return void
      */
     public function __construct($app)
     {
@@ -39,12 +38,12 @@ class PasswordBrokerManager implements FactoryContract
     /**
      * Attempt to get the broker from the local cache.
      *
-     * @param  \UnitEnum|string|null  $name
+     * @param  string|null  $name
      * @return \Illuminate\Contracts\Auth\PasswordBroker
      */
     public function broker($name = null)
     {
-        $name = enum_value($name) ?: $this->getDefaultDriver();
+        $name = $name ?: $this->getDefaultDriver();
 
         return $this->brokers[$name] ?? ($this->brokers[$name] = $this->resolve($name));
     }
@@ -97,6 +96,7 @@ class PasswordBrokerManager implements FactoryContract
                 $key,
                 ($config['expire'] ?? 60) * 60,
                 $config['throttle'] ?? 0,
+                $config['prefix'] ?? '',
             );
         }
 
@@ -105,8 +105,8 @@ class PasswordBrokerManager implements FactoryContract
             $this->app['hash'],
             $config['table'],
             $key,
-            ($config['expire'] ?? 60) * 60,
-            $config['throttle'] ?? 0,
+            $config['expire'],
+            $config['throttle'] ?? 0
         );
     }
 
@@ -134,12 +134,12 @@ class PasswordBrokerManager implements FactoryContract
     /**
      * Set the default password broker name.
      *
-     * @param  \UnitEnum|string  $name
+     * @param  string  $name
      * @return void
      */
     public function setDefaultDriver($name)
     {
-        $this->app['config']['auth.defaults.passwords'] = enum_value($name);
+        $this->app['config']['auth.defaults.passwords'] = $name;
     }
 
     /**

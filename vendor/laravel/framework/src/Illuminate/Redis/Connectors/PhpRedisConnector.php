@@ -8,7 +8,6 @@ use Illuminate\Redis\Connections\PhpRedisConnection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redis as RedisFacade;
 use Illuminate\Support\Str;
-use InvalidArgumentException;
 use LogicException;
 use Redis;
 use RedisCluster;
@@ -51,13 +50,9 @@ class PhpRedisConnector implements Connector
     {
         $options = array_merge($options, $clusterOptions, Arr::pull($config, 'options', []));
 
-        $connector = fn () => $this->createRedisClusterInstance(
-            array_map($this->buildClusterConnectionString(...), $config), $options
-        );
-
-        return new PhpRedisClusterConnection($connector(), $connector, array_merge($config, [
-            'command_retries' => (int) Arr::get($options, 'command_retries', 0),
-        ]));
+        return new PhpRedisClusterConnection($this->createRedisClusterInstance(
+            array_map([$this, 'buildClusterConnectionString'], $config), $options
+        ));
     }
 
     /**
@@ -90,14 +85,12 @@ class PhpRedisConnector implements Connector
                 );
             }
 
-            $this->establishConnection($client, $config);
-
             if (array_key_exists('max_retries', $config)) {
                 $client->setOption(Redis::OPT_MAX_RETRIES, $config['max_retries']);
             }
 
             if (array_key_exists('backoff_algorithm', $config)) {
-                $client->setOption(Redis::OPT_BACKOFF_ALGORITHM, $this->parseBackoffAlgorithm($config['backoff_algorithm']));
+                $client->setOption(Redis::OPT_BACKOFF_ALGORITHM, $config['backoff_algorithm']);
             }
 
             if (array_key_exists('backoff_base', $config)) {
@@ -107,6 +100,8 @@ class PhpRedisConnector implements Connector
             if (array_key_exists('backoff_cap', $config)) {
                 $client->setOption(Redis::OPT_BACKOFF_CAP, $config['backoff_cap']);
             }
+
+            $this->establishConnection($client, $config);
 
             if (! empty($config['password'])) {
                 if (isset($config['username']) && $config['username'] !== '' && is_string($config['password'])) {
@@ -147,15 +142,6 @@ class PhpRedisConnector implements Connector
             if (array_key_exists('compression_level', $config)) {
                 $client->setOption(Redis::OPT_COMPRESSION_LEVEL, $config['compression_level']);
             }
-
-            if (! empty($config['tcp_keepalive'])) {
-                $client->setOption(Redis::OPT_TCP_KEEPALIVE, $config['tcp_keepalive']);
-            }
-
-            if (defined('Redis::OPT_PACK_IGNORE_NUMBERS') &&
-                array_key_exists('pack_ignore_numbers', $config)) {
-                $client->setOption(Redis::OPT_PACK_IGNORE_NUMBERS, $config['pack_ignore_numbers']);
-            }
         });
     }
 
@@ -183,7 +169,7 @@ class PhpRedisConnector implements Connector
         }
 
         if (version_compare(phpversion('redis'), '5.3.0', '>=') && ! is_null($context = Arr::get($config, 'context'))) {
-            $parameters[] = $this->normalizeContext($context);
+            $parameters[] = $context;
         }
 
         $client->{$persistent ? 'pconnect' : 'connect'}(...$parameters);
@@ -206,14 +192,12 @@ class PhpRedisConnector implements Connector
             isset($options['persistent']) && $options['persistent'],
         ];
 
-        if (version_compare(phpversion('redis'), '5.3.2', '>=')) {
-            $parameters[] = $this->formatClusterPassword($options);
-
-            if (! is_null($context = Arr::get($options, 'context'))) {
-                $parameters[] = $this->normalizeClusterContext($context);
-            }
-        } elseif (version_compare(phpversion('redis'), '4.3.0', '>=')) {
+        if (version_compare(phpversion('redis'), '4.3.0', '>=')) {
             $parameters[] = $options['password'] ?? null;
+        }
+
+        if (version_compare(phpversion('redis'), '5.3.2', '>=') && ! is_null($context = Arr::get($options, 'context'))) {
+            $parameters[] = $context;
         }
 
         return tap(new RedisCluster(...$parameters), function ($client) use ($options) {
@@ -240,26 +224,6 @@ class PhpRedisConnector implements Connector
             if (array_key_exists('compression_level', $options)) {
                 $client->setOption(Redis::OPT_COMPRESSION_LEVEL, $options['compression_level']);
             }
-
-            if (! empty($options['tcp_keepalive'])) {
-                $client->setOption(Redis::OPT_TCP_KEEPALIVE, $options['tcp_keepalive']);
-            }
-
-            if (array_key_exists('max_retries', $options)) {
-                $client->setOption(Redis::OPT_MAX_RETRIES, $options['max_retries']);
-            }
-
-            if (array_key_exists('backoff_algorithm', $options)) {
-                $client->setOption(Redis::OPT_BACKOFF_ALGORITHM, $this->parseBackoffAlgorithm($options['backoff_algorithm']));
-            }
-
-            if (array_key_exists('backoff_base', $options)) {
-                $client->setOption(Redis::OPT_BACKOFF_BASE, $options['backoff_base']);
-            }
-
-            if (array_key_exists('backoff_cap', $options)) {
-                $client->setOption(Redis::OPT_BACKOFF_CAP, $options['backoff_cap']);
-            }
         });
     }
 
@@ -271,110 +235,10 @@ class PhpRedisConnector implements Connector
      */
     protected function formatHost(array $options)
     {
-        $host = $options['host'] ?? null;
-
-        if (! is_string($host) || $host === '') {
-            throw new InvalidArgumentException('Redis host must be a non-empty string.');
-        }
-
-        $hostScheme = parse_url($host, PHP_URL_SCHEME);
-
         if (isset($options['scheme'])) {
-            if (is_string($hostScheme)) {
-                if (strcasecmp($hostScheme, $options['scheme']) !== 0) {
-                    throw new InvalidArgumentException('The scheme configured in the Redis host option must match the scheme option.');
-                }
-
-                return $host;
-            }
-
-            return Str::start($host, "{$options['scheme']}://");
+            return Str::start($options['host'], "{$options['scheme']}://");
         }
 
-        return $host;
-    }
-
-    /**
-     * Normalize the SSL context for a single Redis connection.
-     *
-     * Redis::connect() expects the context as ['stream' => ['verify_peer' => false, ...]].
-     *
-     * @param  array  $context
-     * @return array
-     */
-    protected function normalizeContext(array $context)
-    {
-        if (isset($context['stream'])) {
-            return $context;
-        }
-
-        if (isset($context['ssl']) && is_array($context['ssl'])) {
-            return ['stream' => $context['ssl']];
-        }
-
-        return ['stream' => $context];
-    }
-
-    /**
-     * Normalize the SSL context for a RedisCluster connection.
-     *
-     * RedisCluster::__construct() expects a flat context ['verify_peer' => false, ...].
-     *
-     * @param  array  $context
-     * @return array
-     */
-    protected function normalizeClusterContext(array $context)
-    {
-        if (isset($context['ssl']) && is_array($context['ssl'])) {
-            return $context['ssl'];
-        }
-
-        if (isset($context['stream']) && is_array($context['stream'])) {
-            return $context['stream'];
-        }
-
-        return $context;
-    }
-
-    /**
-     * Format the password for a Redis cluster connection.
-     *
-     * @param  array  $options
-     * @return string|array|null
-     */
-    protected function formatClusterPassword(array $options)
-    {
-        $password = $options['password'] ?? null;
-
-        if (isset($options['username']) && $options['username'] !== '' && is_string($password)) {
-            return [$options['username'], $password];
-        }
-
-        return $password;
-    }
-
-    /**
-     * Parse a "friendly" backoff algorithm name into an integer.
-     *
-     * @param  mixed  $algorithm
-     * @return int
-     *
-     * @throws \InvalidArgumentException
-     */
-    protected function parseBackoffAlgorithm(mixed $algorithm)
-    {
-        if (is_int($algorithm)) {
-            return $algorithm;
-        }
-
-        return match ($algorithm) {
-            'default' => Redis::BACKOFF_ALGORITHM_DEFAULT,
-            'decorrelated_jitter' => Redis::BACKOFF_ALGORITHM_DECORRELATED_JITTER,
-            'equal_jitter' => Redis::BACKOFF_ALGORITHM_EQUAL_JITTER,
-            'exponential' => Redis::BACKOFF_ALGORITHM_EXPONENTIAL,
-            'uniform' => Redis::BACKOFF_ALGORITHM_UNIFORM,
-            'constant' => Redis::BACKOFF_ALGORITHM_CONSTANT,
-            default => throw new InvalidArgumentException("Algorithm [{$algorithm}] is not a valid PhpRedis backoff algorithm.")
-        };
+        return $options['host'];
     }
 }

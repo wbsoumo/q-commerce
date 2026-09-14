@@ -62,7 +62,7 @@ class QuestionHelper extends SymfonyQuestionHelper
 
         if ($question instanceof ChoiceQuestion) {
             foreach ($question->getChoices() as $key => $value) {
-                (new TwoColumnDetail($output))->render($value, $key);
+                with(new TwoColumnDetail($output))->render($value, $key);
             }
         }
 
@@ -77,7 +77,7 @@ class QuestionHelper extends SymfonyQuestionHelper
      */
     protected function ensureEndsWithPunctuation($string)
     {
-        if ((new Stringable($string))->doesntEndWith(['?', ':', '!', '.'])) {
+        if (! (new Stringable($string))->endsWith(['?', ':', '!', '.'])) {
             return "$string:";
         }
 

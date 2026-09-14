@@ -48,9 +48,6 @@ class ResendTransport extends AbstractTransport
 
     /**
      * {@inheritDoc}
-     *
-     * @throws \Symfony\Component\Mailer\Exception\TransportException
-     * @throws \Throwable
      */
     protected function doSend(SentMessage $message): void
     {
@@ -76,10 +73,10 @@ class ResendTransport extends AbstractTransport
             foreach ($email->getAttachments() as $attachment) {
                 $attachmentHeaders = $attachment->getPreparedHeaders();
                 $contentType = $attachmentHeaders->get('Content-Type')->getBody();
-                $disposition = $attachmentHeaders->getHeaderBody('Content-Disposition');
+
                 $filename = $attachmentHeaders->getHeaderParameter('Content-Disposition', 'filename');
 
-                if ($contentType === 'text/calendar') {
+                if ($contentType == 'text/calendar') {
                     $content = $attachment->getBody();
                 } else {
                     $content = str_replace("\r\n", '', $attachment->bodyToString());
@@ -90,10 +87,6 @@ class ResendTransport extends AbstractTransport
                     'content' => $content,
                     'filename' => $filename,
                 ];
-
-                if ($disposition === 'inline') {
-                    $item['content_id'] = $attachment->hasContentId() ? $attachment->getContentId() : $filename;
-                }
 
                 $attachments[] = $item;
             }
@@ -113,9 +106,7 @@ class ResendTransport extends AbstractTransport
                 'attachments' => $attachments,
             ]);
 
-            if (isset($result['statusCode']) && $result['statusCode'] != Response::HTTP_OK) {
-                throw new Exception($result['message']);
-            }
+            throw_if(isset($result['statusCode']) && $result['statusCode'] != Response::HTTP_OK, Exception::class, $result['message']);
         } catch (Exception $exception) {
             throw new TransportException(
                 sprintf('Request to Resend API failed. Reason: %s.', $exception->getMessage()),
@@ -126,11 +117,7 @@ class ResendTransport extends AbstractTransport
 
         $messageId = $result->id;
 
-        $message->setMessageId($messageId);
-
-        if ($message->getOriginalMessage() instanceof \Symfony\Component\Mime\Message) {
-            $message->getOriginalMessage()->getHeaders()->addHeader('X-Resend-Email-ID', $messageId);
-        }
+        $email->getHeaders()->addHeader('X-Resend-Email-ID', $messageId);
     }
 
     /**

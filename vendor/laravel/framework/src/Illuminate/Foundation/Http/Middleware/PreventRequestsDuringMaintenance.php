@@ -9,7 +9,6 @@ use Illuminate\Foundation\Http\MaintenanceModeBypassCookie;
 use Illuminate\Foundation\Http\Middleware\Concerns\ExcludesPaths;
 use Illuminate\Support\Arr;
 use Symfony\Component\HttpKernel\Exception\HttpException;
-use TypeError;
 
 class PreventRequestsDuringMaintenance
 {
@@ -40,6 +39,7 @@ class PreventRequestsDuringMaintenance
      * Create a new middleware instance.
      *
      * @param  \Illuminate\Contracts\Foundation\Application  $app
+     * @return void
      */
     public function __construct(Application $app)
     {
@@ -65,7 +65,7 @@ class PreventRequestsDuringMaintenance
         if ($this->app->maintenanceMode()->active()) {
             try {
                 $data = $this->app->maintenanceMode()->data();
-            } catch (ErrorException|TypeError $exception) {
+            } catch (ErrorException $exception) {
                 if (! $this->app->maintenanceMode()->active()) {
                     return $next($request);
                 }
@@ -73,7 +73,7 @@ class PreventRequestsDuringMaintenance
                 throw $exception;
             }
 
-            if (is_string($data['secret'] ?? null) && hash_equals($data['secret'], $request->path())) {
+            if (isset($data['secret']) && $request->path() === $data['secret']) {
                 return $this->bypassResponse($data['secret']);
             }
 
@@ -81,17 +81,17 @@ class PreventRequestsDuringMaintenance
                 return $next($request);
             }
 
-            if (isset($data['redirect']) && ! $request->expectsJson()) {
+            if (isset($data['redirect'])) {
                 $path = $data['redirect'] === '/'
-                    ? $data['redirect']
-                    : trim($data['redirect'], '/');
+                            ? $data['redirect']
+                            : trim($data['redirect'], '/');
 
                 if ($request->path() !== $path) {
                     return redirect($path);
                 }
             }
 
-            if (isset($data['template']) && ! $request->expectsJson()) {
+            if (isset($data['template'])) {
                 return response(
                     $data['template'],
                     $data['status'] ?? 503,
@@ -128,14 +128,14 @@ class PreventRequestsDuringMaintenance
     }
 
     /**
-     * Redirect the user to their intended destination with a maintenance mode bypass cookie.
+     * Redirect the user back to the root of the application with a maintenance mode bypass cookie.
      *
      * @param  string  $secret
      * @return \Illuminate\Http\RedirectResponse
      */
     protected function bypassResponse(string $secret)
     {
-        return redirect()->intended('/')->withCookie(
+        return redirect('/')->withCookie(
             MaintenanceModeBypassCookie::create($secret)
         );
     }

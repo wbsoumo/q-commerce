@@ -67,7 +67,7 @@ abstract class Job
     /**
      * Get the job identifier.
      *
-     * @return string|int|null
+     * @return string
      */
     abstract public function getJobId();
 
@@ -194,12 +194,12 @@ abstract class Job
         // the proper value. Otherwise, the current transaction will never commit.
         if ($e instanceof TimeoutExceededException &&
             $commandName &&
-            isset(class_uses_recursive($commandName)[Batchable::class])) {
+            in_array(Batchable::class, class_uses_recursive($commandName))) {
             $batchRepository = $this->resolve(BatchRepository::class);
 
             try {
                 $batchRepository->rollBack();
-            } catch (Throwable) {
+            } catch (Throwable $e) {
                 // ...
             }
         }
@@ -248,10 +248,10 @@ abstract class Job
     {
         $payload = $this->payload();
 
-        [$class] = JobName::parse($payload['job']);
+        [$class, $method] = JobName::parse($payload['job']);
 
         if (method_exists($this->instance = $this->resolve($class), 'failed')) {
-            $this->instance->failed($payload['data'], $e, $payload['uuid'] ?? '', $this);
+            $this->instance->failed($payload['data'], $e, $payload['uuid'] ?? '');
         }
     }
 
@@ -357,7 +357,7 @@ abstract class Job
     }
 
     /**
-     * Get the resolved display name of the queued job class.
+     * Get the resolved name of the queued job class.
      *
      * Resolves the name of "wrapped" jobs such as class-based handlers.
      *
@@ -366,18 +366,6 @@ abstract class Job
     public function resolveName()
     {
         return JobName::resolve($this->getName(), $this->payload());
-    }
-
-    /**
-     * Get the class of the queued job.
-     *
-     * Resolves the class of "wrapped" jobs such as class-based handlers.
-     *
-     * @return string
-     */
-    public function resolveQueuedJobClass()
-    {
-        return JobName::resolveClassName($this->getName(), $this->payload());
     }
 
     /**

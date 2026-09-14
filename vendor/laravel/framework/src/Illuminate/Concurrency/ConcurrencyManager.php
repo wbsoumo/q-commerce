@@ -7,8 +7,6 @@ use Illuminate\Support\MultipleInstanceManager;
 use RuntimeException;
 use Spatie\Fork\Fork;
 
-use function Illuminate\Support\enum_value;
-
 /**
  * @mixin \Illuminate\Contracts\Concurrency\Driver
  */
@@ -17,20 +15,21 @@ class ConcurrencyManager extends MultipleInstanceManager
     /**
      * Get a driver instance by name.
      *
-     * @param  \UnitEnum|string|null  $name
+     * @param  string|null  $name
      * @return mixed
      */
     public function driver($name = null)
     {
-        return $this->instance(enum_value($name));
+        return $this->instance($name);
     }
 
     /**
      * Create an instance of the process concurrency driver.
      *
+     * @param  array  $config
      * @return \Illuminate\Concurrency\ProcessDriver
      */
-    public function createProcessDriver()
+    public function createProcessDriver(array $config)
     {
         return new ProcessDriver($this->app->make(ProcessFactory::class));
     }
@@ -38,11 +37,12 @@ class ConcurrencyManager extends MultipleInstanceManager
     /**
      * Create an instance of the fork concurrency driver.
      *
+     * @param  array  $config
      * @return \Illuminate\Concurrency\ForkDriver
      *
      * @throws \RuntimeException
      */
-    public function createForkDriver()
+    public function createForkDriver(array $config)
     {
         if (! $this->app->runningInConsole()) {
             throw new RuntimeException('Due to PHP limitations, the fork driver may not be used within web requests.');
@@ -58,9 +58,10 @@ class ConcurrencyManager extends MultipleInstanceManager
     /**
      * Create an instance of the sync concurrency driver.
      *
+     * @param  array  $config
      * @return \Illuminate\Concurrency\SyncDriver
      */
-    public function createSyncDriver()
+    public function createSyncDriver(array $config)
     {
         return new SyncDriver;
     }

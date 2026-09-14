@@ -39,6 +39,7 @@ class RollbackCommand extends BaseCommand
      * Create a new migration rollback command instance.
      *
      * @param  \Illuminate\Database\Migrations\Migrator  $migrator
+     * @return void
      */
     public function __construct(Migrator $migrator)
     {
@@ -54,8 +55,9 @@ class RollbackCommand extends BaseCommand
      */
     public function handle()
     {
-        if ($this->isProhibited() || ! $this->confirmToProceed()) {
-            return self::FAILURE;
+        if ($this->isProhibited() ||
+            ! $this->confirmToProceed()) {
+            return Command::FAILURE;
         }
 
         $this->migrator->usingConnection($this->option('database'), function () {
@@ -68,7 +70,7 @@ class RollbackCommand extends BaseCommand
             );
         });
 
-        return self::SUCCESS;
+        return 0;
     }
 
     /**

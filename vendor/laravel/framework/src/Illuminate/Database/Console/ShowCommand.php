@@ -4,18 +4,16 @@ namespace Illuminate\Database\Console;
 
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\ConnectionResolverInterface;
-use Illuminate\Database\Console\Concerns\InteractsWithPooledConnections;
 use Illuminate\Database\Schema\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Number;
+use Illuminate\Support\Stringable;
 use Symfony\Component\Console\Attribute\AsCommand;
 
 #[AsCommand(name: 'db:show')]
 class ShowCommand extends DatabaseInspectionCommand
 {
-    use InteractsWithPooledConnections;
-
     /**
      * The name and signature of the console command.
      *
@@ -42,7 +40,7 @@ class ShowCommand extends DatabaseInspectionCommand
      */
     public function handle(ConnectionResolverInterface $connections)
     {
-        $connection = $this->resolveDirectConnectionIfPossible($connections, $database = $this->input->getOption('database'));
+        $connection = $connections->connection($database = $this->input->getOption('database'));
 
         $schema = $connection->getSchemaBuilder();
 
@@ -67,7 +65,7 @@ class ShowCommand extends DatabaseInspectionCommand
 
         $this->display($data);
 
-        return self::SUCCESS;
+        return 0;
     }
 
     /**
@@ -82,10 +80,9 @@ class ShowCommand extends DatabaseInspectionCommand
         return (new Collection($schema->getTables()))->map(fn ($table) => [
             'table' => $table['name'],
             'schema' => $table['schema'],
-            'schema_qualified_name' => $table['schema_qualified_name'],
             'size' => $table['size'],
             'rows' => $this->option('counts')
-                ? $connection->withoutTablePrefix(fn ($connection) => $connection->table($table['schema_qualified_name'])->count())
+                ? ($connection->table($table['schema'] ? $table['schema'].'.'.$table['name'] : $table['name'])->count())
                 : null,
             'engine' => $table['engine'],
             'collation' => $table['collation'],
@@ -103,10 +100,11 @@ class ShowCommand extends DatabaseInspectionCommand
     protected function views(ConnectionInterface $connection, Builder $schema)
     {
         return (new Collection($schema->getViews()))
+            ->reject(fn ($view) => (new Stringable($view['name']))->startsWith(['pg_catalog', 'information_schema', 'spt_']))
             ->map(fn ($view) => [
                 'view' => $view['name'],
                 'schema' => $view['schema'],
-                'rows' => $connection->withoutTablePrefix(fn ($connection) => $connection->table($view['schema_qualified_name'])->count()),
+                'rows' => $connection->table($view['schema'] ? $view['schema'].'.'.$view['name'] : $view['name'])->count(),
             ]);
     }
 

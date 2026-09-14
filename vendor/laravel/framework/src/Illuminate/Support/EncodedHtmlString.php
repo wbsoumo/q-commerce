@@ -27,6 +27,7 @@ class EncodedHtmlString extends HtmlString
      *
      * @param  \Illuminate\Contracts\Support\DeferringDisplayableValue|\Illuminate\Contracts\Support\Htmlable|\BackedEnum|string|int|float|null  $html
      * @param  bool  $doubleEncode
+     * @return void
      */
     public function __construct($html = '', protected bool $doubleEncode = true)
     {
@@ -39,7 +40,7 @@ class EncodedHtmlString extends HtmlString
      * @internal
      *
      * @param  string|null  $value
-     * @param  bool  $withQuote
+     * @param  int  $withQuote
      * @param  bool  $doubleEncode
      * @return string
      */

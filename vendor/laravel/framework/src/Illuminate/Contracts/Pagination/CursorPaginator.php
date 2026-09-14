@@ -6,8 +6,6 @@ namespace Illuminate\Contracts\Pagination;
  * @template TKey of array-key
  *
  * @template-covariant TValue
- *
- * @method $this through(callable(TValue): mixed $callback)
  */
 interface CursorPaginator
 {
@@ -32,7 +30,7 @@ interface CursorPaginator
      * Get / set the URL fragment to be appended to URLs.
      *
      * @param  string|null  $fragment
-     * @return ($fragment is null ? string|null : $this)
+     * @return $this|string|null
      */
     public function fragment($fragment = null);
 
@@ -98,13 +96,6 @@ interface CursorPaginator
      * @return bool
      */
     public function hasPages();
-
-    /**
-     * Determine if there are more items in the data source.
-     *
-     * @return bool
-     */
-    public function hasMorePages();
 
     /**
      * Get the base path for paginator generated URLs.

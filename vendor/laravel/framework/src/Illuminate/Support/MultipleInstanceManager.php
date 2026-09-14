@@ -4,13 +4,10 @@ namespace Illuminate\Support;
 
 use Closure;
 use InvalidArgumentException;
-use ReflectionException;
 use RuntimeException;
 
 abstract class MultipleInstanceManager
 {
-    use RebindsCallbacksToSelf;
-
     /**
      * The application instance.
      *
@@ -50,6 +47,7 @@ abstract class MultipleInstanceManager
      * Create a new manager instance.
      *
      * @param  \Illuminate\Contracts\Foundation\Application  $app
+     * @return void
      */
     public function __construct($app)
     {
@@ -194,20 +192,11 @@ abstract class MultipleInstanceManager
      *
      * @param  string  $name
      * @param  \Closure  $callback
-     *
-     * @param-closure-this  $this  $callback
-     *
      * @return $this
      */
     public function extend($name, Closure $callback)
     {
-        try {
-            $callback = $this->bindCallbackToSelf($callback) ?? throw new RuntimeException('Unable to bind custom driver callback');
-        } catch (ReflectionException $e) {
-            throw new RuntimeException('Unable to bind custom driver callback', previous: $e);
-        }
-
-        $this->customCreators[$name] = $callback;
+        $this->customCreators[$name] = $callback->bindTo($this, $this);
 
         return $this;
     }

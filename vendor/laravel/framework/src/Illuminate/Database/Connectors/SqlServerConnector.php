@@ -113,8 +113,7 @@ class SqlServerConnector extends Connector implements ConnectorInterface
     protected function getOdbcDsn(array $config)
     {
         return isset($config['odbc_datasource_name'])
-            ? 'odbc:'.$config['odbc_datasource_name']
-            : '';
+                    ? 'odbc:'.$config['odbc_datasource_name'] : '';
     }
 
     /**
@@ -133,7 +132,7 @@ class SqlServerConnector extends Connector implements ConnectorInterface
             $arguments['Database'] = $config['database'];
         }
 
-        if ($config['readonly'] ?? false) {
+        if (isset($config['readonly'])) {
             $arguments['ApplicationIntent'] = 'ReadOnly';
         }
 
@@ -189,7 +188,7 @@ class SqlServerConnector extends Connector implements ConnectorInterface
             $arguments['Authentication'] = $config['authentication'];
         }
 
-        return $this->buildConnectString('sqlsrv', array_map($this->escapeSqlSrvDsnValue(...), $arguments));
+        return $this->buildConnectString('sqlsrv', $arguments);
     }
 
     /**
@@ -220,21 +219,6 @@ class SqlServerConnector extends Connector implements ConnectorInterface
         }
 
         return $config['host'].$separator.$config['port'];
-    }
-
-    /**
-     * Escape a value for the connection string.
-     *
-     * @param  mixed  $value
-     * @return mixed
-     */
-    protected function escapeSqlSrvDsnValue($value)
-    {
-        if (! is_string($value) || (! str_contains($value, ';') && ! str_contains($value, '}') && ! preg_match('/^\s|\s$/', $value))) {
-            return $value;
-        }
-
-        return '{'.str_replace('}', '}}', $value).'}';
     }
 
     /**

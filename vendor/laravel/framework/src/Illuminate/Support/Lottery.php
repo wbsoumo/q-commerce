@@ -45,18 +45,13 @@ class Lottery
      * Create a new Lottery instance.
      *
      * @param  int|float  $chances
-     * @param  int<1, max>|null  $outOf
-     *
-     * @throws \RuntimeException
+     * @param  int|null  $outOf
+     * @return void
      */
     public function __construct($chances, $outOf = null)
     {
         if ($outOf === null && is_float($chances) && $chances > 1) {
             throw new RuntimeException('Float must not be greater than 1.');
-        }
-
-        if ($outOf !== null && $outOf < 1) {
-            throw new RuntimeException('Lottery "out of" value must be greater than or equal to 1.');
         }
 
         $this->chances = $chances;
@@ -117,7 +112,7 @@ class Lottery
      * Run the lottery.
      *
      * @param  null|int  $times
-     * @return ($times is null ? mixed : list<mixed>)
+     * @return mixed
      */
     public function choose($times = null)
     {
@@ -189,7 +184,7 @@ class Lottery
     }
 
     /**
-     * Force the lottery to always result in a loss.
+     * Force the lottery to always result in a lose.
      *
      * @param  callable|null  $callback
      * @return void

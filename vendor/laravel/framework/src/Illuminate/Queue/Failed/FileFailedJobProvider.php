@@ -36,6 +36,7 @@ class FileFailedJobProvider implements CountableFailedJobProvider, FailedJobProv
      * @param  string  $path
      * @param  int  $limit
      * @param  \Closure|null  $lockProviderResolver
+     * @return void
      */
     public function __construct($path, $limit = 100, ?Closure $lockProviderResolver = null)
     {
@@ -154,11 +155,9 @@ class FileFailedJobProvider implements CountableFailedJobProvider, FailedJobProv
         return $this->lock(function () use ($before) {
             $jobs = $this->read();
 
-            $this->write($prunedJobs = (new Collection($jobs))
-                ->reject(fn ($job) => $job->failed_at_timestamp <= $before->getTimestamp())
-                ->values()
-                ->all()
-            );
+            $this->write($prunedJobs = (new Collection($jobs))->reject(function ($job) use ($before) {
+                return $job->failed_at_timestamp <= $before->getTimestamp();
+            })->values()->all());
 
             return count($jobs) - count($prunedJobs);
         });
@@ -167,10 +166,8 @@ class FileFailedJobProvider implements CountableFailedJobProvider, FailedJobProv
     /**
      * Execute the given callback while holding a lock.
      *
-     * @template TReturn
-     *
-     * @param  (\Closure(): TReturn)  $callback
-     * @return TReturn
+     * @param  \Closure  $callback
+     * @return mixed
      */
     protected function lock(Closure $callback)
     {

@@ -5,16 +5,29 @@ namespace Illuminate\Queue\Events;
 class JobTimedOut
 {
     /**
+     * The connection name.
+     *
+     * @var string
+     */
+    public $connectionName;
+
+    /**
+     * The job instance.
+     *
+     * @var \Illuminate\Contracts\Queue\Job
+     */
+    public $job;
+
+    /**
      * Create a new event instance.
      *
-     * @param  string  $connectionName  The connection name.
-     * @param  \Illuminate\Contracts\Queue\Job  $job  The job instance.
-     * @param  int|null  $timeout  The timeout exceeded in seconds.
+     * @param  string  $connectionName
+     * @param  \Illuminate\Contracts\Queue\Job  $job
+     * @return void
      */
-    public function __construct(
-        public $connectionName,
-        public $job,
-        public $timeout = null,
-    ) {
+    public function __construct($connectionName, $job)
+    {
+        $this->job = $job;
+        $this->connectionName = $connectionName;
     }
 }

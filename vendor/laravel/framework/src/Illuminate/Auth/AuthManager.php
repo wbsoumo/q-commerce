@@ -4,12 +4,7 @@ namespace Illuminate\Auth;
 
 use Closure;
 use Illuminate\Contracts\Auth\Factory as FactoryContract;
-use Illuminate\Support\RebindsCallbacksToSelf;
 use InvalidArgumentException;
-use ReflectionException;
-use RuntimeException;
-
-use function Illuminate\Support\enum_value;
 
 /**
  * @mixin \Illuminate\Contracts\Auth\Guard
@@ -17,7 +12,7 @@ use function Illuminate\Support\enum_value;
  */
 class AuthManager implements FactoryContract
 {
-    use CreatesUserProviders, RebindsCallbacksToSelf;
+    use CreatesUserProviders;
 
     /**
      * The application instance.
@@ -53,6 +48,7 @@ class AuthManager implements FactoryContract
      * Create a new Auth manager instance.
      *
      * @param  \Illuminate\Contracts\Foundation\Application  $app
+     * @return void
      */
     public function __construct($app)
     {
@@ -64,14 +60,14 @@ class AuthManager implements FactoryContract
     /**
      * Attempt to get the guard from the local cache.
      *
-     * @param  \UnitEnum|string|null  $name
+     * @param  string|null  $name
      * @return \Illuminate\Contracts\Auth\Guard|\Illuminate\Contracts\Auth\StatefulGuard
      */
     public function guard($name = null)
     {
-        $name = enum_value($name) ?: $this->getDefaultDriver();
+        $name = $name ?: $this->getDefaultDriver();
 
-        return $this->guards[$name] ??= $this->resolve($name);
+        return $this->guards[$name] ?? $this->guards[$name] = $this->resolve($name);
     }
 
     /**
@@ -132,17 +128,22 @@ class AuthManager implements FactoryContract
             $this->app['session.store'],
             rehashOnLogin: $this->app['config']->get('hashing.rehash_on_login', true),
             timeboxDuration: $this->app['config']->get('auth.timebox_duration', 200000),
-            hashKey: $this->app['config']->get('app.key'),
         );
 
         // When using the remember me functionality of the authentication services we
         // will need to be set the encryption instance of the guard, which allows
         // secure, encrypted cookie values to get generated for those cookies.
-        $guard->setCookieJar($this->app['cookie']);
+        if (method_exists($guard, 'setCookieJar')) {
+            $guard->setCookieJar($this->app['cookie']);
+        }
 
-        $guard->setDispatcher($this->app['events']);
+        if (method_exists($guard, 'setDispatcher')) {
+            $guard->setDispatcher($this->app['events']);
+        }
 
-        $guard->setRequest($this->app->refresh('request', $guard, 'setRequest'));
+        if (method_exists($guard, 'setRequest')) {
+            $guard->setRequest($this->app->refresh('request', $guard, 'setRequest'));
+        }
 
         if (isset($config['remember'])) {
             $guard->setRememberDuration($config['remember']);
@@ -200,12 +201,12 @@ class AuthManager implements FactoryContract
     /**
      * Set the default guard driver the factory should serve.
      *
-     * @param  \UnitEnum|string|null  $name
+     * @param  string  $name
      * @return void
      */
     public function shouldUse($name)
     {
-        $name = enum_value($name) ?: $this->getDefaultDriver();
+        $name = $name ?: $this->getDefaultDriver();
 
         $this->setDefaultDriver($name);
 
@@ -215,12 +216,12 @@ class AuthManager implements FactoryContract
     /**
      * Set the default authentication driver name.
      *
-     * @param  \UnitEnum|string  $name
+     * @param  string  $name
      * @return void
      */
     public function setDefaultDriver($name)
     {
-        $this->app['config']['auth.defaults.guard'] = enum_value($name);
+        $this->app['config']['auth.defaults.guard'] = $name;
     }
 
     /**
@@ -269,19 +270,10 @@ class AuthManager implements FactoryContract
      *
      * @param  string  $driver
      * @param  \Closure  $callback
-     *
-     * @param-closure-this  $this  $callback
-     *
      * @return $this
      */
     public function extend($driver, Closure $callback)
     {
-        try {
-            $callback = $this->bindCallbackToSelf($callback) ?? throw new RuntimeException('Unable to bind custom driver callback');
-        } catch (ReflectionException $e) {
-            throw new RuntimeException('Unable to bind custom driver callback', previous: $e);
-        }
-
         $this->customCreators[$driver] = $callback;
 
         return $this;
