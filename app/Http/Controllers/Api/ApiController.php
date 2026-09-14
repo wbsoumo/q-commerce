@@ -61,7 +61,10 @@ class ApiController extends Controller
             'status' => 'success',
             'data' => $categories,
             'server_time' => now()->toIso8601String(),
-        ])->header('ETag', $etag);
+        ])->header('ETag', $etag)
+          ->header('Access-Control-Allow-Origin', '*')
+          ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
+          ->header('Access-Control-Allow-Headers', '*');
     }
 
     // Get Products by Category with Incremental Sync & ETag Support
@@ -126,7 +129,10 @@ class ApiController extends Controller
             'count' => $products->count(),
             'data' => $products,
             'server_time' => now()->toIso8601String(),
-        ])->header('ETag', $etag);
+        ])->header('ETag', $etag)
+          ->header('Access-Control-Allow-Origin', '*')
+          ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
+          ->header('Access-Control-Allow-Headers', '*');
     }
 
     // Create New Order with Advanced Validation & Stock Reservation
