@@ -227,26 +227,33 @@ class AdminController extends Controller
     // STORE MANAGER PORTAL VIEW: Specific Store Inventory Management
     public function storeManagerPortal(Request $request)
     {
-        $storeId = $request->query('store_id', 1);
+        $storeId = (int)$request->query('store_id', 1);
         $store = DB::table('stores')->where('id', $storeId)->first();
 
         // Get all products (Global + Store Specific for this store)
         $products = DB::table('products')
-            ->where(function($q) use ($storeId) {
-                $q->where('products.scope', 'global')
-                  ->orWhere('products.store_id', $storeId);
-            })
-            ->leftJoin('store_product_inventories', function($join) use ($storeId) {
-                $join->on('products.id', '=', 'store_product_inventories.product_id')
-                     ->where('store_product_inventories.store_id', '=', $storeId);
-            })
             ->select(
-                'products.*',
+                'products.id',
+                'products.name',
+                'products.sku',
+                'products.price',
+                'products.mrp',
+                'products.stock',
+                'products.scope',
+                'products.store_id',
                 'store_product_inventories.custom_price',
                 'store_product_inventories.custom_mrp',
                 'store_product_inventories.custom_stock',
                 'store_product_inventories.is_available'
             )
+            ->leftJoin('store_product_inventories', function($join) use ($storeId) {
+                $join->on('products.id', '=', 'store_product_inventories.product_id')
+                     ->where('store_product_inventories.store_id', '=', $storeId);
+            })
+            ->where(function($q) use ($storeId) {
+                $q->where('products.scope', '=', 'global')
+                  ->orWhere('products.store_id', '=', $storeId);
+            })
             ->get();
 
         $stores = DB::table('stores')->get();
