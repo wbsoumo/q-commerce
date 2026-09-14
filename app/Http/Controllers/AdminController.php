@@ -435,15 +435,23 @@ class AdminController extends Controller
             'updated_at' => now(),
         ];
 
-        $storeColumns = Schema::getColumnListing('stores');
-        if (in_array('banner_title', $storeColumns)) {
-            $updateData['banner_title'] = $request->input('banner_title', 'Mega Diwali Sale');
-        }
-        if (in_array('banner_subtitle', $storeColumns)) {
-            $updateData['banner_subtitle'] = $request->input('banner_subtitle');
-        }
+        $updateData['banner_title'] = $request->input('banner_title', 'Mega Diwali Sale');
+        $updateData['banner_subtitle'] = $request->input('banner_subtitle');
 
-        DB::table('stores')->where('id', $id)->update($updateData);
+        try {
+            DB::table('stores')->where('id', $id)->update($updateData);
+        } catch (\Exception $e) {
+            // If banner_title column is missing in remote DB, add it dynamically
+            if (str_contains($e->getMessage(), 'banner_title') || str_contains($e->getMessage(), '1054')) {
+                \Illuminate\Support\Facades\Schema::table('stores', function ($table) {
+                    $table->string('banner_title')->nullable()->default('Mega Diwali Sale');
+                    $table->string('banner_subtitle')->nullable();
+                });
+                DB::table('stores')->where('id', $id)->update($updateData);
+            } else {
+                throw $e;
+            }
+        }
 
         return redirect('/admin/stores')->with('success', 'Store settings updated successfully!');
     }
