@@ -326,4 +326,70 @@ class ApiController extends Controller
             ], 422);
         }
     }
+
+    // Get User Saved Addresses
+    public function getAddresses(Request $request)
+    {
+        $userPhone = $request->query('phone', '8016222991');
+        $addresses = DB::table('user_addresses')
+            ->where('user_phone', $userPhone)
+            ->orderBy('is_default', 'desc')
+            ->orderBy('id', 'desc')
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $addresses,
+        ])->header('Access-Control-Allow-Origin', '*')
+          ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
+          ->header('Access-Control-Allow-Headers', '*');
+    }
+
+    // Save New User Address with Custom Type & Receiver Info
+    public function storeAddress(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'address_type' => 'required|string', // Home, Work, Other
+                'custom_type_name' => 'nullable|string',
+                'address_details' => 'required|string',
+                'receiver_name' => 'required|string',
+                'receiver_phone' => 'required|string',
+                'is_for_someone_else' => 'nullable|boolean',
+                'latitude' => 'nullable|numeric',
+                'longitude' => 'nullable|numeric',
+                'user_phone' => 'nullable|string',
+            ]);
+
+            $id = DB::table('user_addresses')->insertGetId([
+                'user_phone' => $validated['user_phone'] ?? '8016222991',
+                'address_type' => $validated['address_type'],
+                'custom_type_name' => $validated['custom_type_name'] ?? null,
+                'address_details' => $validated['address_details'],
+                'receiver_name' => $validated['receiver_name'],
+                'receiver_phone' => $validated['receiver_phone'],
+                'is_for_someone_else' => $request->input('is_for_someone_else', false),
+                'latitude' => $request->input('latitude', 23.4126),
+                'longitude' => $request->input('longitude', 88.4292),
+                'is_default' => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $addressRecord = DB::table('user_addresses')->where('id', $id)->first();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Address saved successfully.',
+                'data' => $addressRecord,
+            ], 201)->header('Access-Control-Allow-Origin', '*')
+              ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
+              ->header('Access-Control-Allow-Headers', '*');
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+            ], 422)->header('Access-Control-Allow-Origin', '*');
+        }
+    }
 }

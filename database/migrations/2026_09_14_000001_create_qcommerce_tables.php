@@ -112,6 +112,22 @@ return new class extends Migration
             $table->decimal('total', 10, 2);
             $table->timestamps();
         });
+
+        // 9. User Saved Addresses Table
+        Schema::create('user_addresses', function (Blueprint $table) {
+            $table->id();
+            $table->string('user_phone')->default('8016222991');
+            $table->string('address_type')->default('Home'); // Home, Work, Other
+            $table->string('custom_type_name')->nullable();
+            $table->text('address_details');
+            $table->string('receiver_name');
+            $table->string('receiver_phone');
+            $table->boolean('is_for_someone_else')->default(false);
+            $table->decimal('latitude', 10, 7)->default(23.4126);
+            $table->decimal('longitude', 10, 7)->default(88.4292);
+            $table->boolean('is_default')->default(false);
+            $table->timestamps();
+        });
     }
 
     public function down(): void
