@@ -235,7 +235,13 @@ class AdminController extends Controller
     // STORE MANAGER PORTAL VIEW: Specific Store Inventory Management (With Search)
     public function storeManagerPortal(Request $request)
     {
-        $storeId = (int)$request->query('store_id', 1);
+        $user = auth()->user();
+        if ($user && $user->role === 'store_manager') {
+            $storeId = (int)$user->store_id;
+        } else {
+            $storeId = (int)$request->query('store_id', 1);
+        }
+
         $store = DB::table('stores')->where('id', $storeId)->first();
 
         $query = DB::table('products')
@@ -271,7 +277,11 @@ class AdminController extends Controller
         }
 
         $products = $query->get();
-        $stores = DB::table('stores')->get();
+        if ($user && $user->role === 'store_manager') {
+            $stores = DB::table('stores')->where('id', $storeId)->get();
+        } else {
+            $stores = DB::table('stores')->get();
+        }
 
         return view('admin.manager.index', compact('store', 'products', 'stores'));
     }
@@ -279,7 +289,12 @@ class AdminController extends Controller
     // Update Store Manager Inventory
     public function updateStoreInventory(Request $request)
     {
-        $storeId = $request->input('store_id');
+        $user = auth()->user();
+        $storeId = (int)$request->input('store_id');
+        if ($user && $user->role === 'store_manager' && (int)$user->store_id !== $storeId) {
+            return redirect()->back()->with('error', 'Unauthorized action for this store.');
+        }
+
         $productId = $request->input('product_id');
 
         DB::table('store_product_inventories')->updateOrInsert(
@@ -299,12 +314,21 @@ class AdminController extends Controller
     // 1. Store Settings View & Update
     public function storeSettings($id)
     {
+        $user = auth()->user();
+        if ($user && $user->role === 'store_manager' && (int)$user->store_id !== (int)$id) {
+            abort(403, 'Unauthorized store access');
+        }
         $store = DB::table('stores')->where('id', $id)->first();
         return view('admin.stores.settings', compact('store'));
     }
 
     public function updateStoreSettings(Request $request, $id)
     {
+        $user = auth()->user();
+        if ($user && $user->role === 'store_manager' && (int)$user->store_id !== (int)$id) {
+            return redirect()->back()->with('error', 'Unauthorized store update');
+        }
+
         DB::table('stores')->where('id', $id)->update([
             'status' => $request->input('status', 'Active'),
             'opening_time' => $request->input('opening_time', '06:00'),

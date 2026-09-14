@@ -35,14 +35,21 @@
           <div class="card-body p-3">
             <form action="/admin/store-manager" method="GET" class="row align-items-center">
               <div class="col-md-5">
-                <label class="font-weight-bold text-dark mb-1"><i class="fas fa-building mr-1 text-primary"></i> Select Store Branch to Manage:</label>
-                <select name="store_id" class="form-control form-control-lg font-weight-bold border-primary" onchange="this.form.submit()">
-                  @foreach($stores as $st)
-                    <option value="{{ $st->id }}" {{ ($store->id ?? 1) == $st->id ? 'selected' : '' }}>
-                      {{ $st->name }} ({{ $st->city }} - {{ $st->code }})
-                    </option>
-                  @endforeach
-                </select>
+                <label class="font-weight-bold text-dark mb-1"><i class="fas fa-building mr-1 text-primary"></i> Assigned Store Branch:</label>
+                @if(auth()->user() && auth()->user()->role === 'store_manager')
+                  <div class="form-control form-control-lg font-weight-bold border-primary bg-white d-flex justify-content-between align-items-center">
+                    <span>{{ $store->name }} ({{ $store->city }} - {{ $store->code }})</span>
+                    <span class="badge badge-info"><i class="fas fa-lock mr-1"></i> Assigned Branch</span>
+                  </div>
+                @else
+                  <select name="store_id" class="form-control form-control-lg font-weight-bold border-primary" onchange="this.form.submit()">
+                    @foreach($stores as $st)
+                      <option value="{{ $st->id }}" {{ ($store->id ?? 1) == $st->id ? 'selected' : '' }}>
+                        {{ $st->name }} ({{ $st->city }} - {{ $st->code }})
+                      </option>
+                    @endforeach
+                  </select>
+                @endif
               </div>
               <div class="col-md-7 d-flex justify-content-end align-items-center mt-3 mt-md-0">
                 <div class="mr-4 text-right">
