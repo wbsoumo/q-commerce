@@ -329,6 +329,7 @@ class AdminController extends Controller
 
         $store = DB::table('stores')->where('id', $storeId)->first();
 
+        $hasStoreIdsCol = Schema::hasColumn('products', 'store_ids');
         $query = DB::table('products')
             ->select(
                 'products.id',
@@ -348,10 +349,12 @@ class AdminController extends Controller
                 $join->on('products.id', '=', 'store_product_inventories.product_id')
                      ->where('store_product_inventories.store_id', '=', $storeId);
             })
-            ->where(function($q) use ($storeId) {
+            ->where(function($q) use ($storeId, $hasStoreIdsCol) {
                 $q->where('products.scope', '=', 'global')
-                  ->orWhere('products.store_id', '=', $storeId)
-                  ->orWhereJsonContains('products.store_ids', $storeId);
+                  ->orWhere('products.store_id', '=', $storeId);
+                if ($hasStoreIdsCol) {
+                    $q->orWhereJsonContains('products.store_ids', $storeId);
+                }
             });
 
         if ($request->filled('search')) {

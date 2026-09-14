@@ -102,6 +102,7 @@ class ManagerController extends Controller
         if (!$store) return redirect('/manager/login');
         $storeId = $store->id;
 
+        $hasStoreIdsCol = Schema::hasColumn('products', 'store_ids');
         $productsQuery = DB::table('products')
             ->select(
                 'products.id',
@@ -121,10 +122,12 @@ class ManagerController extends Controller
                 $join->on('products.id', '=', 'store_product_inventories.product_id')
                      ->where('store_product_inventories.store_id', '=', $storeId);
             })
-            ->where(function($q) use ($storeId) {
+            ->where(function($q) use ($storeId, $hasStoreIdsCol) {
                 $q->where('products.scope', '=', 'global')
-                  ->orWhere('products.store_id', '=', $storeId)
-                  ->orWhereJsonContains('products.store_ids', $storeId);
+                  ->orWhere('products.store_id', '=', $storeId);
+                if ($hasStoreIdsCol) {
+                    $q->orWhereJsonContains('products.store_ids', $storeId);
+                }
             });
 
         if ($request->filled('search')) {
