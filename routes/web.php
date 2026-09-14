@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ManagerController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Api\ApiController;
 
@@ -12,15 +13,16 @@ Route::get('/manager/login', [AuthController::class, 'showManagerLogin'])->name(
 Route::post('/manager/login', [AuthController::class, 'processManagerLogin']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// Store Manager Accessible Routes
+// Separate Dedicated Store Manager Portal Routes
 Route::middleware(['store.manager'])->group(function () {
-    Route::get('/admin/store-manager', [AdminController::class, 'storeManagerPortal']);
-    Route::post('/admin/store-manager/update-inventory', [AdminController::class, 'updateStoreInventory']);
-    Route::get('/admin/stores/{id}/settings', [AdminController::class, 'storeSettings']);
-    Route::post('/admin/stores/{id}/settings', [AdminController::class, 'updateStoreSettings']);
+    Route::get('/manager/dashboard', [ManagerController::class, 'dashboard'])->name('manager.dashboard');
+    Route::post('/manager/inventory/update', [ManagerController::class, 'updateInventory']);
+    Route::post('/manager/orders/{id}/status', [ManagerController::class, 'updateOrderStatus']);
+    Route::post('/manager/deliveries/assign', [ManagerController::class, 'assignRider']);
+    Route::post('/manager/settings/update', [ManagerController::class, 'updateSettings']);
 });
 
-// Admin-Only Routes (Restricted from Store Managers)
+// Separate Super Admin-Only Routes
 Route::middleware(['admin.only'])->group(function () {
     Route::get('/', [AdminController::class, 'dashboard']);
     Route::get('/admin', [AdminController::class, 'dashboard']);
@@ -38,6 +40,10 @@ Route::middleware(['admin.only'])->group(function () {
     Route::post('/admin/products/update', [AdminController::class, 'updateProduct']);
     Route::get('/admin/products/{id}/variants', [AdminController::class, 'productVariants']);
     Route::post('/admin/products/{id}/variants/store', [AdminController::class, 'storeProductVariant']);
+
+    // Super Admin Manager View Overrides
+    Route::get('/admin/store-manager', [AdminController::class, 'storeManagerPortal']);
+    Route::post('/admin/store-manager/update-inventory', [AdminController::class, 'updateStoreInventory']);
 
     // Global Inventory & Alerts
     Route::get('/admin/inventory/transactions', [AdminController::class, 'inventoryTransactions']);

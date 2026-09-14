@@ -18,7 +18,7 @@ class AdminOnlyMiddleware
 
         if ($user->role === 'store_manager') {
             // Redirect store managers to their dedicated manager portal
-            return redirect('/admin/store-manager')->with('error', 'Access restricted to Store Manager Portal only.');
+            return redirect('/manager/dashboard')->with('error', 'Access restricted to Store Manager Portal only.');
         }
 
         if ($user->role !== 'admin') {

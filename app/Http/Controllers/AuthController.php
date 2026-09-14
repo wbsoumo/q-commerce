@@ -26,13 +26,14 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        $user = DB::table('users')->where('email', $request->email)->first();
+        $user = \App\Models\User::where('email', $request->email)->first();
 
         if ($user && Hash::check($request->password, $user->password)) {
             if ($user->role !== 'admin') {
                 return redirect()->back()->with('error', 'Unauthorized access! You must be a Super Admin to log in here.');
             }
 
+            Auth::login($user);
             session([
                 'user_id' => $user->id,
                 'user_name' => $user->name,
@@ -50,9 +51,8 @@ class AuthController extends Controller
     // Show Store Manager Login Page
     public function showManagerLogin()
     {
-        if (session()->has('user_id') && session()->get('user_role') === 'store_manager') {
-            $storeId = session()->get('store_id', 1);
-            return redirect('/admin/store-manager?store_id=' . $storeId);
+        if (Auth::check() && Auth::user()->role === 'store_manager') {
+            return redirect('/manager/dashboard');
         }
         return view('auth.manager_login');
     }
@@ -65,13 +65,14 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        $user = DB::table('users')->where('email', $request->email)->first();
+        $user = \App\Models\User::where('email', $request->email)->first();
 
         if ($user && Hash::check($request->password, $user->password)) {
             if ($user->role !== 'store_manager' && $user->role !== 'admin') {
                 return redirect()->back()->with('error', 'Unauthorized access! Account is not assigned as Store Manager.');
             }
 
+            Auth::login($user);
             session([
                 'user_id' => $user->id,
                 'user_name' => $user->name,
@@ -80,8 +81,7 @@ class AuthController extends Controller
                 'store_id' => $user->store_id ?? 1,
             ]);
 
-            $storeId = $user->store_id ?? 1;
-            return redirect('/admin/store-manager?store_id=' . $storeId)->with('success', 'Store Manager authenticated successfully.');
+            return redirect('/manager/dashboard')->with('success', 'Store Manager authenticated successfully.');
         }
 
         return redirect()->back()->with('error', 'Invalid store manager credentials entered.');
@@ -90,7 +90,13 @@ class AuthController extends Controller
     // Logout User Session
     public function logout()
     {
-        session()->forget(['user_id', 'user_name', 'user_email', 'user_role', 'store_id']);
+        $isManager = Auth::check() && Auth::user()->role === 'store_manager';
+        Auth::logout();
+        session()->flush();
+
+        if ($isManager) {
+            return redirect('/manager/login')->with('success', 'Successfully logged out.');
+        }
         return redirect('/admin/login')->with('success', 'Successfully logged out.');
     }
 }
