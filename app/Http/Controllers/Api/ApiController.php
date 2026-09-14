@@ -54,7 +54,10 @@ class ApiController extends Controller
         $etag = md5(json_encode($categories));
 
         if ($request->header('If-None-Match') === $etag) {
-            return response()->json(['status' => 'not_modified'], 304);
+            return response()->json(['status' => 'not_modified'], 304)
+                ->header('Access-Control-Allow-Origin', '*')
+                ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
+                ->header('Access-Control-Allow-Headers', '*');
         }
 
         return response()->json([
@@ -121,7 +124,10 @@ class ApiController extends Controller
 
         $etag = md5(json_encode($products));
         if ($request->header('If-None-Match') === $etag) {
-            return response()->json(['status' => 'not_modified'], 304);
+            return response()->json(['status' => 'not_modified'], 304)
+                ->header('Access-Control-Allow-Origin', '*')
+                ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
+                ->header('Access-Control-Allow-Headers', '*');
         }
 
         return response()->json([
