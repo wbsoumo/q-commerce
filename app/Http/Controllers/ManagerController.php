@@ -148,6 +148,89 @@ class ManagerController extends Controller
         return view('manager.products.create', compact('store', 'categories'));
     }
 
+    // 1.2 Edit Product Form Page for Store Managers
+    public function editProduct($id)
+    {
+        $store = $this->getStoreData();
+        if (!$store) return redirect('/manager/login');
+
+        $product = DB::table('products')->where('id', $id)->first();
+        if (!$product) {
+            return redirect('/manager/inventory')->with('error', 'Product not found.');
+        }
+
+        $inventory = DB::table('store_product_inventories')
+            ->where('store_id', $store->id)
+            ->where('product_id', $id)
+            ->first();
+
+        $categories = DB::table('categories')->where('is_active', true)->get();
+        return view('manager.products.edit', compact('store', 'product', 'inventory', 'categories'));
+    }
+
+    // 1.3 Update Product Handler for Store Managers
+    public function updateProduct(Request $request)
+    {
+        $store = $this->getStoreData();
+        if (!$store) return redirect('/manager/login');
+        $storeId = $store->id;
+
+        $id = $request->input('id');
+        $validated = $request->validate([
+            'category_id' => 'required|exists:categories,id',
+            'name' => 'required|string',
+            'sku' => 'required|string|unique:products,sku,' . $id,
+            'unit' => 'required|string',
+            'price' => 'required|numeric',
+            'mrp' => 'required|numeric',
+            'custom_stock' => 'required|integer',
+            'image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+            'gallery_files.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+        ]);
+
+        $updateData = [
+            'category_id' => $validated['category_id'],
+            'name' => $validated['name'],
+            'sku' => $validated['sku'],
+            'unit' => $validated['unit'],
+            'description' => $request->input('description', ''),
+            'updated_at' => now(),
+        ];
+
+        if ($request->hasFile('image_file')) {
+            $file = $request->file('image_file');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('uploads/products'), $fileName);
+            $updateData['image'] = 'uploads/products/' . $fileName;
+        }
+
+        if ($request->hasFile('gallery_files')) {
+            $galleryPaths = [];
+            foreach ($request->file('gallery_files') as $idx => $gFile) {
+                $gName = time() . '_gal_' . $idx . '_' . $gFile->getClientOriginalName();
+                $gFile->move(public_path('uploads/products'), $gName);
+                $galleryPaths[] = 'uploads/products/' . $gName;
+            }
+            $updateData['gallery'] = json_encode($galleryPaths);
+        }
+
+        // Update main product details
+        DB::table('products')->where('id', $id)->update($updateData);
+
+        // Update branch inventory override
+        DB::table('store_product_inventories')->updateOrInsert(
+            ['store_id' => $storeId, 'product_id' => $id],
+            [
+                'custom_price' => $validated['price'],
+                'custom_mrp' => $validated['mrp'],
+                'custom_stock' => $validated['custom_stock'],
+                'updated_at' => now(),
+            ]
+        );
+
+        return redirect('/manager/inventory')->with('success', 'Product updated successfully!');
+    }
+
     // 2. Store Orders Page
     public function orders(Request $request)
     {

@@ -18,8 +18,9 @@ Route::middleware(['store.manager'])->group(function () {
     Route::get('/manager/dashboard', [ManagerController::class, 'dashboard'])->name('manager.dashboard');
     Route::get('/manager/inventory', [ManagerController::class, 'inventory'])->name('manager.inventory');
     Route::get('/manager/products/create', [ManagerController::class, 'createProduct'])->name('manager.products.create');
-    Route::post('/manager/inventory/update', [ManagerController::class, 'updateInventory']);
+    Route::get('/manager/products/{id}/edit', [ManagerController::class, 'editProduct'])->name('manager.products.edit');
     Route::post('/manager/products/store', [ManagerController::class, 'storeProduct']);
+    Route::post('/manager/products/update', [ManagerController::class, 'updateProduct']);
 
     Route::get('/manager/orders', [ManagerController::class, 'orders'])->name('manager.orders');
     Route::post('/manager/orders/{id}/status', [ManagerController::class, 'updateOrderStatus']);

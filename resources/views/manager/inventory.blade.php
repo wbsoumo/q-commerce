@@ -89,7 +89,7 @@
                   @forelse($products as $prod)
                   <tr>
                     <td class="font-weight-bold align-middle">
-                      <a href="/admin/products/{{ $prod->id }}/edit" class="text-primary font-weight-bold" title="Click to Edit Product">
+                      <a href="/manager/products/{{ $prod->id }}/edit" class="text-primary font-weight-bold" title="Click to Edit Product">
                         {{ $prod->name }} <i class="fas fa-external-link-alt text-muted small ml-1"></i>
                       </a>
                       <br><small class="text-muted">SKU: {{ $prod->sku }}</small>
