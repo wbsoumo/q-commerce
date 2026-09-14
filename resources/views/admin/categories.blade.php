@@ -108,6 +108,22 @@
               <input type="text" name="name" class="form-control" placeholder="e.g. Snack Foods or Cold Drinks" required>
             </div>
             <div class="form-group">
+              <label class="font-weight-bold"><i class="fas fa-icons text-primary mr-1"></i> Choose Header Tab Icon</label>
+              <select name="icon" class="form-control font-weight-bold">
+                <option value="shopping_bag_outlined">🛍️ Shopping Bag (All)</option>
+                <option value="festival_outlined">🪔 Festival / Lights</option>
+                <option value="headphones_outlined">🎧 Electronics / Headphones</option>
+                <option value="brush_outlined">💄 Beauty & Cosmetics</option>
+                <option value="card_giftcard_outlined">🎁 Gifting & Sweets</option>
+                <option value="local_hospital_outlined">🏥 Pharmacy & Health</option>
+                <option value="pets_outlined">🐾 Pet Care</option>
+                <option value="toys_outlined">🧸 Toys & Games</option>
+                <option value="fastfood_outlined">🍔 Fast Food & Snacks</option>
+                <option value="local_drink_outlined">🥤 Beverages & Cold Drinks</option>
+                <option value="local_grocery_store_outlined">🛒 Grocery & Kitchen</option>
+              </select>
+            </div>
+            <div class="form-group">
               <label class="font-weight-bold">Upload Category Image File</label>
               <input type="file" name="image_file" class="form-control-file border p-2 rounded w-100" accept="image/*">
               <small class="form-text text-muted">Or paste image URL below:</small>
@@ -148,6 +164,22 @@
               <input type="text" name="name" id="edit_cat_name" class="form-control" required>
             </div>
             <div class="form-group">
+              <label class="font-weight-bold"><i class="fas fa-icons text-primary mr-1"></i> Choose Header Tab Icon</label>
+              <select name="icon" id="edit_cat_icon" class="form-control font-weight-bold">
+                <option value="shopping_bag_outlined">🛍️ Shopping Bag (All)</option>
+                <option value="festival_outlined">🪔 Festival / Lights</option>
+                <option value="headphones_outlined">🎧 Electronics / Headphones</option>
+                <option value="brush_outlined">💄 Beauty & Cosmetics</option>
+                <option value="card_giftcard_outlined">🎁 Gifting & Sweets</option>
+                <option value="local_hospital_outlined">🏥 Pharmacy & Health</option>
+                <option value="pets_outlined">🐾 Pet Care</option>
+                <option value="toys_outlined">🧸 Toys & Games</option>
+                <option value="fastfood_outlined">🍔 Fast Food & Snacks</option>
+                <option value="local_drink_outlined">🥤 Beverages & Cold Drinks</option>
+                <option value="local_grocery_store_outlined">🛒 Grocery & Kitchen</option>
+              </select>
+            </div>
+            <div class="form-group">
               <label class="font-weight-bold">Upload New Image File</label>
               <input type="file" name="image_file" class="form-control-file border p-2 rounded w-100" accept="image/*">
               <small class="form-text text-muted">Or update image URL:</small>
@@ -180,6 +212,7 @@
   function editCategory(cat) {
     $('#edit_cat_id').val(cat.id);
     $('#edit_cat_name').val(cat.name);
+    $('#edit_cat_icon').val(cat.icon || 'shopping_bag_outlined');
     $('#edit_cat_image_url').val(cat.image || '');
     $('#edit_cat_order').val(cat.display_order || 0);
     $('#editShowHp').prop('checked', !!cat.show_on_homepage);

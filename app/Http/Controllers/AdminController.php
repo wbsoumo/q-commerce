@@ -775,13 +775,18 @@ class AdminController extends Controller
         return redirect()->back()->with('success', 'New Staff member created and assigned roles successfully!');
     }
 
-    // 12. Categories Management (Create, Image File Upload & Edit)
+    // 12. Categories Management (Create, Image File Upload, Icon Selector & Edit)
     public function categories()
     {
         $catCols = \Illuminate\Support\Facades\Schema::getColumnListing('categories');
         if (!in_array('show_on_homepage', $catCols)) {
             \Illuminate\Support\Facades\Schema::table('categories', function ($table) {
                 $table->boolean('show_on_homepage')->default(true);
+            });
+        }
+        if (!in_array('icon', $catCols)) {
+            \Illuminate\Support\Facades\Schema::table('categories', function ($table) {
+                $table->string('icon')->nullable()->default('shopping_bag_outlined');
             });
         }
         $categories = DB::table('categories')->orderBy('display_order', 'asc')->get();
@@ -792,6 +797,7 @@ class AdminController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string',
+            'icon' => 'nullable|string',
             'display_order' => 'nullable|integer',
             'image_url' => 'nullable|string',
             'image_file' => 'nullable|image|max:4096',
@@ -810,6 +816,7 @@ class AdminController extends Controller
         DB::table('categories')->insert([
             'name' => $validated['name'],
             'slug' => $slug,
+            'icon' => $validated['icon'] ?? 'shopping_bag_outlined',
             'image' => $imageUrl,
             'display_order' => $validated['display_order'] ?? 0,
             'show_on_homepage' => $request->has('show_on_homepage'),
@@ -826,6 +833,7 @@ class AdminController extends Controller
         $id = $request->input('id');
         $validated = $request->validate([
             'name' => 'required|string',
+            'icon' => 'nullable|string',
             'display_order' => 'nullable|integer',
             'image_url' => 'nullable|string',
             'image_file' => 'nullable|image|max:4096',
@@ -833,6 +841,7 @@ class AdminController extends Controller
 
         $updateData = [
             'name' => $validated['name'],
+            'icon' => $validated['icon'] ?? 'shopping_bag_outlined',
             'display_order' => $validated['display_order'] ?? 0,
             'show_on_homepage' => $request->has('show_on_homepage'),
             'updated_at' => now(),
