@@ -150,5 +150,53 @@ class QCommerceSeeder extends Seeder
                 'updated_at' => now(),
             ]);
         }
+
+        // 5. Seed Staff Members & Delivery Partners
+        $staff1Id = DB::table('staff_members')->insertGetId([
+            'store_id' => $store1Id,
+            'name' => 'Rajesh Sharma',
+            'phone' => '9876543210',
+            'email' => 'rajesh.staff@blinkit.com',
+            'roles' => json_encode(['delivery_staff', 'store_staff']),
+            'status' => 'Active',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $staff2Id = DB::table('staff_members')->insertGetId([
+            'store_id' => $store1Id,
+            'name' => 'Amit Kumar',
+            'phone' => '9876543211',
+            'email' => 'amit.staff@blinkit.com',
+            'roles' => json_encode(['delivery_staff', 'inventory_staff']),
+            'status' => 'Active',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('delivery_partners')->insert([
+            [
+                'name' => 'Rajesh Sharma',
+                'phone' => '9876543210',
+                'email' => 'rajesh.staff@blinkit.com',
+                'status' => 'Active',
+                'is_online' => true,
+                'assigned_store_id' => $store1Id,
+                'joining_date' => now()->toDateString(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => 'Amit Kumar',
+                'phone' => '9876543211',
+                'email' => 'amit.staff@blinkit.com',
+                'status' => 'Active',
+                'is_online' => true,
+                'assigned_store_id' => $store1Id,
+                'joining_date' => now()->toDateString(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
     }
 }

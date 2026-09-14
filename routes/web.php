@@ -49,6 +49,10 @@ Route::post('/admin/products/{id}/variants/store', [AdminController::class, 'sto
 
 Route::get('/admin/inventory/alerts', [AdminController::class, 'inventoryAlerts']);
 
+// Staff Management Routes
+Route::get('/admin/staff', [AdminController::class, 'staffMembers']);
+Route::post('/admin/staff/store', [AdminController::class, 'storeStaffMember']);
+
 // Auto Database Table Import Route
 Route::get('/import-database', [AdminController::class, 'importDatabase']);
 

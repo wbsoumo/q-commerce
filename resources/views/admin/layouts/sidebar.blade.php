@@ -41,8 +41,13 @@
           </a>
         </li>
         <li class="nav-item">
+          <a href="/admin/staff" class="nav-link {{ request()->is('admin/staff*') ? 'active' : '' }}">
+            <i class="nav-icon fas fa-users-cog"></i><p>Staff & Roles</p>
+          </a>
+        </li>
+        <li class="nav-item">
           <a href="/admin/deliveries" class="nav-link {{ request()->is('admin/deliveries*') ? 'active' : '' }}">
-            <i class="nav-icon fas fa-motorcycle"></i><p>Deliveries & Riders</p>
+            <i class="nav-icon fas fa-motorcycle"></i><p>Deliveries & Dispatch</p>
           </a>
         </li>
         <li class="nav-item">

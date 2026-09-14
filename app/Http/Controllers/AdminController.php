@@ -522,4 +522,59 @@ class AdminController extends Controller
 
         return view('admin.inventory.alerts', compact('alerts'));
     }
+
+    // 11. Staff Management (Multiple Roles Support)
+    public function staffMembers()
+    {
+        $staff = DB::table('staff_members')
+            ->leftJoin('stores', 'staff_members.store_id', '=', 'stores.id')
+            ->select('staff_members.*', 'stores.name as store_name')
+            ->orderBy('staff_members.id', 'desc')
+            ->get();
+
+        $stores = DB::table('stores')->get();
+
+        return view('admin.staff.index', compact('staff', 'stores'));
+    }
+
+    public function storeStaffMember(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string',
+            'phone' => 'required|string|unique:staff_members,phone',
+            'email' => 'nullable|email',
+            'store_id' => 'required|exists:stores,id',
+            'roles' => 'required|array',
+        ]);
+
+        $rolesJson = json_encode($validated['roles']);
+
+        DB::table('staff_members')->insert([
+            'name' => $validated['name'],
+            'phone' => $validated['phone'],
+            'email' => $validated['email'] ?? null,
+            'store_id' => $validated['store_id'],
+            'roles' => $rolesJson,
+            'status' => 'Active',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // If 'delivery_staff' is selected, also register in delivery_partners for order dispatch assignment
+        if (in_array('delivery_staff', $validated['roles'])) {
+            DB::table('delivery_partners')->insert([
+                'name' => $validated['name'],
+                'phone' => $validated['phone'],
+                'email' => $validated['email'] ?? null,
+                'status' => 'Active',
+                'is_online' => true,
+                'assigned_store_id' => $validated['store_id'],
+                'joining_date' => now()->toDateString(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'New Staff member created and assigned roles successfully!');
+    }
 }
