@@ -461,38 +461,61 @@ class AdminController extends Controller
     {
         $store = DB::table('stores')->where('is_active', true)->first();
         $products = DB::table('products')->where('is_active', true)->get();
-        return view('admin.homepage_customizer', ['config' => $store, 'products' => $products]);
+        $categories = DB::table('categories')->orderBy('display_order', 'asc')->get();
+        return view('admin.homepage_customizer', ['config' => $store, 'products' => $products, 'categories' => $categories]);
     }
 
     public function saveHomepageCustomizer(Request $request)
     {
         $bannerTitle = $request->input('banner_title', 'Mega Diwali Sale');
         $bannerSubtitle = $request->input('banner_subtitle', 'Upto 50% Off');
+        $bannerColor = $request->input('banner_color', '#0c831f');
+        $searchHint = $request->input('search_hint', 'milk, atta, chips, diwali lights');
 
         // Check & create columns if missing
-        try {
-            DB::table('stores')->update([
-                'banner_title' => $bannerTitle,
-                'banner_subtitle' => $bannerSubtitle,
-                'updated_at' => now(),
-            ]);
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Schema::table('stores', function ($table) {
-                $table->string('banner_title')->nullable()->default('Mega Diwali Sale');
-                $table->string('banner_subtitle')->nullable();
+        $storeCols = \Illuminate\Support\Facades\Schema::getColumnListing('stores');
+        if (!in_array('banner_color', $storeCols) || !in_array('search_hint', $storeCols)) {
+            \Illuminate\Support\Facades\Schema::table('stores', function ($table) use ($storeCols) {
+                if (!in_array('banner_title', $storeCols)) $table->string('banner_title')->nullable()->default('Mega Diwali Sale');
+                if (!in_array('banner_subtitle', $storeCols)) $table->string('banner_subtitle')->nullable();
+                if (!in_array('banner_color', $storeCols)) $table->string('banner_color')->nullable()->default('#0c831f');
+                if (!in_array('search_hint', $storeCols)) $table->string('search_hint')->nullable()->default('milk, atta, chips, diwali lights');
             });
-            DB::table('stores')->update([
-                'banner_title' => $bannerTitle,
-                'banner_subtitle' => $bannerSubtitle,
-                'updated_at' => now(),
-            ]);
         }
+
+        DB::table('stores')->update([
+            'banner_title' => $bannerTitle,
+            'banner_subtitle' => $bannerSubtitle,
+            'banner_color' => $bannerColor,
+            'search_hint' => $searchHint,
+            'updated_at' => now(),
+        ]);
 
         // Sync featured products globally
         $selectedFeatIds = $request->input('featured_product_ids', []);
         DB::table('products')->update(['is_featured' => 0]);
         if (!empty($selectedFeatIds)) {
             DB::table('products')->whereIn('id', $selectedFeatIds)->update(['is_featured' => 1]);
+        }
+
+        // Sync category primary images and show on homepage flags
+        $categoryImages = $request->input('category_image', []);
+        $homepageCategories = $request->input('show_on_homepage', []);
+
+        $catCols = \Illuminate\Support\Facades\Schema::getColumnListing('categories');
+        if (!in_array('show_on_homepage', $catCols)) {
+            \Illuminate\Support\Facades\Schema::table('categories', function ($table) {
+                $table->boolean('show_on_homepage')->default(true);
+            });
+        }
+
+        foreach ($categoryImages as $catId => $imgUrl) {
+            $showHp = isset($homepageCategories[$catId]) ? 1 : 0;
+            $updateData = ['show_on_homepage' => $showHp];
+            if (!empty($imgUrl)) {
+                $updateData['image'] = $imgUrl;
+            }
+            DB::table('categories')->where('id', $catId)->update($updateData);
         }
 
         return redirect('/admin/homepage-customizer')->with('success', 'Global Homepage Layout successfully saved!');

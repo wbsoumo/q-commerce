@@ -97,7 +97,39 @@
               </div>
             </div>
           </div>
-
+          <!-- 3. CATEGORY MANAGEMENT & PRIMARY IMAGES -->
+          <div class="card card-info card-outline">
+            <div class="card-header"><h3 class="card-title font-weight-bold"><i class="fas fa-th-large mr-2"></i>3. Category Primary Images & Front Page Layout</h3></div>
+            <div class="card-body">
+              <p class="text-muted">Manage main primary image for each category and choose which categories appear on the front page.</p>
+              <div class="row">
+                @foreach($categories as $cat)
+                  <div class="col-md-6 mb-3">
+                    <div class="border rounded p-3 bg-light">
+                      <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="font-weight-bold text-dark mb-0"><i class="fas fa-folder text-warning mr-2"></i>{{ $cat->name }}</h5>
+                        <div class="custom-control custom-switch">
+                          <input type="checkbox" class="custom-control-input" id="cat_hp_{{ $cat->id }}" name="show_on_homepage[{{ $cat->id }}]" {{ ($cat->show_on_homepage ?? true) ? 'checked' : '' }}>
+                          <label class="custom-control-label font-weight-bold text-success" for="cat_hp_{{ $cat->id }}">Show on Front Page</label>
+                        </div>
+                      </div>
+                      <div class="form-group mb-0">
+                        <label class="small text-muted font-weight-bold">Primary Category Image URL</label>
+                        <div class="input-group">
+                          <input type="text" name="category_image[{{ $cat->id }}]" class="form-control form-control-sm" value="{{ $cat->image ?? '' }}" placeholder="https://images.unsplash.com/...">
+                          @if(!empty($cat->image))
+                            <div class="input-group-append">
+                              <span class="input-group-text p-1 bg-white"><img src="{{ $cat->image }}" width="25" height="25" style="object-fit:cover; border-radius:4px;"></span>
+                            </div>
+                          @endif
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                @endforeach
+              </div>
+            </div>
+          </div>
           <!-- 3. FEATURED PRODUCTS CUSTOM SELECTION -->
           <div class="card card-warning card-outline">
             <div class="card-header"><h3 class="card-title font-weight-bold text-dark"><i class="fas fa-gem mr-2"></i>3. Select Products To Show On Main Page</h3></div>
