@@ -95,6 +95,7 @@ Route::middleware(['admin.only'])->group(function () {
 // High-Performance REST API Routes for Flutter App
 Route::prefix('api/v1')->group(function () {
     Route::get('/store/select', [ApiController::class, 'selectStore']);
+    Route::get('/sync-check', [ApiController::class, 'checkSyncStatus']);
     Route::get('/categories', [ApiController::class, 'getCategories']);
     Route::get('/products', [ApiController::class, 'getProducts']);
     Route::post('/orders', [ApiController::class, 'createOrder']);

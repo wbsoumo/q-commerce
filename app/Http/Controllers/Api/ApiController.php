@@ -42,6 +42,45 @@ class ApiController extends Controller
           ->header('Access-Control-Allow-Headers', '*');
     }
 
+    // Ultra-Fast Light-Weight Sync Status Checker API
+    public function checkSyncStatus(Request $request)
+    {
+        $storeId = $request->query('store_id', 1);
+
+        $store = DB::table('stores')->where('id', $storeId)->first();
+        $storeVersion = md5(json_encode([
+            $store->name ?? '',
+            $store->banner_title ?? '',
+            $store->banner_color ?? '',
+            $store->search_hint ?? '',
+            $store->updated_at ?? ''
+        ]));
+
+        $lastCategoryUpdate = DB::table('categories')->max('updated_at') ?? '1970-01-01 00:00:00';
+        $categoryCount = DB::table('categories')->where('is_active', true)->count();
+        $categoriesVersion = md5("{$lastCategoryUpdate}_{$categoryCount}");
+
+        $lastProductUpdate = DB::table('products')->max('updated_at') ?? '1970-01-01 00:00:00';
+        $productCount = DB::table('products')->where('is_active', true)->count();
+        $productsVersion = md5("{$lastProductUpdate}_{$productCount}");
+
+        return response()->json([
+            'status' => 'success',
+            'versions' => [
+                'store' => $storeVersion,
+                'categories' => $categoriesVersion,
+                'products' => $productsVersion,
+            ],
+            'last_updated' => [
+                'categories' => $lastCategoryUpdate,
+                'products' => $lastProductUpdate,
+            ],
+            'server_time' => now()->toIso8601String(),
+        ])->header('Access-Control-Allow-Origin', '*')
+          ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
+          ->header('Access-Control-Allow-Headers', '*');
+    }
+
     // Get All Categories with ETag & Incremental Sync Support
     public function getCategories(Request $request)
     {
