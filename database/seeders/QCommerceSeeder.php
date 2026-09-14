@@ -4,199 +4,225 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class QCommerceSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Seed Roles
-        DB::table('roles')->insert([
-            ['name' => 'Admin'],
-            ['name' => 'Store Manager'],
-        ]);
-
-        // 2. Seed Multi-Vendor Stores
-        $store1Id = DB::table('stores')->insertGetId([
-            'name' => 'Krishnanagar Main Store',
-            'code' => 'STR-KRN-01',
-            'address' => '11E Krishnanagar Main Road',
-            'latitude' => 23.4013,
-            'longitude' => 88.5010,
-            'city' => 'Krishnanagar',
-            'pincode' => '741101',
-            'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $store2Id = DB::table('stores')->insertGetId([
-            'name' => 'Kolkata Hub Store',
-            'code' => 'STR-CCU-02',
-            'address' => 'Salt Lake Sector V, Block EP',
-            'latitude' => 22.5726,
-            'longitude' => 88.4339,
-            'city' => 'Kolkata',
-            'pincode' => '700091',
-            'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        // 3. Seed Users (Admin & Store Managers)
-        DB::table('users')->insert([
+        // 1. Seed Store
+        DB::table('stores')->updateOrInsert(
+            ['id' => 1],
             [
-                'name' => 'Super Admin',
-                'email' => 'admin@blinkit.com',
-                'password' => Hash::make('admin123'),
-                'role' => 'admin',
-                'store_id' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'name' => 'Manager Krishnanagar',
-                'email' => 'manager.krishnanagar@blinkit.com',
-                'password' => Hash::make('manager123'),
-                'role' => 'store_manager',
-                'store_id' => $store1Id,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'name' => 'Manager Kolkata',
-                'email' => 'manager.kolkata@blinkit.com',
-                'password' => Hash::make('manager123'),
-                'role' => 'store_manager',
-                'store_id' => $store2Id,
+                'name' => 'Blinkit Krishnanagar Dark Store',
+                'code' => 'KNGR-DS01',
+                'address' => 'RATANR FLAT, 11E Krishnanagar Main Hub',
+                'latitude' => 23.4013,
+                'longitude' => 88.5010,
+                'delivery_radius_km' => 5.00,
+                'city' => 'Krishnanagar',
+                'pincode' => '741101',
+                'is_active' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]
-        ]);
+        );
 
-        // 4. Seed Categories
+        // 2. Seed Categories with web images
         $categories = [
-            'Ganeshotsav' => 'image 50.png',
-            'Electronics' => 'image 52.png',
-            'Beauty & Cosmetics' => 'image 35.png',
-            'Gifting' => 'image 51.png',
-            'Pharmacy' => 'image 41.png',
-            'Pet Care' => 'image 42.png',
-            'Toys & Games' => 'image 53.png',
-            'Vegetables & Fruits' => 'image 41.png',
-            'Dairy, Bread & Milk' => 'image 44 (1).png',
+            [
+                'name' => 'Vegetables & Fruits',
+                'slug' => 'vegetables-fruits',
+                'image' => 'http://images.unsplash.com/photo-1610832958506-aa56368176cf?w=500&q=80',
+                'display_order' => 1,
+                'is_active' => true,
+            ],
+            [
+                'name' => 'Atta, Dal & Rice',
+                'slug' => 'atta-dal-rice',
+                'image' => 'http://images.unsplash.com/photo-1586201375761-83865001e31c?w=500&q=80',
+                'display_order' => 2,
+                'is_active' => true,
+            ],
+            [
+                'name' => 'Oil, Ghee & Masala',
+                'slug' => 'oil-ghee-masala',
+                'image' => 'http://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=500&q=80',
+                'display_order' => 3,
+                'is_active' => true,
+            ],
+            [
+                'name' => 'Dairy, Bread & Milk',
+                'slug' => 'dairy-bread-milk',
+                'image' => 'http://images.unsplash.com/photo-1550583724-b2692b85b150?w=500&q=80',
+                'display_order' => 4,
+                'is_active' => true,
+            ],
+            [
+                'name' => 'Biscuits & Bakery',
+                'slug' => 'biscuits-bakery',
+                'image' => 'http://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=500&q=80',
+                'display_order' => 5,
+                'is_active' => true,
+            ],
+            [
+                'name' => 'Lights, Diyas & Candles',
+                'slug' => 'lights-diyas-candles',
+                'image' => 'http://images.unsplash.com/photo-1602874801007-bd458bb1b8b6?w=500&q=80',
+                'display_order' => 6,
+                'is_active' => true,
+            ],
+            [
+                'name' => 'Electronics & Gadgets',
+                'slug' => 'electronics-gadgets',
+                'image' => 'http://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=80',
+                'display_order' => 7,
+                'is_active' => true,
+            ],
+            [
+                'name' => 'Beauty & Cosmetics',
+                'slug' => 'beauty-cosmetics',
+                'image' => 'http://images.unsplash.com/photo-1586495777744-4413f21062fa?w=500&q=80',
+                'display_order' => 8,
+                'is_active' => true,
+            ],
         ];
 
-        foreach ($categories as $catName => $img) {
-            $catId = DB::table('categories')->insertGetId([
-                'name' => $catName,
-                'slug' => Str::slug($catName),
-                'image' => $img,
-                'is_active' => true,
-                'created_at' => now(),
+        foreach ($categories as $cat) {
+            DB::table('categories')->updateOrInsert(['slug' => $cat['slug']], array_merge($cat, [
                 'updated_at' => now(),
-            ]);
+            ]));
+        }
 
-            // Global Product
-            $globalProdId = DB::table('products')->insertGetId([
-                'category_id' => $catId,
-                'name' => 'Global ' . $catName . ' Essential Pack',
-                'sku' => 'GLOBAL-' . strtoupper(Str::slug($catName)),
-                'unit' => '1 pack',
-                'price' => rand(49, 199),
-                'mrp' => rand(250, 399),
-                'stock' => 100,
-                'image' => $img,
-                'description' => 'Available in all stores globally.',
+        // 3. Seed Products with web image URLs
+        $catMap = DB::table('categories')->pluck('id', 'slug');
+
+        $products = [
+            [
+                'category_id' => $catMap['lights-diyas-candles'] ?? 1,
+                'name' => 'Golden Glass Wooden Lid Candle (Oudh)',
+                'sku' => 'CNDL-001',
+                'unit' => '1 unit',
+                'price' => 79.00,
+                'mrp' => 120.00,
+                'stock' => 150,
+                'image' => 'http://images.unsplash.com/photo-1602874801007-bd458bb1b8b6?w=500&q=80',
+                'description' => 'Aromatic luxury candle in glass jar with wooden lid.',
                 'scope' => 'global',
-                'store_id' => null,
                 'is_featured' => true,
                 'is_bestseller' => true,
                 'is_active' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            // Store Specific Product (For Krishnanagar Store)
-            DB::table('products')->insert([
-                'category_id' => $catId,
-                'name' => 'Krishnanagar Special ' . $catName,
-                'sku' => 'STR1-' . strtoupper(Str::slug($catName)),
-                'unit' => '1 unit',
-                'price' => rand(89, 299),
-                'mrp' => rand(350, 499),
-                'stock' => 35,
-                'image' => $img,
-                'description' => 'Exclusive item for Krishnanagar store.',
-                'scope' => 'store_specific',
-                'store_id' => $store1Id,
+            ],
+            [
+                'category_id' => $catMap['biscuits-bakery'] ?? 1,
+                'name' => 'Royal Gulab Jamun By Bikano',
+                'sku' => 'SWT-001',
+                'unit' => '500 g',
+                'price' => 149.00,
+                'mrp' => 199.00,
+                'stock' => 80,
+                'image' => 'http://images.unsplash.com/photo-1599785209707-a456fc1337cc?w=500&q=80',
+                'description' => 'Soft & delicious royal gulab jamuns.',
+                'scope' => 'global',
+                'is_featured' => true,
+                'is_bestseller' => true,
+                'is_active' => true,
+            ],
+            [
+                'category_id' => $catMap['vegetables-fruits'] ?? 1,
+                'name' => 'Fresh Hybrid Tomatoes',
+                'sku' => 'VEG-001',
+                'unit' => '1 kg',
+                'price' => 49.00,
+                'mrp' => 65.00,
+                'stock' => 200,
+                'image' => 'http://images.unsplash.com/photo-1610832958506-aa56368176cf?w=500&q=80',
+                'description' => 'Farm fresh juicy red tomatoes.',
+                'scope' => 'global',
                 'is_featured' => false,
                 'is_bestseller' => true,
                 'is_active' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            ],
+            [
+                'category_id' => $catMap['atta-dal-rice'] ?? 1,
+                'name' => 'Chakki Fresh Atta 5kg',
+                'sku' => 'GRC-001',
+                'unit' => '5 kg',
+                'price' => 199.00,
+                'mrp' => 245.00,
+                'stock' => 90,
+                'image' => 'http://images.unsplash.com/photo-1586201375761-83865001e31c?w=500&q=80',
+                'description' => '100% whole wheat grain chakki fresh atta.',
+                'scope' => 'global',
+                'is_featured' => false,
+                'is_bestseller' => true,
+                'is_active' => true,
+            ],
+            [
+                'category_id' => $catMap['oil-ghee-masala'] ?? 1,
+                'name' => 'Fortune Kachi Ghani Mustard Oil 1L',
+                'sku' => 'OIL-001',
+                'unit' => '1 L',
+                'price' => 165.00,
+                'mrp' => 190.00,
+                'stock' => 120,
+                'image' => 'http://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=500&q=80',
+                'description' => 'Pure and pungent mustard oil.',
+                'scope' => 'global',
+                'is_featured' => false,
+                'is_bestseller' => false,
+                'is_active' => true,
+            ],
+            [
+                'category_id' => $catMap['dairy-bread-milk'] ?? 1,
+                'name' => 'Amul Taaza Toned Milk 1L',
+                'sku' => 'DRY-001',
+                'unit' => '1 L',
+                'price' => 33.00,
+                'mrp' => 35.00,
+                'stock' => 300,
+                'image' => 'http://images.unsplash.com/photo-1550583724-b2692b85b150?w=500&q=80',
+                'description' => 'Fresh pasteurized toned milk.',
+                'scope' => 'global',
+                'is_featured' => false,
+                'is_bestseller' => true,
+                'is_active' => true,
+            ],
+            [
+                'category_id' => $catMap['electronics-gadgets'] ?? 1,
+                'name' => 'Wireless Noise Cancelling Headphones',
+                'sku' => 'ELC-001',
+                'unit' => '1 unit',
+                'price' => 899.00,
+                'mrp' => 1499.00,
+                'stock' => 45,
+                'image' => 'http://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=80',
+                'description' => 'High bass wireless stereo headphones.',
+                'scope' => 'global',
+                'is_featured' => true,
+                'is_bestseller' => false,
+                'is_active' => true,
+            ],
+            [
+                'category_id' => $catMap['beauty-cosmetics'] ?? 1,
+                'name' => 'Matte Velvet Lipstick',
+                'sku' => 'BTY-001',
+                'unit' => '1 pc',
+                'price' => 249.00,
+                'mrp' => 350.00,
+                'stock' => 110,
+                'image' => 'http://images.unsplash.com/photo-1586495777744-4413f21062fa?w=500&q=80',
+                'description' => 'Long lasting rich matte velvet lipstick.',
+                'scope' => 'global',
+                'is_featured' => false,
+                'is_bestseller' => true,
+                'is_active' => true,
+            ],
+        ];
 
-            // Custom Store Manager Inventory Override for Global Product
-            DB::table('store_product_inventories')->insert([
-                'store_id' => $store1Id,
-                'product_id' => $globalProdId,
-                'custom_price' => 79.00,
-                'custom_mrp' => 120.00,
-                'custom_stock' => 45,
-                'is_available' => true,
-                'created_at' => now(),
+        foreach ($products as $prod) {
+            DB::table('products')->updateOrInsert(['sku' => $prod['sku']], array_merge($prod, [
                 'updated_at' => now(),
-            ]);
+            ]));
         }
-
-        // 5. Seed Staff Members & Delivery Partners
-        $staff1Id = DB::table('staff_members')->insertGetId([
-            'store_id' => $store1Id,
-            'name' => 'Rajesh Sharma',
-            'phone' => '9876543210',
-            'email' => 'rajesh.staff@blinkit.com',
-            'roles' => json_encode(['delivery_staff', 'store_staff']),
-            'status' => 'Active',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $staff2Id = DB::table('staff_members')->insertGetId([
-            'store_id' => $store1Id,
-            'name' => 'Amit Kumar',
-            'phone' => '9876543211',
-            'email' => 'amit.staff@blinkit.com',
-            'roles' => json_encode(['delivery_staff', 'inventory_staff']),
-            'status' => 'Active',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        DB::table('delivery_partners')->insert([
-            [
-                'name' => 'Rajesh Sharma',
-                'phone' => '9876543210',
-                'email' => 'rajesh.staff@blinkit.com',
-                'status' => 'Active',
-                'is_online' => true,
-                'assigned_store_id' => $store1Id,
-                'joining_date' => now()->toDateString(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'name' => 'Amit Kumar',
-                'phone' => '9876543211',
-                'email' => 'amit.staff@blinkit.com',
-                'status' => 'Active',
-                'is_online' => true,
-                'assigned_store_id' => $store1Id,
-                'joining_date' => now()->toDateString(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-        ]);
     }
 }
