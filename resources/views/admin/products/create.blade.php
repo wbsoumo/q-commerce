@@ -42,7 +42,7 @@
       <div class="container-fluid">
         <div class="card card-success">
           <div class="card-header"><h3 class="card-title font-weight-bold">Product Form</h3></div>
-          <form action="/admin/products/store" method="POST">
+          <form action="/admin/products/store" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="card-body">
               <div class="row">
@@ -105,6 +105,31 @@
                   <input type="number" step="0.01" name="mrp" class="form-control" placeholder="120.00" required>
                 </div>
               </div>
+
+              <!-- PRODUCT MAIN IMAGE & GALLERY -->
+              <div class="card card-outline card-success p-3 mb-3 border">
+                <h5 class="font-weight-bold text-success mb-3"><i class="fas fa-images mr-1"></i> Product Main Image & Gallery Upload</h5>
+                <div class="row">
+                  <div class="col-md-6 form-group">
+                    <label>Main Product Image File</label>
+                    <input type="file" name="image_file" class="form-control-file border p-1 rounded w-100">
+                    <label class="mt-2 text-muted small">Or Default Image Name:</label>
+                    <input type="text" name="image" class="form-control form-control-sm" value="image 41.png">
+                  </div>
+                  <div class="col-md-6 form-group">
+                    <label>Gallery Image Files (Select Multiple)</label>
+                    <input type="file" name="gallery_files[]" class="form-control-file border p-1 rounded w-100" multiple>
+                    <label class="mt-2 text-muted small">Or Gallery Image URLs (One per line):</label>
+                    <textarea name="gallery_urls" class="form-control form-control-sm" rows="2" placeholder="https://example.com/img1.png&#10;https://example.com/img2.png"></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Product Description / Details</label>
+                <textarea name="description" class="form-control" rows="3" placeholder="Enter product ingredients, usage guidelines, storage tips..."></textarea>
+              </div>
+
             </div>
             <div class="card-footer">
               <button type="submit" class="btn btn-success font-weight-bold"><i class="fas fa-save mr-1"></i> Save Product</button>

@@ -153,7 +153,7 @@ class AdminController extends Controller
         return view('admin.products.create', compact('categories', 'stores'));
     }
 
-    // Save Product with Scope (Global vs Store-Specific)
+    // Save Product with Scope (Global vs Store-Specific), Image & Gallery
     public function storeProduct(Request $request)
     {
         $validated = $request->validate([
@@ -166,7 +166,29 @@ class AdminController extends Controller
             'stock' => 'required|integer',
             'scope' => 'required|in:global,store_specific',
             'store_id' => 'nullable|required_if:scope,store_specific|exists:stores,id',
+            'image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+            'gallery_files.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
         ]);
+
+        $imagePath = $request->input('image', 'image 41.png');
+        if ($request->hasFile('image_file')) {
+            $file = $request->file('image_file');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('uploads/products'), $fileName);
+            $imagePath = 'uploads/products/' . $fileName;
+        }
+
+        $galleryPaths = [];
+        if ($request->hasFile('gallery_files')) {
+            foreach ($request->file('gallery_files') as $idx => $gFile) {
+                $gName = time() . '_gal_' . $idx . '_' . $gFile->getClientOriginalName();
+                $gFile->move(public_path('uploads/products'), $gName);
+                $galleryPaths[] = 'uploads/products/' . $gName;
+            }
+        } elseif ($request->filled('gallery_urls')) {
+            $urls = array_filter(array_map('trim', explode("\n", $request->input('gallery_urls'))));
+            $galleryPaths = array_values($urls);
+        }
 
         DB::table('products')->insert([
             'category_id' => $validated['category_id'],
@@ -178,7 +200,8 @@ class AdminController extends Controller
             'stock' => $validated['stock'],
             'scope' => $validated['scope'],
             'store_id' => $validated['scope'] === 'store_specific' ? $validated['store_id'] : null,
-            'image' => $request->input('image', 'image 41.png'),
+            'image' => $imagePath,
+            'gallery' => !empty($galleryPaths) ? json_encode($galleryPaths) : null,
             'description' => $request->input('description', ''),
             'is_active' => true,
             'created_at' => now(),
@@ -214,9 +237,11 @@ class AdminController extends Controller
             'stock' => 'required|integer',
             'scope' => 'required|in:global,store_specific',
             'store_id' => 'nullable|required_if:scope,store_specific|exists:stores,id',
+            'image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+            'gallery_files.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
         ]);
 
-        DB::table('products')->where('id', $id)->update([
+        $updateData = [
             'category_id' => $validated['category_id'],
             'name' => $validated['name'],
             'sku' => $validated['sku'],
@@ -226,8 +251,33 @@ class AdminController extends Controller
             'stock' => $validated['stock'],
             'scope' => $validated['scope'],
             'store_id' => $validated['scope'] === 'store_specific' ? $validated['store_id'] : null,
+            'description' => $request->input('description', ''),
             'updated_at' => now(),
-        ]);
+        ];
+
+        if ($request->hasFile('image_file')) {
+            $file = $request->file('image_file');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('uploads/products'), $fileName);
+            $updateData['image'] = 'uploads/products/' . $fileName;
+        } elseif ($request->filled('image_url')) {
+            $updateData['image'] = $request->input('image_url');
+        }
+
+        $galleryPaths = [];
+        if ($request->hasFile('gallery_files')) {
+            foreach ($request->file('gallery_files') as $idx => $gFile) {
+                $gName = time() . '_gal_' . $idx . '_' . $gFile->getClientOriginalName();
+                $gFile->move(public_path('uploads/products'), $gName);
+                $galleryPaths[] = 'uploads/products/' . $gName;
+            }
+            $updateData['gallery'] = json_encode($galleryPaths);
+        } elseif ($request->filled('gallery_urls')) {
+            $urls = array_filter(array_map('trim', explode("\n", $request->input('gallery_urls'))));
+            $updateData['gallery'] = json_encode(array_values($urls));
+        }
+
+        DB::table('products')->where('id', $id)->update($updateData);
 
         return redirect('/admin/products')->with('success', 'Product updated successfully!');
     }

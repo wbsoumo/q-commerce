@@ -97,7 +97,11 @@
                 @forelse($products as $prod)
                 <tr>
                   <td>{{ $prod->id }}</td>
-                  <td class="font-weight-bold">{{ $prod->name }}</td>
+                  <td class="font-weight-bold">
+                    <a href="/admin/products/{{ $prod->id }}/edit" class="text-primary font-weight-bold" title="Click to Edit Product">
+                      {{ $prod->name }} <i class="fas fa-external-link-alt text-muted small ml-1"></i>
+                    </a>
+                  </td>
                   <td><span class="badge badge-info">{{ $prod->category_name }}</span></td>
                   <td>
                     @if($prod->scope === 'global')

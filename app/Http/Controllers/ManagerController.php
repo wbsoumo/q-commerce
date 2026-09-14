@@ -270,4 +270,60 @@ class ManagerController extends Controller
 
         return redirect()->back()->with('success', 'Branch operational settings updated successfully!');
     }
+
+    // Manager Add Product to Store
+    public function storeProduct(Request $request)
+    {
+        $user = Auth::user();
+        $storeId = (int)($user->store_id ?? 1);
+
+        $validated = $request->validate([
+            'category_id' => 'required|exists:categories,id',
+            'name' => 'required|string',
+            'sku' => 'required|string|unique:products,sku',
+            'unit' => 'required|string',
+            'price' => 'required|numeric',
+            'mrp' => 'required|numeric',
+            'stock' => 'required|integer',
+            'image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+            'gallery_files.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+        ]);
+
+        $imagePath = 'image 41.png';
+        if ($request->hasFile('image_file')) {
+            $file = $request->file('image_file');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('uploads/products'), $fileName);
+            $imagePath = 'uploads/products/' . $fileName;
+        }
+
+        $galleryPaths = [];
+        if ($request->hasFile('gallery_files')) {
+            foreach ($request->file('gallery_files') as $idx => $gFile) {
+                $gName = time() . '_gal_' . $idx . '_' . $gFile->getClientOriginalName();
+                $gFile->move(public_path('uploads/products'), $gName);
+                $galleryPaths[] = 'uploads/products/' . $gName;
+            }
+        }
+
+        DB::table('products')->insert([
+            'category_id' => $validated['category_id'],
+            'name' => $validated['name'],
+            'sku' => $validated['sku'],
+            'unit' => $validated['unit'],
+            'price' => $validated['price'],
+            'mrp' => $validated['mrp'],
+            'stock' => $validated['stock'],
+            'scope' => 'store_specific',
+            'store_id' => $storeId,
+            'image' => $imagePath,
+            'gallery' => !empty($galleryPaths) ? json_encode($galleryPaths) : null,
+            'description' => $request->input('description', ''),
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return redirect()->back()->with('success', 'New product successfully added to your store branch!');
+    }
 }

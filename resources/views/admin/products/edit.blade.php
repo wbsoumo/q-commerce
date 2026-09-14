@@ -45,7 +45,7 @@
       <div class="container-fluid">
         <div class="card card-warning">
           <div class="card-header"><h3 class="card-title font-weight-bold text-white"><i class="fas fa-edit mr-1"></i> Edit Product Details</h3></div>
-          <form action="/admin/products/update" method="POST">
+          <form action="/admin/products/update" method="POST" enctype="multipart/form-data">
             @csrf
             <input type="hidden" name="id" value="{{ $product->id }}">
             <div class="card-body">
@@ -109,6 +109,41 @@
                   <input type="number" step="0.01" name="mrp" class="form-control" value="{{ $product->mrp }}" required>
                 </div>
               </div>
+
+              <!-- PRODUCT MAIN IMAGE & GALLERY -->
+              <div class="card card-outline card-info p-3 mb-3 border">
+                <h5 class="font-weight-bold text-info mb-3"><i class="fas fa-images mr-1"></i> Product Main Image & Gallery</h5>
+                <div class="row">
+                  <div class="col-md-6 form-group">
+                    <label>Main Product Image File</label>
+                    <input type="file" name="image_file" class="form-control-file border p-1 rounded w-100">
+                    <label class="mt-2 text-muted small">Or Image URL / Filename:</label>
+                    <input type="text" name="image_url" class="form-control form-control-sm" value="{{ $product->image }}">
+                    @if($product->image)
+                      <div class="mt-2">
+                        <small class="d-block text-muted font-weight-bold">Current Image Preview:</label>
+                        <img src="{{ str_contains($product->image, 'http') || str_contains($product->image, 'uploads') ? asset($product->image) : 'https://raw.githubusercontent.com/wbsoumo/q-commerce/main/' . $product->image }}" style="max-height: 80px;" class="rounded border">
+                      </div>
+                    @endif
+                  </div>
+                  <div class="col-md-6 form-group">
+                    <label>Gallery Image Files (Multiple)</label>
+                    <input type="file" name="gallery_files[]" class="form-control-file border p-1 rounded w-100" multiple>
+                    <label class="mt-2 text-muted small">Or Gallery Image URLs (One per line):</label>
+                    @php
+                      $galleryArr = !empty($product->gallery) ? json_decode($product->gallery, true) : [];
+                      $galleryText = is_array($galleryArr) ? implode("\n", $galleryArr) : '';
+                    @endphp
+                    <textarea name="gallery_urls" class="form-control form-control-sm" rows="3" placeholder="https://example.com/img1.png&#10;https://example.com/img2.png">{{ $galleryText }}</textarea>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Product Description / Details</label>
+                <textarea name="description" class="form-control" rows="4" placeholder="Enter product ingredients, usage guidelines, storage tips...">{{ $product->description }}</textarea>
+              </div>
+
             </div>
             <div class="card-footer">
               <button type="submit" class="btn btn-warning text-white font-weight-bold"><i class="fas fa-save mr-1"></i> Update Product</button>
