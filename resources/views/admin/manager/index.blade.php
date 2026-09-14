@@ -111,10 +111,15 @@
           </div>
         </div>
 
-        <!-- 3. STORE OPERATIONAL EDIT CARD -->
-        <div class="card card-outline card-info mb-4">
+        <!-- 3. STORE OPERATIONAL EDIT CARD (COLLAPSED BY DEFAULT) -->
+        <div class="card card-outline card-info mb-4 collapsed-card">
           <div class="card-header d-flex justify-content-between align-items-center">
-            <h3 class="card-title font-weight-bold"><i class="fas fa-cog mr-2"></i>Branch Quick Settings & Operational Controls</h3>
+            <h3 class="card-title font-weight-bold" style="cursor: pointer;" data-card-widget="collapse">
+              <i class="fas fa-cog mr-2 text-info"></i>Branch Quick Settings & Operational Controls <small class="text-muted ml-2">(Click to Expand)</small>
+            </h3>
+            <div class="card-tools">
+              <button type="button" class="btn btn-tool text-info" data-card-widget="collapse"><i class="fas fa-plus"></i></button>
+            </div>
           </div>
           <form action="/admin/stores/{{ $store->id }}/settings" method="POST">
             @csrf
@@ -163,22 +168,33 @@
           </form>
         </div>
 
-        <!-- 4. PRODUCT INVENTORY OVERRIDES TABLE -->
-        <div class="card card-outline card-primary shadow-sm">
-          <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center flex-wrap py-2">
-            <h3 class="card-title font-weight-bold my-1"><i class="fas fa-boxes mr-2"></i>Product Price & Stock Override Manager</h3>
-            <form action="/admin/store-manager" method="GET" class="form-inline my-1">
+        <!-- PROMINENT PRODUCT SEARCH BAR -->
+        <div class="card card-outline card-warning mb-3 shadow-sm">
+          <div class="card-body py-2">
+            <form action="/admin/store-manager" method="GET" class="row align-items-center">
               <input type="hidden" name="store_id" value="{{ $store->id ?? 1 }}">
-              <div class="input-group input-group-sm">
-                <input type="text" name="search" class="form-control" placeholder="Search product or SKU..." value="{{ request('search') }}" style="min-width: 220px;">
-                <div class="input-group-append">
-                  <button type="submit" class="btn btn-warning font-weight-bold"><i class="fas fa-search"></i> Search</button>
-                  @if(request('search'))
-                    <a href="/admin/store-manager?store_id={{ $store->id ?? 1 }}" class="btn btn-secondary"><i class="fas fa-undo"></i></a>
-                  @endif
+              <div class="col-md-9">
+                <div class="input-group">
+                  <div class="input-group-prepend">
+                    <span class="input-group-text bg-warning text-dark font-weight-bold"><i class="fas fa-search mr-1"></i> Search Products</span>
+                  </div>
+                  <input type="text" name="search" class="form-control form-control-lg font-weight-bold" placeholder="Type Product Name or SKU code to filter..." value="{{ request('search') }}">
                 </div>
               </div>
+              <div class="col-md-3 mt-2 mt-md-0 text-right">
+                <button type="submit" class="btn btn-warning btn-lg font-weight-bold"><i class="fas fa-search mr-1"></i> Search Catalog</button>
+                @if(request('search'))
+                  <a href="/admin/store-manager?store_id={{ $store->id ?? 1 }}" class="btn btn-default btn-lg font-weight-bold ml-1"><i class="fas fa-undo mr-1"></i> Clear</a>
+                @endif
+              </div>
             </form>
+          </div>
+        </div>
+
+        <!-- 4. PRODUCT INVENTORY OVERRIDES TABLE -->
+        <div class="card card-outline card-primary shadow-sm">
+          <div class="card-header bg-primary text-white py-2">
+            <h3 class="card-title font-weight-bold my-1"><i class="fas fa-boxes mr-2"></i>Product Price & Stock Override Manager</h3>
           </div>
           <div class="card-body p-0">
             <table class="table table-striped table-bordered mb-0">
