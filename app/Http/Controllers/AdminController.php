@@ -466,20 +466,27 @@ class AdminController extends Controller
 
     public function saveHomepageCustomizer(Request $request)
     {
-        $hasBannerTitle = \Illuminate\Support\Facades\Schema::hasColumn('stores', 'banner_title');
-        if (!$hasBannerTitle) {
+        $bannerTitle = $request->input('banner_title', 'Mega Diwali Sale');
+        $bannerSubtitle = $request->input('banner_subtitle', 'Upto 50% Off');
+
+        // Check & create columns if missing
+        try {
+            DB::table('stores')->update([
+                'banner_title' => $bannerTitle,
+                'banner_subtitle' => $bannerSubtitle,
+                'updated_at' => now(),
+            ]);
+        } catch (\Exception $e) {
             \Illuminate\Support\Facades\Schema::table('stores', function ($table) {
                 $table->string('banner_title')->nullable()->default('Mega Diwali Sale');
                 $table->string('banner_subtitle')->nullable();
             });
+            DB::table('stores')->update([
+                'banner_title' => $bannerTitle,
+                'banner_subtitle' => $bannerSubtitle,
+                'updated_at' => now(),
+            ]);
         }
-
-        // Update global banner settings in store
-        DB::table('stores')->update([
-            'banner_title' => $request->input('banner_title', 'Mega Diwali Sale'),
-            'banner_subtitle' => $request->input('banner_subtitle', 'Upto 50% Off'),
-            'updated_at' => now(),
-        ]);
 
         // Sync featured products globally
         $selectedFeatIds = $request->input('featured_product_ids', []);
