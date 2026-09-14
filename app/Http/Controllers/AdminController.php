@@ -194,7 +194,10 @@ class AdminController extends Controller
         $selectedStores = $request->input('store_ids', []);
         $primaryStoreId = !empty($selectedStores) ? (int)$selectedStores[0] : null;
 
-        DB::table('products')->insert([
+        $hasStoreIdCol = \Illuminate\Support\Facades\Schema::hasColumn('products', 'store_id');
+        $hasStoreIdsCol = \Illuminate\Support\Facades\Schema::hasColumn('products', 'store_ids');
+
+        $insertData = [
             'category_id' => $validated['category_id'],
             'name' => $validated['name'],
             'sku' => $validated['sku'],
@@ -204,15 +207,23 @@ class AdminController extends Controller
             'stock' => $validated['stock'],
             'scope' => $validated['scope'],
             'is_featured' => $request->has('is_featured') ? true : false,
-            'store_id' => $validated['scope'] === 'store_specific' ? $primaryStoreId : null,
-            'store_ids' => $validated['scope'] === 'store_specific' && !empty($selectedStores) ? json_encode(array_map('intval', $selectedStores)) : null,
             'image' => $imagePath,
             'gallery' => !empty($galleryPaths) ? json_encode($galleryPaths) : null,
             'description' => $request->input('description', ''),
             'is_active' => true,
             'created_at' => now(),
             'updated_at' => now(),
-        ]);
+        ];
+
+        if ($hasStoreIdCol) {
+            $insertData['store_id'] = $validated['scope'] === 'store_specific' ? $primaryStoreId : null;
+        }
+
+        if ($hasStoreIdsCol) {
+            $insertData['store_ids'] = $validated['scope'] === 'store_specific' && !empty($selectedStores) ? json_encode(array_map('intval', $selectedStores)) : null;
+        }
+
+        DB::table('products')->insert($insertData);
 
         return redirect('/admin/products')->with('success', 'Product created successfully!');
     }
@@ -251,6 +262,9 @@ class AdminController extends Controller
         $selectedStores = $request->input('store_ids', []);
         $primaryStoreId = !empty($selectedStores) ? (int)$selectedStores[0] : null;
 
+        $hasStoreIdCol = \Illuminate\Support\Facades\Schema::hasColumn('products', 'store_id');
+        $hasStoreIdsCol = \Illuminate\Support\Facades\Schema::hasColumn('products', 'store_ids');
+
         $updateData = [
             'category_id' => $validated['category_id'],
             'name' => $validated['name'],
@@ -261,11 +275,17 @@ class AdminController extends Controller
             'stock' => $validated['stock'],
             'scope' => $validated['scope'],
             'is_featured' => $request->has('is_featured') ? true : false,
-            'store_id' => $validated['scope'] === 'store_specific' ? $primaryStoreId : null,
-            'store_ids' => $validated['scope'] === 'store_specific' && !empty($selectedStores) ? json_encode(array_map('intval', $selectedStores)) : null,
             'description' => $request->input('description', ''),
             'updated_at' => now(),
         ];
+
+        if ($hasStoreIdCol) {
+            $updateData['store_id'] = $validated['scope'] === 'store_specific' ? $primaryStoreId : null;
+        }
+
+        if ($hasStoreIdsCol) {
+            $updateData['store_ids'] = $validated['scope'] === 'store_specific' && !empty($selectedStores) ? json_encode(array_map('intval', $selectedStores)) : null;
+        }
 
         if ($request->hasFile('image_file')) {
             $file = $request->file('image_file');
