@@ -415,7 +415,7 @@ class AdminController extends Controller
             return redirect()->back()->with('error', 'Unauthorized store update');
         }
 
-        DB::table('stores')->where('id', $id)->update([
+        $updateData = [
             'status' => $request->input('status', 'Active'),
             'opening_time' => $request->input('opening_time', '06:00'),
             'closing_time' => $request->input('closing_time', '23:00'),
@@ -429,7 +429,17 @@ class AdminController extends Controller
             'store_phone' => $request->input('store_phone'),
             'store_email' => $request->input('store_email'),
             'updated_at' => now(),
-        ]);
+        ];
+
+        $storeColumns = Schema::getColumnListing('stores');
+        if (in_array('banner_title', $storeColumns)) {
+            $updateData['banner_title'] = $request->input('banner_title', 'Mega Diwali Sale');
+        }
+        if (in_array('banner_subtitle', $storeColumns)) {
+            $updateData['banner_subtitle'] = $request->input('banner_subtitle');
+        }
+
+        DB::table('stores')->where('id', $id)->update($updateData);
 
         return redirect('/admin/stores')->with('success', 'Store settings updated successfully!');
     }

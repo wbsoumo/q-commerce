@@ -69,6 +69,18 @@
                 </div>
               </div>
 
+              <div class="row bg-light p-3 rounded mb-3 border">
+                <div class="col-md-6 form-group">
+                  <label class="text-success font-weight-bold"><i class="fas fa-tags mr-1"></i> Mega Sale / Front Page Banner Title</label>
+                  <input type="text" name="banner_title" class="form-control font-weight-bold" value="{{ $store->banner_title ?? 'Mega Diwali Sale' }}" placeholder="e.g. Mega Diwali Sale or Festival Offer">
+                  <small class="form-text text-muted">This title is dynamically displayed on top of the front page banner in the Flutter app.</small>
+                </div>
+                <div class="col-md-6 form-group">
+                  <label class="text-primary font-weight-bold"><i class="fas fa-info-circle mr-1"></i> Banner Subtitle / Announcement</label>
+                  <input type="text" name="banner_subtitle" class="form-control" value="{{ $store->banner_subtitle ?? 'Upto 50% Off' }}" placeholder="e.g. Upto 50% Off on all items">
+                </div>
+              </div>
+
               <div class="row">
                 <div class="col-md-3 form-group">
                   <label>Min. Order Amount (₹)</label>

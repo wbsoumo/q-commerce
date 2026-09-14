@@ -26,6 +26,8 @@ return new class extends Migration
             $table->decimal('delivery_radius_km', 5, 2)->default(5.00);
             $table->string('city')->default('Krishnanagar');
             $table->string('pincode')->default('741101');
+            $table->string('banner_title')->nullable()->default('Mega Diwali Sale');
+            $table->string('banner_subtitle')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
