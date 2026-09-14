@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Manager Dashboard | {{ $store->name ?? 'Branch' }}</title>
+  <title>Manager Dashboard | Today's Summary</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
@@ -36,7 +36,7 @@
       <div class="container-fluid">
         <div class="row align-items-center mb-3">
           <div class="col-sm-6">
-            <h1 class="m-0 font-weight-bold text-dark"><i class="fas fa-tachometer-alt text-primary mr-2"></i>Branch Dashboard</h1>
+            <h1 class="m-0 font-weight-bold text-dark"><i class="fas fa-calendar-day text-primary mr-2"></i>Today's Overview ({{ date('d M, Y') }})</h1>
             <p class="text-muted mb-0"><i class="fas fa-building text-primary mr-1"></i> {{ $store->name ?? 'Store Branch' }} (Code: {{ $store->code ?? 'STR' }})</p>
           </div>
           <div class="col-sm-6 text-right">
@@ -59,46 +59,46 @@
     <div class="content">
       <div class="container-fluid">
 
-        <!-- METRICS TILES -->
+        <!-- TODAY'S METRICS TILES -->
         <div class="row mb-4">
           <div class="col-lg-3 col-6">
             <div class="small-box bg-info shadow-sm">
               <div class="inner">
-                <h3>{{ $totalProductsCount }}</h3>
-                <p>Assigned Products</p>
+                <h3>{{ $todayOrdersCount }}</h3>
+                <p>Today's Total Orders</p>
               </div>
-              <div class="icon"><i class="fas fa-boxes"></i></div>
-              <a href="/manager/inventory" class="small-box-footer">Manage Catalog <i class="fas fa-arrow-circle-right"></i></a>
+              <div class="icon"><i class="fas fa-shopping-bag"></i></div>
+              <a href="/manager/orders" class="small-box-footer">View Today's Orders <i class="fas fa-arrow-circle-right"></i></a>
             </div>
           </div>
           <div class="col-lg-3 col-6">
             <div class="small-box bg-warning shadow-sm">
               <div class="inner">
-                <h3>{{ $pendingOrdersCount }}</h3>
-                <p>Pending Orders</p>
+                <h3>{{ $todayPendingCount }}</h3>
+                <p>Today's Pending</p>
               </div>
               <div class="icon"><i class="fas fa-clock"></i></div>
-              <a href="/manager/orders" class="small-box-footer">View Orders <i class="fas fa-arrow-circle-right"></i></a>
+              <a href="/manager/orders?status=Pending" class="small-box-footer">Process Pending <i class="fas fa-arrow-circle-right"></i></a>
             </div>
           </div>
           <div class="col-lg-3 col-6">
-            <div class="small-box bg-success shadow-sm">
+            <div class="small-box bg-primary shadow-sm">
               <div class="inner">
-                <h3>{{ $outForDeliveryCount }}</h3>
-                <p>Out For Delivery</p>
+                <h3>{{ $todayDispatchedCount }}</h3>
+                <p>Today's Dispatched</p>
               </div>
               <div class="icon"><i class="fas fa-motorcycle"></i></div>
               <a href="/manager/deliveries" class="small-box-footer">Dispatch Hub <i class="fas fa-arrow-circle-right"></i></a>
             </div>
           </div>
           <div class="col-lg-3 col-6">
-            <div class="small-box bg-primary shadow-sm">
+            <div class="small-box bg-success shadow-sm">
               <div class="inner">
-                <h3>₹{{ number_format($totalRevenue, 2) }}</h3>
-                <p>Delivered Revenue</p>
+                <h3>{{ $todayDeliveredCount }}</h3>
+                <p>Today's Delivered</p>
               </div>
-              <div class="icon"><i class="fas fa-rupee-sign"></i></div>
-              <a href="/manager/orders" class="small-box-footer">Sales Details <i class="fas fa-arrow-circle-right"></i></a>
+              <div class="icon"><i class="fas fa-check-circle"></i></div>
+              <a href="/manager/orders?status=Delivered" class="small-box-footer">Completed Orders <i class="fas fa-arrow-circle-right"></i></a>
             </div>
           </div>
         </div>
@@ -106,10 +106,10 @@
         <div class="row">
           <!-- RECENT ORDERS WIDGET -->
           <div class="col-md-7">
-            <div class="card card-outline card-warning shadow-sm">
+            <div class="card card-outline card-primary shadow-sm">
               <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                <h3 class="card-title font-weight-bold text-dark"><i class="fas fa-shopping-bag mr-2 text-warning"></i>Recent Branch Orders</h3>
-                <a href="/manager/orders" class="btn btn-xs btn-outline-warning font-weight-bold">View All</a>
+                <h3 class="card-title font-weight-bold text-dark"><i class="fas fa-list-alt mr-2 text-primary"></i>Today's Orders Activity</h3>
+                <a href="/manager/orders" class="btn btn-xs btn-outline-primary font-weight-bold">View All Store Orders</a>
               </div>
               <div class="card-body p-0">
                 <table class="table table-striped table-sm mb-0">
@@ -117,7 +117,7 @@
                     <tr>
                       <th>Order #</th>
                       <th>Customer Phone</th>
-                      <th>Total</th>
+                      <th>Amount</th>
                       <th>Status</th>
                     </tr>
                   </thead>
@@ -130,7 +130,7 @@
                       <td class="align-middle"><span class="badge badge-info">{{ $ord->status }}</span></td>
                     </tr>
                     @empty
-                    <tr><td colspan="4" class="text-center py-3 text-muted">No recent orders placed.</td></tr>
+                    <tr><td colspan="4" class="text-center py-3 text-muted">No orders received today yet.</td></tr>
                     @endforelse
                   </tbody>
                 </table>
@@ -142,7 +142,7 @@
           <div class="col-md-5">
             <div class="card card-outline card-success shadow-sm">
               <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                <h3 class="card-title font-weight-bold text-dark"><i class="fas fa-motorcycle mr-2 text-success"></i>Active Dispatch</h3>
+                <h3 class="card-title font-weight-bold text-dark"><i class="fas fa-motorcycle mr-2 text-success"></i>Live Dispatch Status</h3>
                 <a href="/manager/deliveries" class="btn btn-xs btn-outline-success font-weight-bold">Dispatch Hub</a>
               </div>
               <div class="card-body p-0">
@@ -150,7 +150,7 @@
                   <thead>
                     <tr>
                       <th>Order #</th>
-                      <th>Rider</th>
+                      <th>Assigned Rider</th>
                       <th>Status</th>
                     </tr>
                   </thead>

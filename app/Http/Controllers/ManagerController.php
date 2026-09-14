@@ -18,29 +18,62 @@ class ManagerController extends Controller
         return DB::table('stores')->where('id', $storeId)->first();
     }
 
-    // 0. Store Manager Main Dashboard
+    // 0. Store Manager Main Dashboard (Today's Details Only)
     public function dashboard()
     {
         $store = $this->getStoreData();
         if (!$store) return redirect('/manager/login');
         $storeId = $store->id;
+        $today = now()->toDateString();
 
-        // Metrics
-        $totalProductsCount = DB::table('products')
-            ->where(function($q) use ($storeId) {
-                $q->where('scope', 'global')->orWhere('store_id', $storeId);
-            })->count();
+        // Today's Metrics
+        $todayOrdersCount = DB::table('orders')
+            ->where('store_id', $storeId)
+            ->whereDate('created_at', $today)
+            ->count();
 
-        $pendingOrdersCount = DB::table('orders')->where('store_id', $storeId)->where('status', 'Pending')->count();
-        $outForDeliveryCount = DB::table('orders')->where('store_id', $storeId)->where('status', 'Out for Delivery')->count();
-        $completedOrdersCount = DB::table('orders')->where('store_id', $storeId)->where('status', 'Delivered')->count();
-        $totalOrdersCount = DB::table('orders')->where('store_id', $storeId)->count();
-        $totalRevenue = DB::table('orders')->where('store_id', $storeId)->where('status', 'Delivered')->sum('grand_total');
+        $todayPendingCount = DB::table('orders')
+            ->where('store_id', $storeId)
+            ->where('status', 'Pending')
+            ->whereDate('created_at', $today)
+            ->count();
 
-        // Recent Orders
-        $recentOrders = DB::table('orders')->where('store_id', $storeId)->orderBy('id', 'desc')->take(8)->get();
+        $todayDispatchedCount = DB::table('orders')
+            ->where('store_id', $storeId)
+            ->where('status', 'Out for Delivery')
+            ->whereDate('created_at', $today)
+            ->count();
 
-        // Active Deliveries
+        $todayDeliveredCount = DB::table('orders')
+            ->where('store_id', $storeId)
+            ->where('status', 'Delivered')
+            ->whereDate('created_at', $today)
+            ->count();
+
+        $todayRevenue = DB::table('orders')
+            ->where('store_id', $storeId)
+            ->where('status', 'Delivered')
+            ->whereDate('created_at', $today)
+            ->sum('grand_total');
+
+        // Today's Recent Orders
+        $recentOrders = DB::table('orders')
+            ->where('store_id', $storeId)
+            ->whereDate('created_at', $today)
+            ->orderBy('id', 'desc')
+            ->take(10)
+            ->get();
+
+        // If no orders today, fall back to latest branch orders for display
+        if ($recentOrders->isEmpty()) {
+            $recentOrders = DB::table('orders')
+                ->where('store_id', $storeId)
+                ->orderBy('id', 'desc')
+                ->take(10)
+                ->get();
+        }
+
+        // Active Deliveries Today
         $recentDeliveries = DB::table('deliveries')
             ->leftJoin('orders', 'deliveries.order_id', '=', 'orders.id')
             ->leftJoin('delivery_partners', 'deliveries.delivery_partner_id', '=', 'delivery_partners.id')
@@ -52,12 +85,11 @@ class ManagerController extends Controller
 
         return view('manager.dashboard', compact(
             'store',
-            'totalProductsCount',
-            'pendingOrdersCount',
-            'outForDeliveryCount',
-            'completedOrdersCount',
-            'totalOrdersCount',
-            'totalRevenue',
+            'todayOrdersCount',
+            'todayPendingCount',
+            'todayDispatchedCount',
+            'todayDeliveredCount',
+            'todayRevenue',
             'recentOrders',
             'recentDeliveries'
         ));
