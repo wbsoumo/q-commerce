@@ -194,9 +194,6 @@ class AdminController extends Controller
         $selectedStores = $request->input('store_ids', []);
         $primaryStoreId = !empty($selectedStores) ? (int)$selectedStores[0] : null;
 
-        $hasStoreIdCol = \Illuminate\Support\Facades\Schema::hasColumn('products', 'store_id');
-        $hasStoreIdsCol = \Illuminate\Support\Facades\Schema::hasColumn('products', 'store_ids');
-
         $insertData = [
             'category_id' => $validated['category_id'],
             'name' => $validated['name'],
@@ -215,12 +212,16 @@ class AdminController extends Controller
             'updated_at' => now(),
         ];
 
-        if ($hasStoreIdCol) {
-            $insertData['store_id'] = $validated['scope'] === 'store_specific' ? $primaryStoreId : null;
-        }
-
-        if ($hasStoreIdsCol) {
-            $insertData['store_ids'] = $validated['scope'] === 'store_specific' && !empty($selectedStores) ? json_encode(array_map('intval', $selectedStores)) : null;
+        try {
+            $existingColumns = \Illuminate\Support\Facades\Schema::getColumnListing('products');
+            if (in_array('store_id', $existingColumns)) {
+                $insertData['store_id'] = $validated['scope'] === 'store_specific' ? $primaryStoreId : null;
+            }
+            if (in_array('store_ids', $existingColumns)) {
+                $insertData['store_ids'] = $validated['scope'] === 'store_specific' && !empty($selectedStores) ? json_encode(array_map('intval', $selectedStores)) : null;
+            }
+        } catch (\Exception $e) {
+            // Ignore column detection if schema check fails
         }
 
         DB::table('products')->insert($insertData);
@@ -262,9 +263,6 @@ class AdminController extends Controller
         $selectedStores = $request->input('store_ids', []);
         $primaryStoreId = !empty($selectedStores) ? (int)$selectedStores[0] : null;
 
-        $hasStoreIdCol = \Illuminate\Support\Facades\Schema::hasColumn('products', 'store_id');
-        $hasStoreIdsCol = \Illuminate\Support\Facades\Schema::hasColumn('products', 'store_ids');
-
         $updateData = [
             'category_id' => $validated['category_id'],
             'name' => $validated['name'],
@@ -279,12 +277,17 @@ class AdminController extends Controller
             'updated_at' => now(),
         ];
 
-        if ($hasStoreIdCol) {
-            $updateData['store_id'] = $validated['scope'] === 'store_specific' ? $primaryStoreId : null;
-        }
-
-        if ($hasStoreIdsCol) {
-            $updateData['store_ids'] = $validated['scope'] === 'store_specific' && !empty($selectedStores) ? json_encode(array_map('intval', $selectedStores)) : null;
+        // Fetch actual existing columns in products table dynamically
+        try {
+            $existingColumns = \Illuminate\Support\Facades\Schema::getColumnListing('products');
+            if (in_array('store_id', $existingColumns)) {
+                $updateData['store_id'] = $validated['scope'] === 'store_specific' ? $primaryStoreId : null;
+            }
+            if (in_array('store_ids', $existingColumns)) {
+                $updateData['store_ids'] = $validated['scope'] === 'store_specific' && !empty($selectedStores) ? json_encode(array_map('intval', $selectedStores)) : null;
+            }
+        } catch (\Exception $e) {
+            // Ignore column detection if schema check fails
         }
 
         if ($request->hasFile('image_file')) {
