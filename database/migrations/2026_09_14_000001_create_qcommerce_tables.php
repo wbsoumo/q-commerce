@@ -23,6 +23,7 @@ return new class extends Migration
             $table->string('address');
             $table->decimal('latitude', 10, 7)->default(23.4013);
             $table->decimal('longitude', 10, 7)->default(88.5010);
+            $table->decimal('delivery_radius_km', 5, 2)->default(5.00);
             $table->string('city')->default('Krishnanagar');
             $table->string('pincode')->default('741101');
             $table->boolean('is_active')->default(true);

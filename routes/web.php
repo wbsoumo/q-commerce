@@ -17,6 +17,8 @@ Route::post('/admin/stores/store', [AdminController::class, 'storeStore']);
 Route::get('/admin/products', [AdminController::class, 'products']);
 Route::get('/admin/products/create', [AdminController::class, 'createProduct']);
 Route::post('/admin/products/store', [AdminController::class, 'storeProduct']);
+Route::get('/admin/products/{id}/edit', [AdminController::class, 'editProduct']);
+Route::post('/admin/products/update', [AdminController::class, 'updateProduct']);
 
 // Store Manager Portal Routes
 Route::get('/admin/store-manager', [AdminController::class, 'storeManagerPortal']);

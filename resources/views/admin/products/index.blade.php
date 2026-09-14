@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
 </head>
-<body class="hold-transition sidebar-mini">
+<body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper">
   <nav class="main-header navbar navbar-expand navbar-white navbar-light">
     <ul class="navbar-nav">
@@ -23,7 +23,7 @@
     </ul>
   </nav>
 
-  <aside class="main-sidebar sidebar-dark-primary elevation-4">
+  <aside class="main-sidebar sidebar-dark-primary elevation-4 position-fixed">
     <a href="/admin" class="brand-link text-center" style="background:#0c831f">
       <span class="brand-text font-weight-bold text-white"><i class="fas fa-bolt mr-2"></i>Q-Commerce</span>
     </a>
@@ -92,6 +92,7 @@
                   <th>Price</th>
                   <th>MRP</th>
                   <th>Stock</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -111,9 +112,12 @@
                   <td class="text-success font-weight-bold">₹{{ $prod->price }}</td>
                   <td><del class="text-muted">₹{{ $prod->mrp }}</del></td>
                   <td><span class="badge badge-secondary">{{ $prod->stock }} pcs</span></td>
+                  <td>
+                    <a href="/admin/products/{{ $prod->id }}/edit" class="btn btn-sm btn-warning font-weight-bold"><i class="fas fa-edit mr-1"></i> Edit</a>
+                  </td>
                 </tr>
                 @empty
-                <tr><td colspan="8" class="text-center py-4">No products found. <a href="/admin/products/create">Add a new product</a></td></tr>
+                <tr><td colspan="9" class="text-center py-4">No products found. <a href="/admin/products/create">Add a new product</a></td></tr>
                 @endforelse
               </tbody>
             </table>

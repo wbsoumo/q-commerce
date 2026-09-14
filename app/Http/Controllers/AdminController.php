@@ -180,6 +180,50 @@ class AdminController extends Controller
         return redirect('/admin/products')->with('success', 'Product created successfully!');
     }
 
+    // Edit Product Form
+    public function editProduct($id)
+    {
+        $product = DB::table('products')->where('id', $id)->first();
+        if (!$product) {
+            return redirect('/admin/products')->with('error', 'Product not found.');
+        }
+        $categories = DB::table('categories')->where('is_active', true)->get();
+        $stores = DB::table('stores')->where('is_active', true)->get();
+        return view('admin.products.edit', compact('product', 'categories', 'stores'));
+    }
+
+    // Update Product Details
+    public function updateProduct(Request $request)
+    {
+        $id = $request->input('id');
+        $validated = $request->validate([
+            'category_id' => 'required|exists:categories,id',
+            'name' => 'required|string',
+            'sku' => 'required|string|unique:products,sku,' . $id,
+            'unit' => 'required|string',
+            'price' => 'required|numeric',
+            'mrp' => 'required|numeric',
+            'stock' => 'required|integer',
+            'scope' => 'required|in:global,store_specific',
+            'store_id' => 'nullable|required_if:scope,store_specific|exists:stores,id',
+        ]);
+
+        DB::table('products')->where('id', $id)->update([
+            'category_id' => $validated['category_id'],
+            'name' => $validated['name'],
+            'sku' => $validated['sku'],
+            'unit' => $validated['unit'],
+            'price' => $validated['price'],
+            'mrp' => $validated['mrp'],
+            'stock' => $validated['stock'],
+            'scope' => $validated['scope'],
+            'store_id' => $validated['scope'] === 'store_specific' ? $validated['store_id'] : null,
+            'updated_at' => now(),
+        ]);
+
+        return redirect('/admin/products')->with('success', 'Product updated successfully!');
+    }
+
     // STORE MANAGER PORTAL VIEW: Specific Store Inventory Management
     public function storeManagerPortal(Request $request)
     {

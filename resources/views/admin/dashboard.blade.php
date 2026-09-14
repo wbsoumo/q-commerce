@@ -12,7 +12,7 @@
     .btn-success { background-color: #0c831f; border-color: #0c831f; }
   </style>
 </head>
-<body class="hold-transition sidebar-mini">
+<body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper">
 
   <!-- Navbar -->
@@ -34,7 +34,7 @@
   </nav>
 
   <!-- Main Sidebar -->
-  <aside class="main-sidebar sidebar-dark-primary elevation-4">
+  <aside class="main-sidebar sidebar-dark-primary elevation-4 position-fixed">
     <a href="/admin" class="brand-link text-center">
       <span class="brand-text font-weight-bold text-white"><i class="fas fa-bolt mr-2"></i>Q-Commerce Admin</span>
     </a>
