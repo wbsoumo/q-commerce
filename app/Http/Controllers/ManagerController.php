@@ -103,7 +103,7 @@ class ManagerController extends Controller
         if (!$store) return redirect('/manager/login');
         $storeId = $store->id;
 
-        $hasStoreIdsCol = Schema::hasColumn('products', 'store_ids');
+        $hasStoreIdsCol = \Illuminate\Support\Facades\Schema::hasColumn('products', 'store_ids');
         $productsQuery = DB::table('products')
             ->select(
                 'products.id',

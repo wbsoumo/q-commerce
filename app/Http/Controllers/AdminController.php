@@ -330,7 +330,7 @@ class AdminController extends Controller
 
         $store = DB::table('stores')->where('id', $storeId)->first();
 
-        $hasStoreIdsCol = Schema::hasColumn('products', 'store_ids');
+        $hasStoreIdsCol = \Illuminate\Support\Facades\Schema::hasColumn('products', 'store_ids');
         $query = DB::table('products')
             ->select(
                 'products.id',
