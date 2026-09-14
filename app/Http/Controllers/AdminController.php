@@ -273,4 +273,231 @@ class AdminController extends Controller
 
         return redirect()->back()->with('success', 'Store inventory updated successfully!');
     }
+
+    // 1. Store Settings View & Update
+    public function storeSettings($id)
+    {
+        $store = DB::table('stores')->where('id', $id)->first();
+        return view('admin.stores.settings', compact('store'));
+    }
+
+    public function updateStoreSettings(Request $request, $id)
+    {
+        DB::table('stores')->where('id', $id)->update([
+            'status' => $request->input('status', 'Active'),
+            'opening_time' => $request->input('opening_time', '06:00'),
+            'closing_time' => $request->input('closing_time', '23:00'),
+            'vacation_mode' => $request->has('vacation_mode'),
+            'temporary_closure_reason' => $request->input('temporary_closure_reason'),
+            'min_order_amount' => $request->input('min_order_amount', 0),
+            'delivery_fee' => $request->input('delivery_fee', 15),
+            'free_delivery_threshold' => $request->input('free_delivery_threshold', 299),
+            'estimated_delivery_time_mins' => $request->input('estimated_delivery_time_mins', 15),
+            'prep_time_mins' => $request->input('prep_time_mins', 5),
+            'store_phone' => $request->input('store_phone'),
+            'store_email' => $request->input('store_email'),
+            'updated_at' => now(),
+        ]);
+
+        return redirect('/admin/stores')->with('success', 'Store settings updated successfully!');
+    }
+
+    // 2. Inventory Transaction History & Adjustments
+    public function inventoryTransactions(Request $request)
+    {
+        $transactions = DB::table('inventory_transactions')
+            ->leftJoin('products', 'inventory_transactions.product_id', '=', 'products.id')
+            ->leftJoin('stores', 'inventory_transactions.store_id', '=', 'stores.id')
+            ->select('inventory_transactions.*', 'products.name as product_name', 'stores.name as store_name')
+            ->orderBy('inventory_transactions.id', 'desc')
+            ->paginate(20);
+
+        $products = DB::table('products')->get();
+        $stores = DB::table('stores')->get();
+
+        return view('admin.inventory.index', compact('transactions', 'products', 'stores'));
+    }
+
+    public function adjustInventory(Request $request)
+    {
+        $productId = $request->input('product_id');
+        $storeId = $request->input('store_id');
+        $quantity = (int)$request->input('quantity');
+        $type = $request->input('transaction_type', 'STOCK_ADJUSTMENT');
+        $reason = $request->input('reason', 'Manual Stock Adjustment');
+
+        \App\Services\InventoryService::updateStock($productId, $storeId, $quantity, $type, $reason, 'Manual Adjustment');
+
+        return redirect()->back()->with('success', 'Stock adjusted successfully and transaction logged!');
+    }
+
+    // 4. Order Details & Timeline History
+    public function showOrder($id)
+    {
+        $order = DB::table('orders')->where('id', $id)->first();
+        $items = DB::table('order_items')->where('order_id', $id)->get();
+        $history = DB::table('order_status_histories')->where('order_id', $id)->orderBy('created_at', 'asc')->get();
+        $delivery = DB::table('deliveries')->where('order_id', $id)->first();
+
+        return view('admin.orders.show', compact('order', 'items', 'history', 'delivery'));
+    }
+
+    public function updateOrderStatus(Request $request, $id)
+    {
+        $newStatus = $request->input('status');
+        $order = DB::table('orders')->where('id', $id)->first();
+
+        if ($order) {
+            DB::table('orders')->where('id', $id)->update(['status' => $newStatus, 'updated_at' => now()]);
+
+            DB::table('order_status_histories')->insert([
+                'order_id' => $id,
+                'previous_status' => $order->status,
+                'new_status' => $newStatus,
+                'reason' => $request->input('reason', 'Status updated by Admin'),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // Release or Consume Stock based on status lifecycle
+            $items = DB::table('order_items')->where('order_id', $id)->get();
+            foreach ($items as $item) {
+                if ($newStatus === 'Cancelled' || $newStatus === 'Refunded') {
+                    \App\Services\InventoryService::releaseReservation($item->product_id, $order->store_id, $item->quantity, $order->order_number);
+                } elseif ($newStatus === 'Delivered') {
+                    \App\Services\InventoryService::consumeReservation($item->product_id, $order->store_id, $item->quantity, $order->order_number);
+                }
+            }
+        }
+
+        return redirect()->back()->with('success', "Order status updated to {$newStatus}!");
+    }
+
+    // 6. Customer Management
+    public function customers()
+    {
+        $customers = DB::table('customers')->orderBy('id', 'desc')->paginate(15);
+        return view('admin.customers.index', compact('customers'));
+    }
+
+    public function showCustomer($id)
+    {
+        $customer = DB::table('customers')->where('id', $id)->first();
+        $orders = DB::table('orders')->where('user_phone', $customer->phone ?? '')->get();
+        return view('admin.customers.show', compact('customer', 'orders'));
+    }
+
+    public function updateCustomerStatus(Request $request, $id)
+    {
+        DB::table('customers')->where('id', $id)->update([
+            'status' => $request->input('status', 'Active'),
+            'is_vip' => $request->has('is_vip'),
+            'notes' => $request->input('notes'),
+            'updated_at' => now(),
+        ]);
+        return redirect()->back()->with('success', 'Customer record updated successfully!');
+    }
+
+    // 7. Delivery Management
+    public function deliveries()
+    {
+        $deliveries = DB::table('deliveries')
+            ->leftJoin('orders', 'deliveries.order_id', '=', 'orders.id')
+            ->leftJoin('delivery_partners', 'deliveries.delivery_partner_id', '=', 'delivery_partners.id')
+            ->leftJoin('stores', 'deliveries.store_id', '=', 'stores.id')
+            ->select('deliveries.*', 'orders.order_number', 'orders.grand_total', 'delivery_partners.name as rider_name', 'stores.name as store_name')
+            ->orderBy('deliveries.id', 'desc')
+            ->get();
+
+        $riders = DB::table('delivery_partners')->where('status', 'Active')->get();
+
+        return view('admin.deliveries.index', compact('deliveries', 'riders'));
+    }
+
+    public function assignDeliveryRider(Request $request)
+    {
+        $deliveryId = $request->input('delivery_id');
+        $riderId = $request->input('delivery_partner_id');
+
+        DB::table('deliveries')->where('id', $deliveryId)->update([
+            'delivery_partner_id' => $riderId,
+            'delivery_status' => 'Assigned',
+            'assigned_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return redirect()->back()->with('success', 'Delivery partner assigned successfully!');
+    }
+
+    // 8. Delivery Zones
+    public function deliveryZones()
+    {
+        $zones = DB::table('delivery_zones')
+            ->leftJoin('stores', 'delivery_zones.store_id', '=', 'stores.id')
+            ->select('delivery_zones.*', 'stores.name as store_name')
+            ->get();
+
+        $stores = DB::table('stores')->get();
+        return view('admin.delivery_zones.index', compact('zones', 'stores'));
+    }
+
+    public function storeDeliveryZone(Request $request)
+    {
+        DB::table('delivery_zones')->insert([
+            'store_id' => $request->input('store_id'),
+            'zone_name' => $request->input('zone_name'),
+            'zone_type' => $request->input('zone_type', 'radius'),
+            'radius_km' => $request->input('radius_km', 5.0),
+            'pincodes' => json_encode(array_map('trim', explode(',', $request->input('pincodes', '')))),
+            'base_delivery_fee' => $request->input('base_delivery_fee', 15.00),
+            'min_order_amount' => $request->input('min_order_amount', 0.00),
+            'free_delivery_threshold' => $request->input('free_delivery_threshold', 299.00),
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return redirect()->back()->with('success', 'Delivery Zone created successfully!');
+    }
+
+    // 9. Product Variants
+    public function productVariants($id)
+    {
+        $product = DB::table('products')->where('id', $id)->first();
+        $variants = DB::table('product_variants')->where('product_id', $id)->get();
+        return view('admin.products.variants', compact('product', 'variants'));
+    }
+
+    public function storeProductVariant(Request $request, $id)
+    {
+        DB::table('product_variants')->insert([
+            'product_id' => $id,
+            'variant_name' => $request->input('variant_name'),
+            'sku' => $request->input('sku'),
+            'price' => $request->input('price'),
+            'mrp' => $request->input('mrp'),
+            'stock' => $request->input('stock', 50),
+            'unit' => $request->input('unit', 'pcs'),
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('products')->where('id', $id)->update(['has_variants' => true]);
+
+        return redirect()->back()->with('success', 'Product Variant added successfully!');
+    }
+
+    // 10. Inventory Alerts
+    public function inventoryAlerts()
+    {
+        $alerts = DB::table('inventory_alerts')
+            ->leftJoin('products', 'inventory_alerts.product_id', '=', 'products.id')
+            ->leftJoin('stores', 'inventory_alerts.store_id', '=', 'stores.id')
+            ->select('inventory_alerts.*', 'products.name as product_name', 'stores.name as store_name')
+            ->orderBy('inventory_alerts.id', 'desc')
+            ->get();
+
+        return view('admin.inventory.alerts', compact('alerts'));
+    }
 }

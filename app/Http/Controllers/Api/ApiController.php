@@ -5,17 +5,28 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Services\StoreOperationalService;
+use App\Services\CheckoutValidationService;
+use App\Services\InventoryService;
+use Exception;
 
 class ApiController extends Controller
 {
-    // Auto-Select Store based on user coordinates
+    // Auto-Select Store based on user coordinates & Operational Check
     public function selectStore(Request $request)
     {
         $lat = $request->query('lat', 23.4013);
         $lng = $request->query('lng', 88.5010);
 
-        // Fetch active store
+        // Fetch primary active store
         $store = DB::table('stores')->where('is_active', true)->first();
+
+        if ($store) {
+            $opStatus = StoreOperationalService::checkStoreStatus($store);
+            $store->is_operational = $opStatus['is_operational'];
+            $store->closure_reason = $opStatus['reason'];
+            $store->delivery_time_mins = $store->estimated_delivery_time_mins ?? 15;
+        }
 
         return response()->json([
             'status' => 'success',
@@ -23,6 +34,8 @@ class ApiController extends Controller
                 'name' => 'Krishnanagar Main Store',
                 'address' => '11E Krishnanagar Main Road',
                 'delivery_time_mins' => 15,
+                'is_operational' => true,
+                'closure_reason' => 'Store is open and operational.',
             ]
         ]);
     }
@@ -41,17 +54,52 @@ class ApiController extends Controller
         ]);
     }
 
-    // Get Products by Category
+    // Get Products by Category with Variants & Store Overrides
     public function getProducts(Request $request)
     {
         $categoryId = $request->query('category_id');
-        $query = DB::table('products')->where('is_active', true);
+        $storeId = $request->query('store_id', 1);
+
+        $query = DB::table('products')->where('products.is_active', true);
 
         if ($categoryId) {
-            $query->where('category_id', $categoryId);
+            $query->where('products.category_id', $categoryId);
         }
 
-        $products = $query->get();
+        // Left join store product overrides
+        $products = $query
+            ->leftJoin('store_product_inventories', function($join) use ($storeId) {
+                $join->on('products.id', '=', 'store_product_inventories.product_id')
+                     ->where('store_product_inventories.store_id', '=', $storeId);
+            })
+            ->select(
+                'products.*',
+                'store_product_inventories.custom_price',
+                'store_product_inventories.custom_mrp',
+                'store_product_inventories.custom_stock',
+                'store_product_inventories.custom_reserved_stock',
+                'store_product_inventories.is_available'
+            )
+            ->get();
+
+        // Attach Variants if product has variants
+        foreach ($products as $prod) {
+            if ($prod->has_variants) {
+                $prod->variants = DB::table('product_variants')
+                    ->where('product_id', $prod->id)
+                    ->where('is_active', true)
+                    ->get();
+            } else {
+                $prod->variants = [];
+            }
+
+            // Calculate Effective Price & Available Stock
+            $prod->effective_price = $prod->custom_price ?? $prod->price;
+            $prod->effective_mrp = $prod->custom_mrp ?? $prod->mrp;
+            $totalStock = $prod->custom_stock ?? $prod->stock;
+            $resStock = $prod->custom_reserved_stock ?? $prod->reserved_stock;
+            $prod->available_stock = max(0, $totalStock - $resStock);
+        }
 
         return response()->json([
             'status' => 'success',
@@ -60,51 +108,110 @@ class ApiController extends Controller
         ]);
     }
 
-    // Create New Order
+    // Create New Order with Advanced Validation & Stock Reservation
     public function createOrder(Request $request)
     {
-        $validated = $request->validate([
-            'user_name' => 'required|string',
-            'user_phone' => 'required|string',
-            'delivery_address' => 'required|string',
-            'items' => 'required|array',
-            'subtotal' => 'required|numeric',
-            'grand_total' => 'required|numeric',
-        ]);
-
-        $orderNumber = 'ORD-' . strtoupper(uniqid());
-
-        $orderId = DB::table('orders')->insertGetId([
-            'order_number' => $orderNumber,
-            'user_name' => $validated['user_name'],
-            'user_phone' => $validated['user_phone'],
-            'delivery_address' => $validated['delivery_address'],
-            'subtotal' => $validated['subtotal'],
-            'delivery_fee' => 15.00,
-            'grand_total' => $validated['grand_total'],
-            'payment_method' => $request->input('payment_method', 'PhonePe UPI'),
-            'status' => 'Pending',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        foreach ($validated['items'] as $item) {
-            DB::table('order_items')->insert([
-                'order_id' => $orderId,
-                'product_id' => $item['product_id'] ?? null,
-                'product_name' => $item['name'],
-                'price' => $item['price'],
-                'quantity' => $item['quantity'],
-                'total' => $item['price'] * $item['quantity'],
-                'created_at' => now(),
-                'updated_at' => now(),
+        try {
+            $validatedData = $request->validate([
+                'user_name' => 'required|string',
+                'user_phone' => 'required|string',
+                'delivery_address' => 'required|string',
+                'items' => 'required|array',
+                'store_id' => 'nullable|integer',
             ]);
-        }
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Order placed successfully',
-            'order_number' => $orderNumber,
-        ], 201);
+            // Run Server-Side Validation & Fee Calculation Engine
+            $checkoutResult = CheckoutValidationService::validateAndCalculateCheckout(array_merge($request->all(), [
+                'store_id' => $request->input('store_id', 1)
+            ]));
+
+            return DB::transaction(function() use ($validatedData, $checkoutResult, $request) {
+                $orderNumber = 'ORD-' . strtoupper(uniqid());
+
+                // 1. Insert Order Record
+                $orderId = DB::table('orders')->insertGetId([
+                    'order_number' => $orderNumber,
+                    'store_id' => $checkoutResult['store_id'],
+                    'user_name' => $validatedData['user_name'],
+                    'user_phone' => $validatedData['user_phone'],
+                    'delivery_address' => $validatedData['delivery_address'],
+                    'subtotal' => $checkoutResult['subtotal'],
+                    'delivery_fee' => $checkoutResult['delivery_fee'],
+                    'grand_total' => $checkoutResult['grand_total'],
+                    'payment_method' => $request->input('payment_method', 'PhonePe UPI'),
+                    'status' => 'Pending',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                // 2. Insert Order Items & Reserve Stock
+                foreach ($checkoutResult['items'] as $item) {
+                    DB::table('order_items')->insert([
+                        'order_id' => $orderId,
+                        'product_id' => $item['product_id'],
+                        'product_name' => $item['name'],
+                        'price' => $item['price'],
+                        'quantity' => $item['quantity'],
+                        'total' => $item['total'],
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+
+                    // Reserve Stock atomically
+                    InventoryService::reserveStock(
+                        $item['product_id'],
+                        $checkoutResult['store_id'],
+                        $item['quantity'],
+                        $orderNumber,
+                        $item['variant_id'] ?? null
+                    );
+                }
+
+                // 3. Log Initial Status History
+                DB::table('order_status_histories')->insert([
+                    'order_id' => $orderId,
+                    'previous_status' => null,
+                    'new_status' => 'Pending',
+                    'reason' => 'Customer created order via Mobile App',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                // 4. Record/Update Customer Record
+                $customer = DB::table('customers')->where('phone', $validatedData['user_phone'])->first();
+                if ($customer) {
+                    DB::table('customers')->where('id', $customer->id)->update([
+                        'total_orders' => $customer->total_orders + 1,
+                        'total_spent' => $customer->total_spent + $checkoutResult['grand_total'],
+                        'last_order_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                } else {
+                    DB::table('customers')->insert([
+                        'name' => $validatedData['user_name'],
+                        'phone' => $validatedData['user_phone'],
+                        'status' => 'Active',
+                        'total_orders' => 1,
+                        'total_spent' => $checkoutResult['grand_total'],
+                        'last_order_at' => now(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Order placed successfully and stock reserved.',
+                    'order_number' => $orderNumber,
+                    'grand_total' => $checkoutResult['grand_total'],
+                ], 201);
+            });
+
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 422);
+        }
     }
 }

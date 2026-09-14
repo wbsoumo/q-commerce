@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Q-Commerce Admin | Stores & Managers</title>
+  <title>Q-Commerce Admin | Delivery Management</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
@@ -14,12 +14,7 @@
     <ul class="navbar-nav">
       <li class="nav-item"><a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a></li>
       <li class="nav-item d-none d-sm-inline-block"><a href="/admin" class="nav-link">Dashboard</a></li>
-      <li class="nav-item d-none d-sm-inline-block"><a href="/admin/stores" class="nav-link active font-weight-bold">Stores</a></li>
-    </ul>
-    <ul class="navbar-nav ml-auto">
-      <li class="nav-item">
-        <a class="btn btn-success btn-sm font-weight-bold" href="/admin/stores/create"><i class="fas fa-plus mr-1"></i> Add New Store & Manager</a>
-      </li>
+      <li class="nav-item d-none d-sm-inline-block"><a href="/admin/deliveries" class="nav-link active font-weight-bold">Deliveries</a></li>
     </ul>
   </nav>
 
@@ -31,9 +26,8 @@
       <nav class="mt-2">
         <ul class="nav nav-pills nav-sidebar flex-column">
           <li class="nav-item"><a href="/admin" class="nav-link"><i class="nav-icon fas fa-tachometer-alt"></i><p>Dashboard</p></a></li>
-          <li class="nav-item"><a href="/admin/stores" class="nav-link active"><i class="nav-icon fas fa-store"></i><p>Stores & Managers</p></a></li>
-          <li class="nav-item"><a href="/admin/products" class="nav-link"><i class="nav-icon fas fa-boxes"></i><p>Products</p></a></li>
-          <li class="nav-item"><a href="/admin/store-manager" class="nav-link"><i class="nav-icon fas fa-user-cog"></i><p>Store Manager Portal</p></a></li>
+          <li class="nav-item"><a href="/admin/deliveries" class="nav-link active"><i class="nav-icon fas fa-motorcycle"></i><p>Deliveries & Riders</p></a></li>
+          <li class="nav-item"><a href="/admin/delivery-zones" class="nav-link"><i class="nav-icon fas fa-map-marked-alt"></i><p>Delivery Zones</p></a></li>
         </ul>
       </nav>
     </div>
@@ -42,8 +36,7 @@
   <div class="content-wrapper">
     <div class="content-header">
       <div class="container-fluid d-flex justify-content-between align-items-center">
-        <h1 class="m-0 font-weight-bold">Stores & Assigned Managers</h1>
-        <a href="/admin/stores/create" class="btn btn-success font-weight-bold"><i class="fas fa-plus mr-1"></i> Create Store & Manager</a>
+        <h1 class="m-0 font-weight-bold">Delivery Partner & Dispatch Management</h1>
       </div>
     </div>
 
@@ -56,43 +49,46 @@
           </div>
         @endif
 
-        <div class="card card-outline card-success">
-          <div class="card-header"><h3 class="card-title font-weight-bold">Active Store Network</h3></div>
+        <div class="card card-outline card-primary">
+          <div class="card-header"><h3 class="card-title font-weight-bold"><i class="fas fa-truck-loading mr-2"></i>Active Deliveries & Assignments</h3></div>
           <div class="card-body p-0">
-            <table class="table table-striped">
+            <table class="table table-striped table-bordered">
               <thead>
                 <tr>
                   <th>#ID</th>
-                  <th>Store Code</th>
-                  <th>Store Name</th>
-                  <th>City</th>
-                  <th>Assigned Manager</th>
-                  <th>Manager Email</th>
-                  <th>Status</th>
-                  <th>Action</th>
+                  <th>Order #</th>
+                  <th>Store</th>
+                  <th>Delivery Status</th>
+                  <th>Assigned Rider</th>
+                  <th>Grand Total</th>
+                  <th>Assign / Reassign Rider</th>
                 </tr>
               </thead>
               <tbody>
-                @forelse($stores as $st)
+                @forelse($deliveries as $del)
                 <tr>
-                  <td>{{ $st->id }}</td>
-                  <td><span class="badge badge-secondary">{{ $st->code }}</span></td>
-                  <td class="font-weight-bold">{{ $st->name }}</td>
-                  <td>{{ $st->city }} ({{ $st->pincode }})</td>
-                  <td><span class="badge badge-info"><i class="fas fa-user-shield mr-1"></i>{{ $st->manager_name ?? 'Unassigned' }}</span></td>
-                  <td>{{ $st->manager_email ?? 'N/A' }}</td>
-                  <td><span class="badge badge-success">Active</span></td>
+                  <td>{{ $del->id }}</td>
+                  <td class="font-weight-bold">{{ $del->order_number }}</td>
+                  <td>{{ $del->store_name }}</td>
+                  <td><span class="badge badge-info">{{ $del->delivery_status }}</span></td>
+                  <td><span class="badge badge-secondary">{{ $del->rider_name ?? 'Unassigned' }}</span></td>
+                  <td class="text-success font-weight-bold">₹{{ $del->grand_total }}</td>
                   <td>
-                    <a href="/admin/stores/{{ $st->id }}/settings" class="btn btn-warning btn-xs font-weight-bold mr-1">
-                      <i class="fas fa-cog mr-1"></i> Settings
-                    </a>
-                    <a href="/admin/store-manager?store_id={{ $st->id }}" class="btn btn-primary btn-xs font-weight-bold">
-                      <i class="fas fa-edit mr-1"></i> Manager Portal
-                    </a>
+                    <form action="/admin/deliveries/assign" method="POST" class="form-inline">
+                      @csrf
+                      <input type="hidden" name="delivery_id" value="{{ $del->id }}">
+                      <select name="delivery_partner_id" class="form-control form-control-sm mr-2">
+                        <option value="">Select Rider</option>
+                        @foreach($riders as $r)
+                          <option value="{{ $r->id }}" {{ $del->delivery_partner_id == $r->id ? 'selected' : '' }}>{{ $r->name }} ({{ $r->phone }})</option>
+                        @endforeach
+                      </select>
+                      <button type="submit" class="btn btn-sm btn-primary font-weight-bold">Assign</button>
+                    </form>
                   </td>
                 </tr>
                 @empty
-                <tr><td colspan="8" class="text-center py-4">No stores found. <a href="/admin/stores/create">Click here to create a store.</a></td></tr>
+                <tr><td colspan="7" class="text-center py-4">No deliveries created yet. Deliveries will populate automatically as orders are placed.</td></tr>
                 @endforelse
               </tbody>
             </table>
