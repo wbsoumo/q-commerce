@@ -4,39 +4,78 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class QCommerceSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Seed Stores
-        DB::table('stores')->insert([
+        // 1. Seed Roles
+        DB::table('roles')->insert([
+            ['name' => 'Admin'],
+            ['name' => 'Store Manager'],
+        ]);
+
+        // 2. Seed Multi-Vendor Stores
+        $store1Id = DB::table('stores')->insertGetId([
+            'name' => 'Krishnanagar Main Store',
+            'code' => 'STR-KRN-01',
+            'address' => '11E Krishnanagar Main Road',
+            'latitude' => 23.4013,
+            'longitude' => 88.5010,
+            'city' => 'Krishnanagar',
+            'pincode' => '741101',
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $store2Id = DB::table('stores')->insertGetId([
+            'name' => 'Kolkata Hub Store',
+            'code' => 'STR-CCU-02',
+            'address' => 'Salt Lake Sector V, Block EP',
+            'latitude' => 22.5726,
+            'longitude' => 88.4339,
+            'city' => 'Kolkata',
+            'pincode' => '700091',
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // 3. Seed Users (Admin & Store Managers)
+        DB::table('users')->insert([
             [
-                'name' => 'Krishnanagar Main Store',
-                'address' => '11E Krishnanagar Main Road',
-                'latitude' => 23.4013,
-                'longitude' => 88.5010,
-                'city' => 'Krishnanagar',
-                'pincode' => '741101',
-                'is_active' => true,
+                'name' => 'Super Admin',
+                'email' => 'admin@blinkit.com',
+                'password' => Hash::make('admin123'),
+                'role' => 'admin',
+                'store_id' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Kolkata Hub Store',
-                'address' => 'Salt Lake Sector V',
-                'latitude' => 22.5726,
-                'longitude' => 88.4339,
-                'city' => 'Kolkata',
-                'pincode' => '700091',
-                'is_active' => true,
+                'name' => 'Manager Krishnanagar',
+                'email' => 'manager.krishnanagar@blinkit.com',
+                'password' => Hash::make('manager123'),
+                'role' => 'store_manager',
+                'store_id' => $store1Id,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => 'Manager Kolkata',
+                'email' => 'manager.kolkata@blinkit.com',
+                'password' => Hash::make('manager123'),
+                'role' => 'store_manager',
+                'store_id' => $store2Id,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]
         ]);
 
-        // 2. Seed Categories
+        // 4. Seed Categories
         $categories = [
             'Ganeshotsav' => 'image 50.png',
             'Electronics' => 'image 52.png',
@@ -59,33 +98,56 @@ class QCommerceSeeder extends Seeder
                 'updated_at' => now(),
             ]);
 
-            // Seed sample subcategories
-            $subCatId = DB::table('sub_categories')->insertGetId([
+            // Global Product
+            $globalProdId = DB::table('products')->insertGetId([
                 'category_id' => $catId,
-                'name' => 'Popular Items',
-                'slug' => 'popular-items',
+                'name' => 'Global ' . $catName . ' Essential Pack',
+                'sku' => 'GLOBAL-' . strtoupper(Str::slug($catName)),
+                'unit' => '1 pack',
+                'price' => rand(49, 199),
+                'mrp' => rand(250, 399),
+                'stock' => 100,
+                'image' => $img,
+                'description' => 'Available in all stores globally.',
+                'scope' => 'global',
+                'store_id' => null,
+                'is_featured' => true,
+                'is_bestseller' => true,
+                'is_active' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
 
-            // Seed Products
+            // Store Specific Product (For Krishnanagar Store)
             DB::table('products')->insert([
-                [
-                    'category_id' => $catId,
-                    'sub_category_id' => $subCatId,
-                    'name' => 'Premium ' . $catName . ' Special Pack',
-                    'unit' => '1 pack',
-                    'price' => rand(49, 499),
-                    'mrp' => rand(595, 899),
-                    'stock' => 50,
-                    'image' => $img,
-                    'description' => 'Fresh quality ' . $catName . ' delivered in 15 minutes.',
-                    'is_featured' => true,
-                    'is_bestseller' => true,
-                    'is_active' => true,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]
+                'category_id' => $catId,
+                'name' => 'Krishnanagar Special ' . $catName,
+                'sku' => 'STR1-' . strtoupper(Str::slug($catName)),
+                'unit' => '1 unit',
+                'price' => rand(89, 299),
+                'mrp' => rand(350, 499),
+                'stock' => 35,
+                'image' => $img,
+                'description' => 'Exclusive item for Krishnanagar store.',
+                'scope' => 'store_specific',
+                'store_id' => $store1Id,
+                'is_featured' => false,
+                'is_bestseller' => true,
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // Custom Store Manager Inventory Override for Global Product
+            DB::table('store_product_inventories')->insert([
+                'store_id' => $store1Id,
+                'product_id' => $globalProdId,
+                'custom_price' => 79.00,
+                'custom_mrp' => 120.00,
+                'custom_stock' => 45,
+                'is_available' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
         }
     }

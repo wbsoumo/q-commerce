@@ -7,7 +7,20 @@ use App\Http\Controllers\Api\ApiController;
 // Admin Panel Routes
 Route::get('/', [AdminController::class, 'dashboard']);
 Route::get('/admin', [AdminController::class, 'dashboard']);
+
+// Stores & Managers Routes
+Route::get('/admin/stores', [AdminController::class, 'stores']);
+Route::get('/admin/stores/create', [AdminController::class, 'createStore']);
+Route::post('/admin/stores/store', [AdminController::class, 'storeStore']);
+
+// Products Routes with Global vs Store Specific Scope
 Route::get('/admin/products', [AdminController::class, 'products']);
+Route::get('/admin/products/create', [AdminController::class, 'createProduct']);
+Route::post('/admin/products/store', [AdminController::class, 'storeProduct']);
+
+// Store Manager Portal Routes
+Route::get('/admin/store-manager', [AdminController::class, 'storeManagerPortal']);
+Route::post('/admin/store-manager/update-inventory', [AdminController::class, 'updateStoreInventory']);
 
 // Auto Database Table Import Route
 Route::get('/import-database', [AdminController::class, 'importDatabase']);
