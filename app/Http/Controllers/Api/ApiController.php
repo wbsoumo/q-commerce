@@ -40,30 +40,45 @@ class ApiController extends Controller
         ]);
     }
 
-    // Get All Categories
-    public function getCategories()
+    // Get All Categories with ETag & Incremental Sync Support
+    public function getCategories(Request $request)
     {
-        $categories = DB::table('categories')
-            ->where('is_active', true)
-            ->orderBy('display_order', 'asc')
-            ->get();
+        $query = DB::table('categories')->where('is_active', true);
+        
+        $updatedSince = $request->query('updated_since');
+        if ($updatedSince) {
+            $query->where('updated_at', '>', $updatedSince);
+        }
+
+        $categories = $query->orderBy('display_order', 'asc')->get();
+        $etag = md5(json_encode($categories));
+
+        if ($request->header('If-None-Match') === $etag) {
+            return response()->json(['status' => 'not_modified'], 304);
+        }
 
         return response()->json([
             'status' => 'success',
-            'data' => $categories
-        ]);
+            'data' => $categories,
+            'server_time' => now()->toIso8601String(),
+        ])->header('ETag', $etag);
     }
 
-    // Get Products by Category with Variants & Store Overrides
+    // Get Products by Category with Incremental Sync & ETag Support
     public function getProducts(Request $request)
     {
         $categoryId = $request->query('category_id');
         $storeId = $request->query('store_id', 1);
+        $updatedSince = $request->query('updated_since');
 
         $query = DB::table('products')->where('products.is_active', true);
 
         if ($categoryId) {
             $query->where('products.category_id', $categoryId);
+        }
+
+        if ($updatedSince) {
+            $query->where('products.updated_at', '>', $updatedSince);
         }
 
         // Left join store product overrides
@@ -101,11 +116,17 @@ class ApiController extends Controller
             $prod->available_stock = max(0, $totalStock - $resStock);
         }
 
+        $etag = md5(json_encode($products));
+        if ($request->header('If-None-Match') === $etag) {
+            return response()->json(['status' => 'not_modified'], 304);
+        }
+
         return response()->json([
             'status' => 'success',
             'count' => $products->count(),
-            'data' => $products
-        ]);
+            'data' => $products,
+            'server_time' => now()->toIso8601String(),
+        ])->header('ETag', $etag);
     }
 
     // Create New Order with Advanced Validation & Stock Reservation

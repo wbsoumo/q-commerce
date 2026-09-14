@@ -109,6 +109,9 @@
                     @else
                       <span class="badge badge-primary"><i class="fas fa-store mr-1"></i> Store Specific</span>
                     @endif
+                    @if(!empty($prod->is_featured))
+                      <span class="badge badge-warning text-dark ml-1"><i class="fas fa-star mr-1"></i> Featured</span>
+                    @endif
                   </td>
                   <td>{{ $prod->store_name ?? 'All Stores (Global)' }}</td>
                   <td class="text-success font-weight-bold">₹{{ $prod->price }}</td>

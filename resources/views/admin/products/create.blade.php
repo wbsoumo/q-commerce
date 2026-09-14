@@ -97,13 +97,19 @@
               </div>
 
               <div class="row">
-                <div class="col-md-6 form-group">
+                <div class="col-md-4 form-group">
                   <label>Selling Price (₹)</label>
                   <input type="number" step="0.01" name="price" class="form-control" placeholder="99.00" required>
                 </div>
-                <div class="col-md-6 form-group">
+                <div class="col-md-4 form-group">
                   <label>MRP (₹)</label>
                   <input type="number" step="0.01" name="mrp" class="form-control" placeholder="120.00" required>
+                </div>
+                <div class="col-md-4 form-group d-flex align-items-center mt-3">
+                  <div class="custom-control custom-switch custom-switch-off-danger custom-switch-on-success">
+                    <input type="checkbox" name="is_featured" value="1" class="custom-control-input" id="isFeaturedCreateSwitch">
+                    <label class="custom-control-label font-weight-bold text-success" for="isFeaturedCreateSwitch"><i class="fas fa-star text-warning mr-1"></i> Featured Product (Show on Front Page)</label>
+                  </div>
                 </div>
               </div>
 
