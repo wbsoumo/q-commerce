@@ -87,14 +87,16 @@ class ApiController extends Controller
             $query->where('products.updated_at', '>', $updatedSince);
         }
 
-        // Left join store product overrides
+        // Left join store product overrides & categories
         $products = $query
+            ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
             ->leftJoin('store_product_inventories', function($join) use ($storeId) {
                 $join->on('products.id', '=', 'store_product_inventories.product_id')
                      ->where('store_product_inventories.store_id', '=', $storeId);
             })
             ->select(
                 'products.*',
+                'categories.name as category_name',
                 'store_product_inventories.custom_price',
                 'store_product_inventories.custom_mrp',
                 'store_product_inventories.custom_stock',
