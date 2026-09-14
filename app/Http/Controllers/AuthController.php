@@ -48,6 +48,40 @@ class AuthController extends Controller
         return redirect()->back()->with('error', 'Invalid admin credentials entered.');
     }
 
+    // Show Temp Admin Register Page
+    public function showAdminRegister()
+    {
+        return view('auth.admin_register');
+    }
+
+    // Process Temp Admin Registration/Password Reset
+    public function processAdminRegister(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string',
+            'email' => 'required|email',
+            'password' => 'required|min:4',
+        ]);
+
+        $user = \App\Models\User::where('email', $request->email)->first();
+        if ($user) {
+            $user->update([
+                'name' => $request->name,
+                'password' => Hash::make($request->password),
+                'role' => 'admin',
+            ]);
+        } else {
+            \App\Models\User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'role' => 'admin',
+            ]);
+        }
+
+        return redirect('/admin/login')->with('success', 'Admin account registered/updated successfully! You can now log in.');
+    }
+
     // Show Store Manager Login Page
     public function showManagerLogin()
     {
