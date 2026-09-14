@@ -27,61 +27,61 @@ class QCommerceSeeder extends Seeder
             ]
         );
 
-        // 2. Seed Categories with web images
+        // 2. Seed Categories with web images (HTTPS URLs)
         $categories = [
             [
                 'name' => 'Vegetables & Fruits',
                 'slug' => 'vegetables-fruits',
-                'image' => 'http://images.unsplash.com/photo-1610832958506-aa56368176cf?w=500&q=80',
+                'image' => 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=500&q=80',
                 'display_order' => 1,
                 'is_active' => true,
             ],
             [
                 'name' => 'Atta, Dal & Rice',
                 'slug' => 'atta-dal-rice',
-                'image' => 'http://images.unsplash.com/photo-1586201375761-83865001e31c?w=500&q=80',
+                'image' => 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500&q=80',
                 'display_order' => 2,
                 'is_active' => true,
             ],
             [
                 'name' => 'Oil, Ghee & Masala',
                 'slug' => 'oil-ghee-masala',
-                'image' => 'http://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=500&q=80',
+                'image' => 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=500&q=80',
                 'display_order' => 3,
                 'is_active' => true,
             ],
             [
                 'name' => 'Dairy, Bread & Milk',
                 'slug' => 'dairy-bread-milk',
-                'image' => 'http://images.unsplash.com/photo-1550583724-b2692b85b150?w=500&q=80',
+                'image' => 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=500&q=80',
                 'display_order' => 4,
                 'is_active' => true,
             ],
             [
                 'name' => 'Biscuits & Bakery',
                 'slug' => 'biscuits-bakery',
-                'image' => 'http://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=500&q=80',
+                'image' => 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=500&q=80',
                 'display_order' => 5,
                 'is_active' => true,
             ],
             [
                 'name' => 'Lights, Diyas & Candles',
                 'slug' => 'lights-diyas-candles',
-                'image' => 'http://images.unsplash.com/photo-1602874801007-bd458bb1b8b6?w=500&q=80',
+                'image' => 'https://images.unsplash.com/photo-1602874801007-bd458bb1b8b6?w=500&q=80',
                 'display_order' => 6,
                 'is_active' => true,
             ],
             [
                 'name' => 'Electronics & Gadgets',
                 'slug' => 'electronics-gadgets',
-                'image' => 'http://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=80',
+                'image' => 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=80',
                 'display_order' => 7,
                 'is_active' => true,
             ],
             [
                 'name' => 'Beauty & Cosmetics',
                 'slug' => 'beauty-cosmetics',
-                'image' => 'http://images.unsplash.com/photo-1586495777744-4413f21062fa?w=500&q=80',
+                'image' => 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=500&q=80',
                 'display_order' => 8,
                 'is_active' => true,
             ],
@@ -93,7 +93,7 @@ class QCommerceSeeder extends Seeder
             ]));
         }
 
-        // 3. Seed Products with web image URLs
+        // 3. Seed Products with web image URLs (HTTPS)
         $catMap = DB::table('categories')->pluck('id', 'slug');
 
         $products = [
@@ -105,7 +105,7 @@ class QCommerceSeeder extends Seeder
                 'price' => 79.00,
                 'mrp' => 120.00,
                 'stock' => 150,
-                'image' => 'http://images.unsplash.com/photo-1602874801007-bd458bb1b8b6?w=500&q=80',
+                'image' => 'https://images.unsplash.com/photo-1602874801007-bd458bb1b8b6?w=500&q=80',
                 'description' => 'Aromatic luxury candle in glass jar with wooden lid.',
                 'scope' => 'global',
                 'is_featured' => true,
@@ -120,7 +120,7 @@ class QCommerceSeeder extends Seeder
                 'price' => 149.00,
                 'mrp' => 199.00,
                 'stock' => 80,
-                'image' => 'http://images.unsplash.com/photo-1599785209707-a456fc1337cc?w=500&q=80',
+                'image' => 'https://images.unsplash.com/photo-1599785209707-a456fc1337cc?w=500&q=80',
                 'description' => 'Soft & delicious royal gulab jamuns.',
                 'scope' => 'global',
                 'is_featured' => true,
@@ -135,7 +135,7 @@ class QCommerceSeeder extends Seeder
                 'price' => 49.00,
                 'mrp' => 65.00,
                 'stock' => 200,
-                'image' => 'http://images.unsplash.com/photo-1610832958506-aa56368176cf?w=500&q=80',
+                'image' => 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=500&q=80',
                 'description' => 'Farm fresh juicy red tomatoes.',
                 'scope' => 'global',
                 'is_featured' => false,
@@ -150,7 +150,7 @@ class QCommerceSeeder extends Seeder
                 'price' => 199.00,
                 'mrp' => 245.00,
                 'stock' => 90,
-                'image' => 'http://images.unsplash.com/photo-1586201375761-83865001e31c?w=500&q=80',
+                'image' => 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500&q=80',
                 'description' => '100% whole wheat grain chakki fresh atta.',
                 'scope' => 'global',
                 'is_featured' => false,
@@ -165,7 +165,7 @@ class QCommerceSeeder extends Seeder
                 'price' => 165.00,
                 'mrp' => 190.00,
                 'stock' => 120,
-                'image' => 'http://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=500&q=80',
+                'image' => 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=500&q=80',
                 'description' => 'Pure and pungent mustard oil.',
                 'scope' => 'global',
                 'is_featured' => false,
@@ -180,7 +180,7 @@ class QCommerceSeeder extends Seeder
                 'price' => 33.00,
                 'mrp' => 35.00,
                 'stock' => 300,
-                'image' => 'http://images.unsplash.com/photo-1550583724-b2692b85b150?w=500&q=80',
+                'image' => 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=500&q=80',
                 'description' => 'Fresh pasteurized toned milk.',
                 'scope' => 'global',
                 'is_featured' => false,
@@ -195,7 +195,7 @@ class QCommerceSeeder extends Seeder
                 'price' => 899.00,
                 'mrp' => 1499.00,
                 'stock' => 45,
-                'image' => 'http://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=80',
+                'image' => 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=80',
                 'description' => 'High bass wireless stereo headphones.',
                 'scope' => 'global',
                 'is_featured' => true,
@@ -210,7 +210,7 @@ class QCommerceSeeder extends Seeder
                 'price' => 249.00,
                 'mrp' => 350.00,
                 'stock' => 110,
-                'image' => 'http://images.unsplash.com/photo-1586495777744-4413f21062fa?w=500&q=80',
+                'image' => 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=500&q=80',
                 'description' => 'Long lasting rich matte velvet lipstick.',
                 'scope' => 'global',
                 'is_featured' => false,
