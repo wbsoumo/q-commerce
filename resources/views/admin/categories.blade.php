@@ -109,19 +109,19 @@
             </div>
             <div class="form-group">
               <label class="font-weight-bold"><i class="fas fa-icons text-primary mr-1"></i> Choose Header Tab Icon</label>
-              <select name="icon" class="form-control font-weight-bold">
-                <option value="shopping_bag_outlined">🛍️ Shopping Bag (All)</option>
-                <option value="festival_outlined">🪔 Festival / Lights</option>
-                <option value="headphones_outlined">🎧 Electronics / Headphones</option>
-                <option value="brush_outlined">💄 Beauty & Cosmetics</option>
-                <option value="card_giftcard_outlined">🎁 Gifting & Sweets</option>
-                <option value="local_hospital_outlined">🏥 Pharmacy & Health</option>
-                <option value="pets_outlined">🐾 Pet Care</option>
-                <option value="toys_outlined">🧸 Toys & Games</option>
-                <option value="fastfood_outlined">🍔 Fast Food & Snacks</option>
-                <option value="local_drink_outlined">🥤 Beverages & Cold Drinks</option>
-                <option value="local_grocery_store_outlined">🛒 Grocery & Kitchen</option>
-              </select>
+              <input type="hidden" name="icon" id="create_cat_icon_value" value="shopping_bag_outlined">
+              <div class="d-flex align-items-center p-2 border rounded bg-light">
+                <div id="create_cat_icon_preview" class="btn btn-dark btn-circle mr-3" style="width:42px; height:42px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:18px;">
+                  <i class="fas fa-shopping-bag"></i>
+                </div>
+                <div class="flex-grow-1">
+                  <span id="create_cat_icon_label" class="font-weight-bold text-dark d-block">Shopping Bag (All)</span>
+                  <small class="text-muted" id="create_cat_icon_code">shopping_bag_outlined</small>
+                </div>
+                <button type="button" class="btn btn-outline-primary btn-sm font-weight-bold" onclick="openIconPicker('create')">
+                  <i class="fas fa-th mr-1"></i> Browse Icon Library
+                </button>
+              </div>
             </div>
             <div class="form-group">
               <label class="font-weight-bold">Upload Category Image File</label>
@@ -165,19 +165,19 @@
             </div>
             <div class="form-group">
               <label class="font-weight-bold"><i class="fas fa-icons text-primary mr-1"></i> Choose Header Tab Icon</label>
-              <select name="icon" id="edit_cat_icon" class="form-control font-weight-bold">
-                <option value="shopping_bag_outlined">🛍️ Shopping Bag (All)</option>
-                <option value="festival_outlined">🪔 Festival / Lights</option>
-                <option value="headphones_outlined">🎧 Electronics / Headphones</option>
-                <option value="brush_outlined">💄 Beauty & Cosmetics</option>
-                <option value="card_giftcard_outlined">🎁 Gifting & Sweets</option>
-                <option value="local_hospital_outlined">🏥 Pharmacy & Health</option>
-                <option value="pets_outlined">🐾 Pet Care</option>
-                <option value="toys_outlined">🧸 Toys & Games</option>
-                <option value="fastfood_outlined">🍔 Fast Food & Snacks</option>
-                <option value="local_drink_outlined">🥤 Beverages & Cold Drinks</option>
-                <option value="local_grocery_store_outlined">🛒 Grocery & Kitchen</option>
-              </select>
+              <input type="hidden" name="icon" id="edit_cat_icon_value" value="shopping_bag_outlined">
+              <div class="d-flex align-items-center p-2 border rounded bg-light">
+                <div id="edit_cat_icon_preview" class="btn btn-dark btn-circle mr-3" style="width:42px; height:42px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:18px;">
+                  <i class="fas fa-shopping-bag"></i>
+                </div>
+                <div class="flex-grow-1">
+                  <span id="edit_cat_icon_label" class="font-weight-bold text-dark d-block">Shopping Bag (All)</span>
+                  <small class="text-muted" id="edit_cat_icon_code">shopping_bag_outlined</small>
+                </div>
+                <button type="button" class="btn btn-outline-primary btn-sm font-weight-bold" onclick="openIconPicker('edit')">
+                  <i class="fas fa-th mr-1"></i> Browse Icon Library
+                </button>
+              </div>
             </div>
             <div class="form-group">
               <label class="font-weight-bold">Upload New Image File</label>
@@ -203,19 +203,103 @@
     </div>
   </div>
 
+  <!-- INTERACTIVE ICON PICKER MODAL -->
+  <div class="modal fade" id="iconPickerModal" tabindex="-1" style="z-index: 1060;">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title font-weight-bold"><i class="fas fa-icons mr-2"></i>Select Material & Category Icon</h5>
+          <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+        </div>
+        <div class="modal-body">
+          <input type="text" id="iconSearchInput" class="form-control mb-3 font-weight-bold" placeholder="🔍 Search icons by name (e.g. food, bag, phone, gift, drinks)..." onkeyup="filterIconGrid()">
+          <div class="row" id="iconGridContainer" style="max-height: 380px; overflow-y: auto;">
+            <!-- Dynamic Icon Cards Injected via JS -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <footer class="main-footer"><strong>Copyright &copy; 2026 Q-Commerce Admin.</strong></footer>
 </div>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
 <script>
+  let activeIconTarget = 'create';
+
+  const iconLibrary = [
+    { code: 'shopping_bag_outlined', fa: 'fa-shopping-bag', label: 'Shopping Bag (All)', tags: 'bag shop store default' },
+    { code: 'festival_outlined', fa: 'fa-box-open', label: 'Festival / Diya / Lights', tags: 'diwali lights fest celebration' },
+    { code: 'headphones_outlined', fa: 'fa-headphones', label: 'Electronics / Headphones', tags: 'phone gadgets audio electronics' },
+    { code: 'brush_outlined', fa: 'fa-paint-brush', label: 'Beauty & Cosmetics', tags: 'makeup beauty cream face wash' },
+    { code: 'card_giftcard_outlined', fa: 'fa-gift', label: 'Gifting & Sweets', tags: 'gift hamper sweets diwali box' },
+    { code: 'local_hospital_outlined', fa: 'fa-first-aid', label: 'Pharmacy & Health', tags: 'medical medicine doctor hospital' },
+    { code: 'pets_outlined', fa: 'fa-paw', label: 'Pet Care & Dog Food', tags: 'dog cat pet animal food' },
+    { code: 'toys_outlined', fa: 'fa-gamepad', label: 'Toys & Games', tags: 'toys kids puzzle game' },
+    { code: 'fastfood_outlined', fa: 'fa-hamburger', label: 'Fast Food & Snacks', tags: 'chips snack burger food' },
+    { code: 'local_drink_outlined', fa: 'fa-wine-bottle', label: 'Beverages & Cold Drinks', tags: 'soda drink juice water milk' },
+    { code: 'local_grocery_store_outlined', fa: 'fa-shopping-cart', label: 'Grocery & Kitchen', tags: 'atta dal rice oil grocery' },
+  ];
+
+  function renderIconGrid() {
+    let html = '';
+    iconLibrary.forEach(item => {
+      html += `
+        <div class="col-md-3 col-6 mb-3 icon-card-col" data-tags="${item.code} ${item.label.toLowerCase()} ${item.tags}">
+          <div class="card h-100 text-center p-3 border hover-shadow" style="cursor:pointer; transition: transform 0.2s;" onclick="selectIcon('${item.code}', '${item.fa}', '${item.label}')">
+            <div class="mb-2 text-primary" style="font-size: 28px;">
+              <i class="fas ${item.fa}"></i>
+            </div>
+            <span class="font-weight-bold text-dark small d-block">${item.label}</span>
+            <code class="text-muted d-block mt-1" style="font-size: 10px;">${item.code}</code>
+          </div>
+        </div>
+      `;
+    });
+    $('#iconGridContainer').html(html);
+  }
+
+  function filterIconGrid() {
+    const q = $('#iconSearchInput').val().toLowerCase();
+    $('.icon-card-col').each(function() {
+      const tags = $(this).data('tags');
+      if (tags.includes(q)) {
+        $(this).show();
+      } else {
+        $(this).hide();
+      }
+    });
+  }
+
+  function openIconPicker(target) {
+    activeIconTarget = target;
+    renderIconGrid();
+    $('#iconPickerModal').modal('show');
+  }
+
+  function selectIcon(code, fa, label) {
+    $(`#${activeIconTarget}_cat_icon_value`).val(code);
+    $(`#${activeIconTarget}_cat_icon_preview`).html(`<i class="fas ${fa}"></i>`);
+    $(`#${activeIconTarget}_cat_icon_label`).text(label);
+    $(`#${activeIconTarget}_cat_icon_code`).text(code);
+    $('#iconPickerModal').modal('hide');
+  }
+
   function editCategory(cat) {
     $('#edit_cat_id').val(cat.id);
     $('#edit_cat_name').val(cat.name);
-    $('#edit_cat_icon').val(cat.icon || 'shopping_bag_outlined');
     $('#edit_cat_image_url').val(cat.image || '');
     $('#edit_cat_order').val(cat.display_order || 0);
     $('#editShowHp').prop('checked', !!cat.show_on_homepage);
+
+    const found = iconLibrary.find(i => i.code === (cat.icon || 'shopping_bag_outlined')) || iconLibrary[0];
+    selectIcon(found.code, found.fa, found.label);
+
     $('#editCategoryModal').modal('show');
   }
 </script>
