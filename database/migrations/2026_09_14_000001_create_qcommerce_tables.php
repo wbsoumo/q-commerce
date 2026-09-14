@@ -60,7 +60,8 @@ return new class extends Migration
             $table->string('image')->nullable();
             $table->text('description')->nullable();
             $table->enum('scope', ['global', 'store_specific'])->default('global');
-            $table->foreignId('store_id')->nullable()->constrained()->onDelete('cascade'); // Null if global
+            $table->foreignId('store_id')->nullable()->constrained()->onDelete('cascade'); // Legacy single store
+            $table->json('store_ids')->nullable(); // Multiple assigned stores JSON array
             $table->boolean('is_featured')->default(false);
             $table->boolean('is_bestseller')->default(false);
             $table->boolean('is_active')->default(true);

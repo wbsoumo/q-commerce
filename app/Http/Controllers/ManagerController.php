@@ -123,7 +123,8 @@ class ManagerController extends Controller
             })
             ->where(function($q) use ($storeId) {
                 $q->where('products.scope', '=', 'global')
-                  ->orWhere('products.store_id', '=', $storeId);
+                  ->orWhere('products.store_id', '=', $storeId)
+                  ->orWhereJsonContains('products.store_ids', $storeId);
             });
 
         if ($request->filled('search')) {

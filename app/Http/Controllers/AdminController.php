@@ -165,7 +165,8 @@ class AdminController extends Controller
             'mrp' => 'required|numeric',
             'stock' => 'required|integer',
             'scope' => 'required|in:global,store_specific',
-            'store_id' => 'nullable|required_if:scope,store_specific|exists:stores,id',
+            'store_ids' => 'nullable|array',
+            'store_ids.*' => 'exists:stores,id',
             'image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
             'gallery_files.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
         ]);
@@ -190,6 +191,9 @@ class AdminController extends Controller
             $galleryPaths = array_values($urls);
         }
 
+        $selectedStores = $request->input('store_ids', []);
+        $primaryStoreId = !empty($selectedStores) ? (int)$selectedStores[0] : null;
+
         DB::table('products')->insert([
             'category_id' => $validated['category_id'],
             'name' => $validated['name'],
@@ -199,7 +203,8 @@ class AdminController extends Controller
             'mrp' => $validated['mrp'],
             'stock' => $validated['stock'],
             'scope' => $validated['scope'],
-            'store_id' => $validated['scope'] === 'store_specific' ? $validated['store_id'] : null,
+            'store_id' => $validated['scope'] === 'store_specific' ? $primaryStoreId : null,
+            'store_ids' => $validated['scope'] === 'store_specific' && !empty($selectedStores) ? json_encode(array_map('intval', $selectedStores)) : null,
             'image' => $imagePath,
             'gallery' => !empty($galleryPaths) ? json_encode($galleryPaths) : null,
             'description' => $request->input('description', ''),
@@ -236,10 +241,14 @@ class AdminController extends Controller
             'mrp' => 'required|numeric',
             'stock' => 'required|integer',
             'scope' => 'required|in:global,store_specific',
-            'store_id' => 'nullable|required_if:scope,store_specific|exists:stores,id',
+            'store_ids' => 'nullable|array',
+            'store_ids.*' => 'exists:stores,id',
             'image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
             'gallery_files.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
         ]);
+
+        $selectedStores = $request->input('store_ids', []);
+        $primaryStoreId = !empty($selectedStores) ? (int)$selectedStores[0] : null;
 
         $updateData = [
             'category_id' => $validated['category_id'],
@@ -250,7 +259,8 @@ class AdminController extends Controller
             'mrp' => $validated['mrp'],
             'stock' => $validated['stock'],
             'scope' => $validated['scope'],
-            'store_id' => $validated['scope'] === 'store_specific' ? $validated['store_id'] : null,
+            'store_id' => $validated['scope'] === 'store_specific' ? $primaryStoreId : null,
+            'store_ids' => $validated['scope'] === 'store_specific' && !empty($selectedStores) ? json_encode(array_map('intval', $selectedStores)) : null,
             'description' => $request->input('description', ''),
             'updated_at' => now(),
         ];
@@ -315,7 +325,8 @@ class AdminController extends Controller
             })
             ->where(function($q) use ($storeId) {
                 $q->where('products.scope', '=', 'global')
-                  ->orWhere('products.store_id', '=', $storeId);
+                  ->orWhere('products.store_id', '=', $storeId)
+                  ->orWhereJsonContains('products.store_ids', $storeId);
             });
 
         if ($request->filled('search')) {

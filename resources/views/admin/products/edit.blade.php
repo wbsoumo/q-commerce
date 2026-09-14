@@ -75,12 +75,23 @@
                   <small class="form-text text-muted">Global products appear everywhere. Store specific products only appear in assigned store.</small>
                 </div>
                 <div class="col-md-6 form-group mb-0" id="storeSelectGroup" style="display: none;">
-                  <label class="text-primary font-weight-bold"><i class="fas fa-store mr-1"></i> Assign to Specific Store</label>
-                  <select name="store_id" class="form-control font-weight-bold">
+                  <label class="text-primary font-weight-bold"><i class="fas fa-store mr-1"></i> Assign to Specific Store(s) <small class="text-muted">(Hold Ctrl/Cmd or select multiple)</small></label>
+                  @php
+                    $selectedStores = [];
+                    if (!empty($product->store_ids)) {
+                        $selectedStores = json_decode($product->store_ids, true) ?? [];
+                    } elseif (!empty($product->store_id)) {
+                        $selectedStores = [$product->store_id];
+                    }
+                  @endphp
+                  <select name="store_ids[]" class="form-control font-weight-bold" multiple style="height: 110px;">
                     @foreach($stores as $st)
-                      <option value="{{ $st->id }}" {{ $product->store_id == $st->id ? 'selected' : '' }}>{{ $st->name }} ({{ $st->city }})</option>
+                      <option value="{{ $st->id }}" {{ in_array($st->id, $selectedStores) ? 'selected' : '' }}>
+                        {{ $st->name }} ({{ $st->city }} - {{ $st->code }})
+                      </option>
                     @endforeach
                   </select>
+                  <small class="form-text text-muted">Select one or multiple store branches for this product.</small>
                 </div>
               </div>
 
