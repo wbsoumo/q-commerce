@@ -35,6 +35,11 @@
             </a>
           </li>
           <li class="nav-item">
+            <a href="/admin/homepage-customizer" class="nav-link {{ request()->is('admin/homepage-customizer*') ? 'active' : '' }}">
+              <i class="nav-icon fas fa-desktop text-success"></i><p class="font-weight-bold">Global App Customizer</p>
+            </a>
+          </li>
+          <li class="nav-item">
             <a href="/admin/store-manager" class="nav-link {{ request()->is('admin/store-manager*') ? 'active' : '' }}">
               <i class="nav-icon fas fa-user-cog"></i><p>Store Manager Portal</p>
             </a>

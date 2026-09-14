@@ -456,6 +456,41 @@ class AdminController extends Controller
         return redirect('/admin/stores')->with('success', 'Store settings updated successfully!');
     }
 
+    // 8. Global Home Page Customizer Action
+    public function homepageCustomizer()
+    {
+        $store = DB::table('stores')->where('is_active', true)->first();
+        $products = DB::table('products')->where('is_active', true)->get();
+        return view('admin.homepage_customizer', ['config' => $store, 'products' => $products]);
+    }
+
+    public function saveHomepageCustomizer(Request $request)
+    {
+        $hasBannerTitle = \Illuminate\Support\Facades\Schema::hasColumn('stores', 'banner_title');
+        if (!$hasBannerTitle) {
+            \Illuminate\Support\Facades\Schema::table('stores', function ($table) {
+                $table->string('banner_title')->nullable()->default('Mega Diwali Sale');
+                $table->string('banner_subtitle')->nullable();
+            });
+        }
+
+        // Update global banner settings in store
+        DB::table('stores')->update([
+            'banner_title' => $request->input('banner_title', 'Mega Diwali Sale'),
+            'banner_subtitle' => $request->input('banner_subtitle', 'Upto 50% Off'),
+            'updated_at' => now(),
+        ]);
+
+        // Sync featured products globally
+        $selectedFeatIds = $request->input('featured_product_ids', []);
+        DB::table('products')->update(['is_featured' => 0]);
+        if (!empty($selectedFeatIds)) {
+            DB::table('products')->whereIn('id', $selectedFeatIds)->update(['is_featured' => 1]);
+        }
+
+        return redirect('/admin/homepage-customizer')->with('success', 'Global Homepage Layout successfully saved!');
+    }
+
     // 2. Inventory Transaction History & Adjustments
     public function inventoryTransactions(Request $request)
     {

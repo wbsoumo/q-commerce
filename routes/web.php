@@ -53,6 +53,10 @@ Route::middleware(['admin.only'])->group(function () {
     Route::get('/admin/products/{id}/variants', [AdminController::class, 'productVariants']);
     Route::post('/admin/products/{id}/variants/store', [AdminController::class, 'storeProductVariant']);
 
+    // Global Homepage Customizer
+    Route::get('/admin/homepage-customizer', [AdminController::class, 'homepageCustomizer']);
+    Route::post('/admin/homepage-customizer/save', [AdminController::class, 'saveHomepageCustomizer']);
+
     // Super Admin Manager View Overrides
     Route::get('/admin/store-manager', [AdminController::class, 'storeManagerPortal']);
     Route::post('/admin/store-manager/update-inventory', [AdminController::class, 'updateStoreInventory']);
