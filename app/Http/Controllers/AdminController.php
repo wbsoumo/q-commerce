@@ -233,8 +233,8 @@ class AdminController extends Controller
         // Get all products (Global + Store Specific for this store)
         $products = DB::table('products')
             ->where(function($q) use ($storeId) {
-                $q->where('scope', 'global')
-                  ->orWhere('store_id', $storeId);
+                $q->where('products.scope', 'global')
+                  ->orWhere('products.store_id', $storeId);
             })
             ->leftJoin('store_product_inventories', function($join) use ($storeId) {
                 $join->on('products.id', '=', 'store_product_inventories.product_id')
