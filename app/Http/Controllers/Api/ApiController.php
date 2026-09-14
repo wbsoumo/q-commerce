@@ -15,26 +15,60 @@ class ApiController extends Controller
     // Auto-Select Store based on user coordinates & Operational Check
     public function selectStore(Request $request)
     {
-        $lat = $request->query('lat', 23.4013);
-        $lng = $request->query('lng', 88.5010);
+        $lat = (float)$request->query('lat', 23.4013);
+        $lng = (float)$request->query('lng', 88.5010);
 
-        // Fetch primary active store
-        $store = DB::table('stores')->where('is_active', true)->first();
+        // Fetch all active stores
+        $stores = DB::table('stores')->where('is_active', true)->get();
 
-        if ($store) {
-            $opStatus = StoreOperationalService::checkStoreStatus($store);
-            $store->is_operational = $opStatus['is_operational'];
-            $store->closure_reason = $opStatus['reason'];
-            $store->delivery_time_mins = $store->estimated_delivery_time_mins ?? 15;
+        $selectedStore = null;
+        $minDistanceKm = 999999;
+        $isWithinCoverage = false;
+
+        foreach ($stores as $store) {
+            $storeLat = (float)($store->latitude ?? 23.4013);
+            $storeLng = (float)($store->longitude ?? 88.5010);
+            $radiusKm = (float)($store->delivery_radius_km ?? 15.0);
+
+            // Haversine distance calculation formula
+            $earthRadiusKm = 6371.0;
+            $dLat = deg2rad($storeLat - $lat);
+            $dLng = deg2rad($storeLng - $lng);
+            $a = sin($dLat / 2) * sin($dLat / 2) +
+                 cos(deg2rad($lat)) * cos(deg2rad($storeLat)) *
+                 sin($dLng / 2) * sin($dLng / 2);
+            $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+            $distanceKm = $earthRadiusKm * $c;
+
+            if ($distanceKm < $minDistanceKm) {
+                $minDistanceKm = $distanceKm;
+                $selectedStore = $store;
+                if ($distanceKm <= $radiusKm) {
+                    $isWithinCoverage = true;
+                }
+            }
+        }
+
+        if ($selectedStore) {
+            $opStatus = StoreOperationalService::checkStoreStatus($selectedStore);
+            $selectedStore->is_operational = $isWithinCoverage && $opStatus['is_operational'];
+            $selectedStore->is_serviceable = $isWithinCoverage;
+            $selectedStore->distance_km = round($minDistanceKm, 2);
+            $selectedStore->closure_reason = !$isWithinCoverage
+                ? "We are currently not available at your location. Distance to nearest store is " . round($minDistanceKm, 1) . " km (Coverage limit: " . ($selectedStore->delivery_radius_km ?? 15) . " km)."
+                : $opStatus['reason'];
+            $selectedStore->delivery_time_mins = $selectedStore->estimated_delivery_time_mins ?? 15;
         }
 
         return response()->json([
             'status' => 'success',
-            'store' => $store ?? [
+            'is_serviceable' => $isWithinCoverage,
+            'store' => $selectedStore ?? [
                 'name' => 'Krishnanagar Main Store',
                 'address' => '11E Krishnanagar Main Road',
                 'delivery_time_mins' => 15,
                 'is_operational' => true,
+                'is_serviceable' => true,
                 'closure_reason' => 'Store is open and operational.',
             ]
         ])->header('Access-Control-Allow-Origin', '*')

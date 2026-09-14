@@ -224,5 +224,22 @@ class QCommerceSeeder extends Seeder
                 'updated_at' => now(),
             ]));
         }
+
+        // 4. Seed Customer Profile for Soumojit Saha (8016222991)
+        DB::table('customers')->updateOrInsert(
+            ['phone' => '8016222991'],
+            [
+                'name' => 'Soumojit Saha',
+                'email' => 'soumojit.saha@gmail.com',
+                'status' => 'Active',
+                'is_vip' => true,
+                'total_orders' => 12,
+                'total_spent' => 2850.00,
+                'last_order_at' => now()->subHours(2),
+                'notes' => 'VIP Customer - Prefers Cash on Delivery & Express delivery to 11E Krishnanagar',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
     }
 }
