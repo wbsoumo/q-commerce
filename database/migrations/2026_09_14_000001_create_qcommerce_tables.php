@@ -91,6 +91,8 @@ return new class extends Migration
             $table->string('user_name');
             $table->string('user_phone');
             $table->text('delivery_address');
+            $table->decimal('latitude', 10, 7)->nullable();
+            $table->decimal('longitude', 10, 7)->nullable();
             $table->decimal('subtotal', 10, 2);
             $table->decimal('delivery_fee', 10, 2)->default(15.00);
             $table->decimal('grand_total', 10, 2);

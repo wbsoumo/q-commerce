@@ -211,6 +211,8 @@ class ApiController extends Controller
                     'user_name' => $validatedData['user_name'],
                     'user_phone' => $validatedData['user_phone'],
                     'delivery_address' => $validatedData['delivery_address'],
+                    'latitude' => $request->input('latitude', 23.4126),
+                    'longitude' => $request->input('longitude', 88.4292),
                     'subtotal' => $checkoutResult['subtotal'],
                     'delivery_fee' => $checkoutResult['delivery_fee'],
                     'grand_total' => $checkoutResult['grand_total'],
