@@ -61,6 +61,14 @@
             <i class="nav-icon fas fa-file-import"></i><p>Import Database</p>
           </a>
         </li>
+        <li class="nav-item mt-2">
+          <form action="/logout" method="POST" id="logout-form">
+            @csrf
+            <a href="#" class="nav-link text-danger" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+              <i class="nav-icon fas fa-sign-out-alt"></i><p>Logout</p>
+            </a>
+          </form>
+        </li>
       </ul>
     </nav>
   </div>

@@ -2,7 +2,15 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Api\ApiController;
+
+// Authentication Routes
+Route::get('/admin/login', [AuthController::class, 'showAdminLogin'])->name('admin.login');
+Route::post('/admin/login', [AuthController::class, 'processAdminLogin']);
+Route::get('/manager/login', [AuthController::class, 'showManagerLogin'])->name('manager.login');
+Route::post('/manager/login', [AuthController::class, 'processManagerLogin']);
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Admin Panel Routes
 Route::get('/', [AdminController::class, 'dashboard']);
