@@ -41,6 +41,8 @@ Route::middleware(['admin.only'])->group(function () {
     Route::get('/admin/stores', [AdminController::class, 'stores']);
     Route::get('/admin/stores/create', [AdminController::class, 'createStore']);
     Route::post('/admin/stores/store', [AdminController::class, 'storeStore']);
+    Route::get('/admin/stores/{id}/settings', [AdminController::class, 'storeSettings']);
+    Route::post('/admin/stores/{id}/settings', [AdminController::class, 'updateStoreSettings']);
 
     // Master Product Catalog
     Route::get('/admin/products', [AdminController::class, 'products']);
