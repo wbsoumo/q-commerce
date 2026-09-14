@@ -39,9 +39,9 @@
           <p class="text-muted mb-0"><i class="fas fa-store text-primary mr-1"></i> {{ $store->name }} (Code: {{ $store->code }})</p>
         </div>
         <div>
-          <button type="button" class="btn btn-success font-weight-bold mr-2" data-toggle="modal" data-target="#addStoreProductModal">
+          <a href="/manager/products/create" class="btn btn-success font-weight-bold mr-2 shadow-sm">
             <i class="fas fa-plus-circle mr-1"></i> Add New Product to Store
-          </button>
+          </a>
           <span class="badge badge-{{ ($store->status ?? 'Active') === 'Active' ? 'success' : 'danger' }} p-2" style="font-size: 1rem;">
             <i class="fas fa-circle mr-1" style="font-size: 0.65rem;"></i> {{ $store->status ?? 'Active' }}
           </span>

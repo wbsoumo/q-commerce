@@ -138,6 +138,16 @@ class ManagerController extends Controller
         return view('manager.inventory', compact('store', 'products'));
     }
 
+    // 1.1 Create Product Form Page for Store Managers
+    public function createProduct()
+    {
+        $store = $this->getStoreData();
+        if (!$store) return redirect('/manager/login');
+
+        $categories = DB::table('categories')->where('is_active', true)->get();
+        return view('manager.products.create', compact('store', 'categories'));
+    }
+
     // 2. Store Orders Page
     public function orders(Request $request)
     {
@@ -324,6 +334,6 @@ class ManagerController extends Controller
             'updated_at' => now(),
         ]);
 
-        return redirect()->back()->with('success', 'New product successfully added to your store branch!');
+        return redirect('/manager/inventory')->with('success', 'New product successfully added to your store branch!');
     }
 }

@@ -15,8 +15,9 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Separate Dedicated Store Manager Portal Routes
 Route::middleware(['store.manager'])->group(function () {
-    Route::get('/manager/dashboard', [ManagerController::class, 'inventory'])->name('manager.dashboard');
+    Route::get('/manager/dashboard', [ManagerController::class, 'dashboard'])->name('manager.dashboard');
     Route::get('/manager/inventory', [ManagerController::class, 'inventory'])->name('manager.inventory');
+    Route::get('/manager/products/create', [ManagerController::class, 'createProduct'])->name('manager.products.create');
     Route::post('/manager/inventory/update', [ManagerController::class, 'updateInventory']);
     Route::post('/manager/products/store', [ManagerController::class, 'storeProduct']);
 
