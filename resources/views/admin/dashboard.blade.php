@@ -34,28 +34,7 @@
   </nav>
 
   <!-- Main Sidebar -->
-  <aside class="main-sidebar sidebar-dark-primary elevation-4 position-fixed">
-    <a href="/admin" class="brand-link text-center">
-      <span class="brand-text font-weight-bold text-white"><i class="fas fa-bolt mr-2"></i>Q-Commerce Admin</span>
-    </a>
-    <div class="sidebar">
-      <nav class="mt-2">
-        <ul class="nav nav-pills nav-sidebar flex-column">
-          <li class="nav-item"><a href="/admin" class="nav-link active"><i class="nav-icon fas fa-tachometer-alt"></i><p>Dashboard</p></a></li>
-          <li class="nav-item"><a href="/admin/stores" class="nav-link"><i class="nav-icon fas fa-store"></i><p>Stores & Operating Hours</p></a></li>
-          <li class="nav-item"><a href="/admin/products" class="nav-link"><i class="nav-icon fas fa-boxes"></i><p>Product Catalog & Variants</p></a></li>
-          <li class="nav-item"><a href="/admin/store-manager" class="nav-link"><i class="nav-icon fas fa-user-cog"></i><p>Store Manager Portal</p></a></li>
-          <li class="nav-item"><a href="/admin/inventory/transactions" class="nav-link"><i class="nav-icon fas fa-history"></i><p>Inventory History</p></a></li>
-          <li class="nav-item"><a href="/admin/inventory/alerts" class="nav-link text-warning"><i class="nav-icon fas fa-exclamation-triangle"></i><p>Inventory Alerts</p></a></li>
-          <li class="nav-item"><a href="/admin/customers" class="nav-link"><i class="nav-icon fas fa-users"></i><p>Customer Management</p></a></li>
-          <li class="nav-item"><a href="/admin/deliveries" class="nav-link"><i class="nav-icon fas fa-motorcycle"></i><p>Deliveries & Dispatch</p></a></li>
-          <li class="nav-item"><a href="/admin/delivery-zones" class="nav-link"><i class="nav-icon fas fa-map-marked-alt"></i><p>Delivery Fee Zones</p></a></li>
-          <li class="nav-header">SYSTEM</li>
-          <li class="nav-item"><a href="/import-database" class="nav-link text-warning" onclick="return confirm('Import Database Tables?')"><i class="nav-icon fas fa-file-import"></i><p>Import Database</p></a></li>
-        </ul>
-      </nav>
-    </div>
-  </aside>
+  @include('admin.layouts.sidebar')
 
   <!-- Content Wrapper -->
   <div class="content-wrapper">
