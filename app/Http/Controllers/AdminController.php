@@ -774,4 +774,81 @@ class AdminController extends Controller
 
         return redirect()->back()->with('success', 'New Staff member created and assigned roles successfully!');
     }
+
+    // 12. Categories Management (Create, Image File Upload & Edit)
+    public function categories()
+    {
+        $catCols = \Illuminate\Support\Facades\Schema::getColumnListing('categories');
+        if (!in_array('show_on_homepage', $catCols)) {
+            \Illuminate\Support\Facades\Schema::table('categories', function ($table) {
+                $table->boolean('show_on_homepage')->default(true);
+            });
+        }
+        $categories = DB::table('categories')->orderBy('display_order', 'asc')->get();
+        return view('admin.categories', compact('categories'));
+    }
+
+    public function storeCategory(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string',
+            'display_order' => 'nullable|integer',
+            'image_url' => 'nullable|string',
+            'image_file' => 'nullable|image|max:4096',
+        ]);
+
+        $imageUrl = $validated['image_url'] ?? null;
+        if ($request->hasFile('image_file')) {
+            $file = $request->file('image_file');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('uploads/categories'), $filename);
+            $imageUrl = url('uploads/categories/' . $filename);
+        }
+
+        $slug = \Illuminate\Support\Str::slug($validated['name']) . '-' . rand(100, 999);
+
+        DB::table('categories')->insert([
+            'name' => $validated['name'],
+            'slug' => $slug,
+            'image' => $imageUrl,
+            'display_order' => $validated['display_order'] ?? 0,
+            'show_on_homepage' => $request->has('show_on_homepage'),
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return redirect('/admin/categories')->with('success', 'Category created successfully!');
+    }
+
+    public function updateCategory(Request $request)
+    {
+        $id = $request->input('id');
+        $validated = $request->validate([
+            'name' => 'required|string',
+            'display_order' => 'nullable|integer',
+            'image_url' => 'nullable|string',
+            'image_file' => 'nullable|image|max:4096',
+        ]);
+
+        $updateData = [
+            'name' => $validated['name'],
+            'display_order' => $validated['display_order'] ?? 0,
+            'show_on_homepage' => $request->has('show_on_homepage'),
+            'updated_at' => now(),
+        ];
+
+        if ($request->hasFile('image_file')) {
+            $file = $request->file('image_file');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('uploads/categories'), $filename);
+            $updateData['image'] = url('uploads/categories/' . $filename);
+        } elseif (!empty($validated['image_url'])) {
+            $updateData['image'] = $validated['image_url'];
+        }
+
+        DB::table('categories')->where('id', $id)->update($updateData);
+
+        return redirect('/admin/categories')->with('success', 'Category updated successfully!');
+    }
 }

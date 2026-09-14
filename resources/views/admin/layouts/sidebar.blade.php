@@ -30,6 +30,11 @@
             </a>
           </li>
           <li class="nav-item">
+            <a href="/admin/categories" class="nav-link {{ request()->is('admin/categories*') ? 'active' : '' }}">
+              <i class="nav-icon fas fa-folder text-warning"></i><p class="font-weight-bold">Categories</p>
+            </a>
+          </li>
+          <li class="nav-item">
             <a href="/admin/products" class="nav-link {{ request()->is('admin/products*') ? 'active' : '' }}">
               <i class="nav-icon fas fa-boxes"></i><p>Product Catalog</p>
             </a>

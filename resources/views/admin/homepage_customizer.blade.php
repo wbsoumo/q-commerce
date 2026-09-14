@@ -97,32 +97,25 @@
               </div>
             </div>
           </div>
-          <!-- 3. CATEGORY MANAGEMENT & PRIMARY IMAGES -->
+          <!-- 3. FRONT PAGE CATEGORIES SELECTION -->
           <div class="card card-info card-outline">
-            <div class="card-header"><h3 class="card-title font-weight-bold"><i class="fas fa-th-large mr-2"></i>3. Category Primary Images & Front Page Layout</h3></div>
+            <div class="card-header"><h3 class="card-title font-weight-bold"><i class="fas fa-th-large mr-2"></i>3. Select Categories To Display On Front Page</h3></div>
             <div class="card-body">
-              <p class="text-muted">Manage main primary image for each category and choose which categories appear on the front page.</p>
+              <p class="text-muted">Choose which categories appear on the Flutter app front screen. When a user clicks a category tab in the app, all products in that category will automatically display.</p>
               <div class="row">
                 @foreach($categories as $cat)
-                  <div class="col-md-6 mb-3">
-                    <div class="border rounded p-3 bg-light">
-                      <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="font-weight-bold text-dark mb-0"><i class="fas fa-folder text-warning mr-2"></i>{{ $cat->name }}</h5>
-                        <div class="custom-control custom-switch">
-                          <input type="checkbox" class="custom-control-input" id="cat_hp_{{ $cat->id }}" name="show_on_homepage[{{ $cat->id }}]" {{ ($cat->show_on_homepage ?? true) ? 'checked' : '' }}>
-                          <label class="custom-control-label font-weight-bold text-success" for="cat_hp_{{ $cat->id }}">Show on Front Page</label>
+                  <div class="col-md-4 col-sm-6 mb-3">
+                    <div class="border rounded p-3 bg-light d-flex align-items-center justify-content-between">
+                      <div class="d-flex align-items-center">
+                        <img src="{{ $cat->image ?? 'https://via.placeholder.com/40' }}" width="40" height="40" style="object-fit:cover; border-radius:8px;" class="mr-3 border">
+                        <div>
+                          <strong class="d-block text-dark">{{ $cat->name }}</strong>
+                          <span class="small text-muted">Display order: {{ $cat->display_order }}</span>
                         </div>
                       </div>
-                      <div class="form-group mb-0">
-                        <label class="small text-muted font-weight-bold">Primary Category Image URL</label>
-                        <div class="input-group">
-                          <input type="text" name="category_image[{{ $cat->id }}]" class="form-control form-control-sm" value="{{ $cat->image ?? '' }}" placeholder="https://images.unsplash.com/...">
-                          @if(!empty($cat->image))
-                            <div class="input-group-append">
-                              <span class="input-group-text p-1 bg-white"><img src="{{ $cat->image }}" width="25" height="25" style="object-fit:cover; border-radius:4px;"></span>
-                            </div>
-                          @endif
-                        </div>
+                      <div class="custom-control custom-switch ml-2">
+                        <input type="checkbox" class="custom-control-input" id="cat_hp_{{ $cat->id }}" name="show_on_homepage[{{ $cat->id }}]" {{ ($cat->show_on_homepage ?? true) ? 'checked' : '' }}>
+                        <label class="custom-control-label" for="cat_hp_{{ $cat->id }}"></label>
                       </div>
                     </div>
                   </div>
