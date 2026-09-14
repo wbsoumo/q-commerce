@@ -1,5 +1,5 @@
 <aside class="main-sidebar manager-sidebar sidebar-dark-primary elevation-4 position-fixed">
-  <a href="/manager/inventory" class="brand-link text-center brand-banner border-0">
+  <a href="/manager/dashboard" class="brand-link text-center brand-banner border-0">
     <span class="brand-text font-weight-bold text-white"><i class="fas fa-shopping-basket mr-2"></i>Branch Manager</span>
   </a>
   <div class="sidebar">
@@ -14,6 +14,11 @@
     </div>
     <nav class="mt-2">
       <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+        <li class="nav-item">
+          <a href="/manager/dashboard" class="nav-link {{ request()->is('manager/dashboard*') ? 'active' : '' }}">
+            <i class="nav-icon fas fa-tachometer-alt text-primary"></i><p>Dashboard</p>
+          </a>
+        </li>
         <li class="nav-item">
           <a href="/manager/inventory" class="nav-link {{ request()->is('manager/inventory*') ? 'active' : '' }}">
             <i class="nav-icon fas fa-boxes text-info"></i><p>Live Inventory & Pricing</p>

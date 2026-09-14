@@ -18,6 +18,51 @@ class ManagerController extends Controller
         return DB::table('stores')->where('id', $storeId)->first();
     }
 
+    // 0. Store Manager Main Dashboard
+    public function dashboard()
+    {
+        $store = $this->getStoreData();
+        if (!$store) return redirect('/manager/login');
+        $storeId = $store->id;
+
+        // Metrics
+        $totalProductsCount = DB::table('products')
+            ->where(function($q) use ($storeId) {
+                $q->where('scope', 'global')->orWhere('store_id', $storeId);
+            })->count();
+
+        $pendingOrdersCount = DB::table('orders')->where('store_id', $storeId)->where('status', 'Pending')->count();
+        $outForDeliveryCount = DB::table('orders')->where('store_id', $storeId)->where('status', 'Out for Delivery')->count();
+        $completedOrdersCount = DB::table('orders')->where('store_id', $storeId)->where('status', 'Delivered')->count();
+        $totalOrdersCount = DB::table('orders')->where('store_id', $storeId)->count();
+        $totalRevenue = DB::table('orders')->where('store_id', $storeId)->where('status', 'Delivered')->sum('grand_total');
+
+        // Recent Orders
+        $recentOrders = DB::table('orders')->where('store_id', $storeId)->orderBy('id', 'desc')->take(8)->get();
+
+        // Active Deliveries
+        $recentDeliveries = DB::table('deliveries')
+            ->leftJoin('orders', 'deliveries.order_id', '=', 'orders.id')
+            ->leftJoin('delivery_partners', 'deliveries.delivery_partner_id', '=', 'delivery_partners.id')
+            ->select('deliveries.*', 'orders.order_number', 'orders.grand_total', 'orders.status as order_status', 'delivery_partners.name as rider_name')
+            ->where('deliveries.store_id', $storeId)
+            ->orderBy('deliveries.id', 'desc')
+            ->take(5)
+            ->get();
+
+        return view('manager.dashboard', compact(
+            'store',
+            'totalProductsCount',
+            'pendingOrdersCount',
+            'outForDeliveryCount',
+            'completedOrdersCount',
+            'totalOrdersCount',
+            'totalRevenue',
+            'recentOrders',
+            'recentDeliveries'
+        ));
+    }
+
     // 1. Live Inventory & Pricing Page
     public function inventory(Request $request)
     {
