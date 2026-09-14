@@ -8,27 +8,23 @@ use Illuminate\Support\Facades\Auth;
 
 class ManagerController extends Controller
 {
-    // Dedicated Manager Dashboard View
-    public function dashboard(Request $request)
+    private function getStoreData()
     {
         $user = Auth::user();
         if (!$user || ($user->role !== 'store_manager' && $user->role !== 'admin')) {
-            return redirect('/manager/login')->with('error', 'Unauthorized access.');
+            return null;
         }
-
         $storeId = (int)($user->store_id ?? 1);
-        $store = DB::table('stores')->where('id', $storeId)->first();
+        return DB::table('stores')->where('id', $storeId)->first();
+    }
 
-        // 1. Fetch Store Orders
-        $ordersQuery = DB::table('orders')->where('store_id', $storeId)->orderBy('id', 'desc');
+    // 1. Live Inventory & Pricing Page
+    public function inventory(Request $request)
+    {
+        $store = $this->getStoreData();
+        if (!$store) return redirect('/manager/login');
+        $storeId = $store->id;
 
-        if ($request->filled('order_status')) {
-            $ordersQuery->where('status', $request->order_status);
-        }
-
-        $orders = $ordersQuery->take(20)->get();
-
-        // 2. Fetch Store Product Catalog & Inventories
         $productsQuery = DB::table('products')
             ->select(
                 'products.id',
@@ -62,11 +58,33 @@ class ManagerController extends Controller
         }
 
         $products = $productsQuery->get();
+        return view('manager.inventory', compact('store', 'products'));
+    }
 
-        // 3. Store Delivery Personnel / Riders
-        $riders = DB::table('delivery_partners')->where('status', 'Active')->get();
+    // 2. Store Orders Page
+    public function orders(Request $request)
+    {
+        $store = $this->getStoreData();
+        if (!$store) return redirect('/manager/login');
+        $storeId = $store->id;
 
-        // 4. Store Delivery List
+        $ordersQuery = DB::table('orders')->where('store_id', $storeId)->orderBy('id', 'desc');
+
+        if ($request->filled('status')) {
+            $ordersQuery->where('status', $request->status);
+        }
+
+        $orders = $ordersQuery->get();
+        return view('manager.orders', compact('store', 'orders'));
+    }
+
+    // 3. Delivery Dispatch Page
+    public function deliveries(Request $request)
+    {
+        $store = $this->getStoreData();
+        if (!$store) return redirect('/manager/login');
+        $storeId = $store->id;
+
         $deliveries = DB::table('deliveries')
             ->leftJoin('orders', 'deliveries.order_id', '=', 'orders.id')
             ->leftJoin('delivery_partners', 'deliveries.delivery_partner_id', '=', 'delivery_partners.id')
@@ -75,24 +93,21 @@ class ManagerController extends Controller
             ->orderBy('deliveries.id', 'desc')
             ->get();
 
-        // Stats
-        $pendingOrdersCount = DB::table('orders')->where('store_id', $storeId)->where('status', 'Pending')->count();
-        $totalOrdersCount = DB::table('orders')->where('store_id', $storeId)->count();
-        $outForDeliveryCount = DB::table('orders')->where('store_id', $storeId)->where('status', 'Out for Delivery')->count();
+        $riders = DB::table('delivery_partners')->where('status', 'Active')->get();
 
-        return view('manager.dashboard', compact(
-            'store',
-            'products',
-            'orders',
-            'deliveries',
-            'riders',
-            'pendingOrdersCount',
-            'totalOrdersCount',
-            'outForDeliveryCount'
-        ));
+        return view('manager.deliveries', compact('store', 'deliveries', 'riders'));
     }
 
-    // Manager: Update Branch Price & Stock
+    // 4. Branch Operations Settings Page
+    public function settings()
+    {
+        $store = $this->getStoreData();
+        if (!$store) return redirect('/manager/login');
+
+        return view('manager.settings', compact('store'));
+    }
+
+    // Manager Actions
     public function updateInventory(Request $request)
     {
         $user = Auth::user();
@@ -113,7 +128,6 @@ class ManagerController extends Controller
         return redirect()->back()->with('success', 'Branch product price & stock updated!');
     }
 
-    // Manager: Update Order Status & Assign Delivery Rider
     public function updateOrderStatus(Request $request, $id)
     {
         $user = Auth::user();
@@ -121,7 +135,7 @@ class ManagerController extends Controller
 
         $order = DB::table('orders')->where('id', $id)->where('store_id', $storeId)->first();
         if (!$order) {
-            return redirect()->back()->with('error', 'Order not found or does not belong to your store branch.');
+            return redirect()->back()->with('error', 'Order not found or unauthorized.');
         }
 
         $newStatus = $request->input('status');
@@ -139,7 +153,6 @@ class ManagerController extends Controller
         return redirect()->back()->with('success', "Order #{$order->order_number} status updated to {$newStatus}!");
     }
 
-    // Manager: Assign Delivery Partner / Rider
     public function assignRider(Request $request)
     {
         $user = Auth::user();
@@ -149,7 +162,7 @@ class ManagerController extends Controller
 
         $delivery = DB::table('deliveries')->where('id', $deliveryId)->where('store_id', $storeId)->first();
         if (!$delivery) {
-            return redirect()->back()->with('error', 'Delivery assignment unauthorized for this store branch.');
+            return redirect()->back()->with('error', 'Delivery assignment unauthorized.');
         }
 
         DB::table('deliveries')->where('id', $deliveryId)->update([
@@ -162,7 +175,6 @@ class ManagerController extends Controller
         return redirect()->back()->with('success', 'Delivery partner assigned successfully!');
     }
 
-    // Manager: Update Branch Operational Hours & Settings
     public function updateSettings(Request $request)
     {
         $user = Auth::user();
