@@ -115,13 +115,21 @@ class AdminController extends Controller
         return redirect('/admin/stores')->with('success', 'Store and Store Manager created successfully!');
     }
 
-    // Products List View (Global & Store Specific Filter)
+    // Products List View (Global & Store Specific Filter + Search)
     public function products(Request $request)
     {
         $query = DB::table('products')
             ->join('categories', 'products.category_id', '=', 'categories.id')
             ->leftJoin('stores', 'products.store_id', '=', 'stores.id')
             ->select('products.*', 'categories.name as category_name', 'stores.name as store_name');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('products.name', 'LIKE', "%{$search}%")
+                  ->orWhere('products.sku', 'LIKE', "%{$search}%");
+            });
+        }
 
         if ($request->has('scope') && in_array($request->scope, ['global', 'store_specific'])) {
             $query->where('products.scope', $request->scope);
@@ -224,14 +232,13 @@ class AdminController extends Controller
         return redirect('/admin/products')->with('success', 'Product updated successfully!');
     }
 
-    // STORE MANAGER PORTAL VIEW: Specific Store Inventory Management
+    // STORE MANAGER PORTAL VIEW: Specific Store Inventory Management (With Search)
     public function storeManagerPortal(Request $request)
     {
         $storeId = (int)$request->query('store_id', 1);
         $store = DB::table('stores')->where('id', $storeId)->first();
 
-        // Get all products (Global + Store Specific for this store)
-        $products = DB::table('products')
+        $query = DB::table('products')
             ->select(
                 'products.id',
                 'products.name',
@@ -253,9 +260,17 @@ class AdminController extends Controller
             ->where(function($q) use ($storeId) {
                 $q->where('products.scope', '=', 'global')
                   ->orWhere('products.store_id', '=', $storeId);
-            })
-            ->get();
+            });
 
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('products.name', 'LIKE', "%{$search}%")
+                  ->orWhere('products.sku', 'LIKE', "%{$search}%");
+            });
+        }
+
+        $products = $query->get();
         $stores = DB::table('stores')->get();
 
         return view('admin.manager.index', compact('store', 'products', 'stores'));

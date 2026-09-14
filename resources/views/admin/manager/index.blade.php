@@ -165,8 +165,20 @@
 
         <!-- 4. PRODUCT INVENTORY OVERRIDES TABLE -->
         <div class="card card-outline card-primary shadow-sm">
-          <div class="card-header bg-primary text-white">
-            <h3 class="card-title font-weight-bold"><i class="fas fa-boxes mr-2"></i>Product Price & Stock Override Manager</h3>
+          <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center flex-wrap py-2">
+            <h3 class="card-title font-weight-bold my-1"><i class="fas fa-boxes mr-2"></i>Product Price & Stock Override Manager</h3>
+            <form action="/admin/store-manager" method="GET" class="form-inline my-1">
+              <input type="hidden" name="store_id" value="{{ $store->id ?? 1 }}">
+              <div class="input-group input-group-sm">
+                <input type="text" name="search" class="form-control" placeholder="Search product or SKU..." value="{{ request('search') }}" style="min-width: 220px;">
+                <div class="input-group-append">
+                  <button type="submit" class="btn btn-warning font-weight-bold"><i class="fas fa-search"></i> Search</button>
+                  @if(request('search'))
+                    <a href="/admin/store-manager?store_id={{ $store->id ?? 1 }}" class="btn btn-secondary"><i class="fas fa-undo"></i></a>
+                  @endif
+                </div>
+              </div>
+            </form>
           </div>
           <div class="card-body p-0">
             <table class="table table-striped table-bordered mb-0">

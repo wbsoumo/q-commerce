@@ -42,24 +42,36 @@
           </div>
         @endif
 
-        <!-- Filter Bar -->
+        <!-- Filter Bar & Search -->
         <div class="card card-outline card-primary mb-3">
           <div class="card-body py-2">
-            <form action="/admin/products" method="GET" class="form-inline">
-              <label class="mr-2 font-weight-bold">Filter Scope:</label>
-              <select name="scope" class="form-control mr-3" onchange="this.form.submit()">
-                <option value="">All Scopes</option>
-                <option value="global" {{ request('scope') == 'global' ? 'selected' : '' }}>Global Only</option>
-                <option value="store_specific" {{ request('scope') == 'store_specific' ? 'selected' : '' }}>Store Specific Only</option>
-              </select>
+            <form action="/admin/products" method="GET" class="form-inline d-flex justify-content-between flex-wrap">
+              <div class="d-flex align-items-center flex-wrap my-1">
+                <label class="mr-2 font-weight-bold"><i class="fas fa-search mr-1 text-primary"></i> Search:</label>
+                <input type="text" name="search" class="form-control mr-3" placeholder="Search product name or SKU..." value="{{ request('search') }}" style="min-width: 250px;">
 
-              <label class="mr-2 font-weight-bold">Filter Store:</label>
-              <select name="store_id" class="form-control mr-3" onchange="this.form.submit()">
-                <option value="">All Stores</option>
-                @foreach($stores as $st)
-                  <option value="{{ $st->id }}" {{ request('store_id') == $st->id ? 'selected' : '' }}>{{ $st->name }}</option>
-                @endforeach
-              </select>
+                <label class="mr-2 font-weight-bold">Scope:</label>
+                <select name="scope" class="form-control mr-3" onchange="this.form.submit()">
+                  <option value="">All Scopes</option>
+                  <option value="global" {{ request('scope') == 'global' ? 'selected' : '' }}>Global Only</option>
+                  <option value="store_specific" {{ request('scope') == 'store_specific' ? 'selected' : '' }}>Store Specific Only</option>
+                </select>
+
+                <label class="mr-2 font-weight-bold">Store:</label>
+                <select name="store_id" class="form-control mr-3" onchange="this.form.submit()">
+                  <option value="">All Stores</option>
+                  @foreach($stores as $st)
+                    <option value="{{ $st->id }}" {{ request('store_id') == $st->id ? 'selected' : '' }}>{{ $st->name }}</option>
+                  @endforeach
+                </select>
+              </div>
+
+              <div class="my-1">
+                <button type="submit" class="btn btn-primary font-weight-bold"><i class="fas fa-search mr-1"></i> Search</button>
+                @if(request('search') || request('scope') || request('store_id'))
+                  <a href="/admin/products" class="btn btn-default font-weight-bold ml-1"><i class="fas fa-undo mr-1"></i> Reset</a>
+                @endif
+              </div>
             </form>
           </div>
         </div>
