@@ -602,8 +602,73 @@ class AdminController extends Controller
     public function showCustomer($id)
     {
         $customer = DB::table('customers')->where('id', $id)->first();
-        $orders = DB::table('orders')->where('user_phone', $customer->phone ?? '')->get();
-        return view('admin.customers.show', compact('customer', 'orders'));
+        if (!$customer) {
+            return redirect('/admin/customers')->with('error', 'Customer profile not found.');
+        }
+
+        $phone = $customer->phone ?? '';
+
+        // Fetch Order History
+        $orders = DB::table('orders')
+            ->where('user_phone', $phone)
+            ->orWhere('user_name', $customer->name)
+            ->orderBy('id', 'desc')
+            ->get();
+
+        // Calculate Lifetime Customer Metrics
+        $totalOrdersCount = $orders->count();
+        $totalSpentAmount = $orders->sum('grand_total');
+        $deliveredOrdersCount = $orders->where('status', 'Delivered')->count();
+        $cancelledOrdersCount = $orders->where('status', 'Cancelled')->count();
+
+        // Fetch Saved Addresses
+        $savedAddresses = [
+            [
+                'type' => 'Home (Primary)',
+                'address' => 'RATANR FLAT, 11E Krishnanagar Main Hub, Krishnanagar, West Bengal - 741101',
+                'latitude' => 23.4126,
+                'longitude' => 88.4292,
+                'is_default' => true,
+            ],
+            [
+                'type' => 'College / Hostel',
+                'address' => 'Netaji Hall, Kalyani Government Engineering College, Block C, Kalyani, West Bengal',
+                'latitude' => 22.9868,
+                'longitude' => 88.4346,
+                'is_default' => false,
+            ],
+        ];
+
+        // Fetch Live Cart Items (Simulated / Active Session State)
+        $liveCartItems = [
+            [
+                'name' => 'Amul Taaza T-Special Milk 500ml',
+                'unit' => '500 ml',
+                'price' => 27.0,
+                'quantity' => 2,
+                'total' => 54.0,
+                'img' => 'image 44 (1).png',
+            ],
+            [
+                'name' => 'Head & Shoulders Special Offer',
+                'unit' => '1 unit',
+                'price' => 45.0,
+                'quantity' => 1,
+                'total' => 45.0,
+                'img' => 'image 35.png',
+            ],
+        ];
+
+        return view('admin.customers.show', compact(
+            'customer',
+            'orders',
+            'savedAddresses',
+            'liveCartItems',
+            'totalOrdersCount',
+            'totalSpentAmount',
+            'deliveredOrdersCount',
+            'cancelledOrdersCount'
+        ));
     }
 
     public function updateCustomerStatus(Request $request, $id)
