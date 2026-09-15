@@ -111,8 +111,8 @@
                 <!-- Lifecycle Step Progress Header -->
                 <div class="mb-3 text-center">
                   <div class="btn-group btn-group-toggle w-100 mb-2">
-                    <span class="btn btn-xs {{ in_array($currentStatus, ['Pending', 'Confirmed', 'Processing', 'Preparing', 'Out for Delivery', 'Ready for Pickup', 'Delivered']) ? 'btn-success' : 'btn-light border' }}">1. Confirmed</span>
-                    <span class="btn btn-xs {{ in_array($currentStatus, ['Processing', 'Preparing', 'Out for Delivery', 'Ready for Pickup', 'Delivered']) ? 'btn-success' : 'btn-light border' }}">2. Processing</span>
+                    <span class="btn btn-xs {{ in_array($currentStatus, ['Pending', 'Confirmed', 'Packing', 'Processing', 'Preparing', 'Out for Delivery', 'Ready for Pickup', 'Delivered']) ? 'btn-success' : 'btn-light border' }}">1. Confirmed</span>
+                    <span class="btn btn-xs {{ in_array($currentStatus, ['Packing', 'Processing', 'Preparing', 'Out for Delivery', 'Ready for Pickup', 'Delivered']) ? 'btn-success' : 'btn-light border' }}">2. Packing</span>
                     <span class="btn btn-xs {{ in_array($currentStatus, ['Out for Delivery', 'Ready for Pickup', 'Delivered']) ? 'btn-success' : 'btn-light border' }}">{{ $isPickup ? '3. Ready' : '3. Out for Delivery' }}</span>
                     <span class="btn btn-xs {{ $currentStatus === 'Delivered' ? 'btn-success' : 'btn-light border' }}">4. Delivered</span>
                   </div>
@@ -120,20 +120,20 @@
 
                 <!-- Next Stage Action Control (No Dropdown) -->
                 @if($currentStatus === 'Pending' || $currentStatus === 'Confirmed')
-                  <!-- Stage 1 -> Stage 2: Confirmed to Processing -->
+                  <!-- Stage 1 -> Stage 2: Confirmed to Packing -->
                   <form action="/admin/orders/{{ $order->id }}/update-status" method="POST">
                     @csrf
-                    <input type="hidden" name="status" value="Processing">
+                    <input type="hidden" name="status" value="Packing">
                     <div class="alert alert-info p-3 mb-3">
-                      <i class="fas fa-box-open mr-2"></i> <strong>Next Step: Advance Order to Processing</strong><br>
+                      <i class="fas fa-box-open mr-2"></i> <strong>Next Step: Advance Order to Packing</strong><br>
                       <span class="small">Mark order as accepted and start preparing items in store.</span>
                     </div>
                     <button type="submit" class="btn btn-lg btn-block btn-primary font-weight-bold py-3 shadow-sm">
-                      <i class="fas fa-boxes mr-2"></i> Advance to Processing 📦
+                      <i class="fas fa-boxes mr-2"></i> Advance to Packing 📦
                     </button>
                   </form>
 
-                @elseif($currentStatus === 'Processing' || $currentStatus === 'Preparing')
+                @elseif($currentStatus === 'Packing' || $currentStatus === 'Processing' || $currentStatus === 'Preparing')
                   <!-- Stage 2 -> Stage 3 -->
                   @if(!$isPickup)
                     <!-- Home Delivery: Prompt Delivery Partner Assignment for Out for Delivery -->
