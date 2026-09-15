@@ -1,149 +1,190 @@
-@extends('admin.layouts.app')
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Q-Commerce Admin | Orders & Pickup Management</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+</head>
+<body class="hold-transition sidebar-mini layout-fixed">
+<div class="wrapper">
+  <!-- Navbar -->
+  <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+    <ul class="navbar-nav">
+      <li class="nav-item"><a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a></li>
+      <li class="nav-item d-none d-sm-inline-block"><a href="/admin" class="nav-link">Dashboard</a></li>
+      <li class="nav-item d-none d-sm-inline-block"><a href="/admin/orders" class="nav-link active font-weight-bold">Orders Management</a></li>
+    </ul>
+  </nav>
 
-@section('content')
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h3 class="fw-bold mb-1">Orders Management</h3>
-        <p class="text-muted small mb-0">View, filter, and manage all customer orders including Store Pickups & Home Deliveries.</p>
-    </div>
-    <div>
-        <a href="{{ url('/admin/deliveries') }}" class="btn btn-outline-primary shadow-sm rounded-pill px-3">
-            <i class="bi bi-truck me-1"></i> Logistics & Dispatch View
-        </a>
-    </div>
-</div>
+  @include('admin.layouts.sidebar')
 
-<!-- Filters & Tabs -->
-<div class="card border-0 shadow-sm rounded-4 mb-4">
-    <div class="card-body p-3">
-        <form method="GET" action="{{ url('/admin/orders') }}" class="row g-3 align-items-center">
-            <div class="col-md-4">
+  <!-- Content Wrapper -->
+  <div class="content-wrapper">
+    <div class="content-header">
+      <div class="container-fluid d-flex justify-content-between align-items-center">
+        <div>
+          <h1 class="m-0 font-weight-bold">Orders & Store Pickups</h1>
+          <p class="text-muted mb-0 small">View, filter, and track customer pickup dates, slots, and delivery details.</p>
+        </div>
+        <div>
+          <a href="/admin/deliveries" class="btn btn-outline-primary btn-sm rounded-pill font-weight-bold">
+            <i class="fas fa-truck mr-1"></i> Logistics & Dispatch View
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+      <div class="container-fluid">
+        <!-- Filters Card -->
+        <div class="card card-outline card-primary shadow-sm mb-3">
+          <div class="card-body p-3">
+            <form method="GET" action="/admin/orders" class="row align-items-center">
+              <div class="col-md-5 mb-2 mb-md-0">
                 <div class="input-group">
-                    <span class="input-group-text bg-light border-0"><i class="bi bi-funnel text-muted"></i></span>
-                    <select name="type" class="form-select border-0 bg-light fw-medium" onchange="this.form.submit()">
-                        <option value="">All Fulfillment Types (Delivery & Pickup)</option>
-                        <option value="pickup" {{ request('type') == 'pickup' ? 'selected' : '' }}>🏬 Store Pickup Only</option>
-                        <option value="delivery" {{ request('type') == 'delivery' ? 'selected' : '' }}>🛵 Home Delivery Only</option>
-                    </select>
+                  <div class="input-group-prepend">
+                    <span class="input-group-text bg-light border-right-0"><i class="fas fa-filter text-muted"></i></span>
+                  </div>
+                  <select name="type" class="form-control font-weight-bold" onchange="this.form.submit()">
+                    <option value="">All Order Types (Store Pickup & Delivery)</option>
+                    <option value="pickup" {{ request('type') == 'pickup' ? 'selected' : '' }}>🏬 Store Pickup Only</option>
+                    <option value="delivery" {{ request('type') == 'delivery' ? 'selected' : '' }}>🛵 Home Delivery Only</option>
+                  </select>
                 </div>
-            </div>
-            <div class="col-md-4">
+              </div>
+
+              <div class="col-md-5 mb-2 mb-md-0">
                 <div class="input-group">
-                    <span class="input-group-text bg-light border-0"><i class="bi bi-flag text-muted"></i></span>
-                    <select name="status" class="form-select border-0 bg-light fw-medium" onchange="this.form.submit()">
-                        <option value="">All Order Statuses</option>
-                        <option value="Pending" {{ request('status') == 'Pending' ? 'selected' : '' }}>Pending</option>
-                        <option value="Processing" {{ request('status') == 'Processing' ? 'selected' : '' }}>Processing</option>
-                        <option value="Out for Delivery" {{ request('status') == 'Out for Delivery' ? 'selected' : '' }}>Out for Delivery / Ready for Pickup</option>
-                        <option value="Delivered" {{ request('status') == 'Delivered' ? 'selected' : '' }}>Delivered / Completed</option>
-                        <option value="Cancelled" {{ request('status') == 'Cancelled' ? 'selected' : '' }}>Cancelled</option>
-                    </select>
+                  <div class="input-group-prepend">
+                    <span class="input-group-text bg-light border-right-0"><i class="fas fa-info-circle text-muted"></i></span>
+                  </div>
+                  <select name="status" class="form-control font-weight-bold" onchange="this.form.submit()">
+                    <option value="">All Statuses</option>
+                    <option value="Pending" {{ request('status') == 'Pending' ? 'selected' : '' }}>Pending</option>
+                    <option value="Processing" {{ request('status') == 'Processing' ? 'selected' : '' }}>Processing</option>
+                    <option value="Out for Delivery" {{ request('status') == 'Out for Delivery' ? 'selected' : '' }}>Ready for Pickup / Out for Delivery</option>
+                    <option value="Delivered" {{ request('status') == 'Delivered' ? 'selected' : '' }}>Delivered / Pickup Completed</option>
+                    <option value="Cancelled" {{ request('status') == 'Cancelled' ? 'selected' : '' }}>Cancelled</option>
+                  </select>
                 </div>
-            </div>
-            <div class="col-md-4 text-end">
+              </div>
+
+              <div class="col-md-2 text-md-right">
                 @if(request('type') || request('status'))
-                    <a href="{{ url('/admin/orders') }}" class="btn btn-link text-decoration-none text-muted small">
-                        <i class="bi bi-x-circle me-1"></i> Clear Filters
-                    </a>
+                  <a href="/admin/orders" class="btn btn-sm btn-link text-danger">
+                    <i class="fas fa-times-circle mr-1"></i> Clear Filters
+                  </a>
                 @endif
-            </div>
-        </form>
-    </div>
-</div>
+              </div>
+            </form>
+          </div>
+        </div>
 
-<!-- Orders Table -->
-<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-            <thead class="bg-light border-bottom">
-                <tr class="text-secondary small text-uppercase">
-                    <th class="ps-4">Order Details</th>
-                    <th>Customer / Receiver</th>
-                    <th>Fulfillment Type</th>
-                    <th>Pickup Date & Slot</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                    <th class="pe-4 text-end">Action</th>
+        <!-- Orders Table Card -->
+        <div class="card shadow-sm">
+          <div class="card-body p-0 table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="bg-light">
+                <tr class="text-uppercase text-muted text-xs">
+                  <th class="pl-4">Order Details</th>
+                  <th>Customer / Recipient</th>
+                  <th>Order Type</th>
+                  <th>Pickup Schedule</th>
+                  <th>Total Amount</th>
+                  <th>Status</th>
+                  <th class="pr-4 text-right">Action</th>
                 </tr>
-            </thead>
-            <tbody>
+              </thead>
+              <tbody>
                 @forelse($orders as $order)
                 <tr>
-                    <td class="ps-4">
-                        <div class="fw-bold text-dark">#{{ $order->order_number }}</div>
-                        <div class="text-muted extra-small"><i class="bi bi-shop me-1"></i>{{ $order->store_name ?? 'Darkstore' }}</div>
-                        <div class="text-muted extra-small"><i class="bi bi-clock me-1"></i>{{ \Carbon\Carbon::parse($order->created_at)->format('d M Y, h:i A') }}</div>
-                    </td>
-                    <td>
-                        <div class="fw-semibold text-dark">{{ $order->user_name }}</div>
-                        <div class="text-muted small">{{ $order->user_phone }}</div>
-                        @if($order->is_for_someone_else)
-                            <span class="badge bg-warning text-dark extra-small rounded-pill mt-1">
-                                <i class="bi bi-gift me-1"></i> Recipient: {{ $order->receiver_name }} ({{ $order->receiver_phone }})
-                            </span>
-                        @endif
-                    </td>
-                    <td>
-                        @if($order->order_type === 'pickup')
-                            <span class="badge bg-purple-subtle text-purple border border-purple-subtle px-2 py-1 rounded-pill fw-bold">
-                                🏬 Store Pickup
-                            </span>
-                        @else
-                            <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1 rounded-pill fw-bold">
-                                🛵 Home Delivery
-                            </span>
-                        @endif
-                    </td>
-                    <td>
-                        @if($order->order_type === 'pickup')
-                            <div class="fw-semibold text-dark">{{ $order->pickup_date ?? 'Today' }}</div>
-                            <div class="badge bg-light text-secondary border extra-small mt-1">
-                                <i class="bi bi-clock-history me-1"></i>{{ $order->pickup_time ?? 'Standard Operating Hours' }}
-                            </div>
-                        @else
-                            <span class="text-muted small">Standard Delivery</span>
-                        @endif
-                    </td>
-                    <td>
-                        <div class="fw-bold text-dark">₹{{ number_format($order->grand_total, 2) }}</div>
-                        <div class="text-muted extra-small">{{ strtoupper($order->payment_method) }} ({{ $order->payment_status }})</div>
-                    </td>
-                    <td>
-                        @php
-                            $statusColors = [
-                                'Pending' => 'bg-warning text-dark',
-                                'Processing' => 'bg-info text-white',
-                                'Out for Delivery' => 'bg-primary text-white',
-                                'Delivered' => 'bg-success text-white',
-                                'Cancelled' => 'bg-danger text-white'
-                            ];
-                            $badgeClass = $statusColors[$order->status] ?? 'bg-secondary text-white';
-                        @endphp
-                        <span class="badge {{ $badgeClass }} px-2 py-1 rounded-pill">
-                            {{ $order->status }}
-                        </span>
-                    </td>
-                    <td class="pe-4 text-end">
-                        <a href="{{ url('/admin/orders/' . $order->id) }}" class="btn btn-sm btn-light border shadow-sm rounded-pill px-3">
-                            <i class="bi bi-eye text-primary me-1"></i> View Details
-                        </a>
-                    </td>
+                  <td class="pl-4">
+                    <div class="font-weight-bold text-dark">#{{ $order->order_number }}</div>
+                    <div class="text-muted text-xs"><i class="fas fa-store mr-1"></i>{{ $order->store_name ?? 'Darkstore' }}</div>
+                    <div class="text-muted text-xs"><i class="far fa-clock mr-1"></i>{{ \Carbon\Carbon::parse($order->created_at)->format('d M Y, h:i A') }}</div>
+                  </td>
+                  <td>
+                    <div class="font-weight-bold text-dark">{{ $order->user_name }}</div>
+                    <div class="text-muted small">{{ $order->user_phone }}</div>
+                    @if($order->is_for_someone_else)
+                      <span class="badge badge-warning text-dark text-xs mt-1">
+                        <i class="fas fa-gift mr-1"></i> For: {{ $order->receiver_name }} ({{ $order->receiver_phone }})
+                      </span>
+                    @endif
+                  </td>
+                  <td>
+                    @if($order->order_type === 'pickup')
+                      <span class="badge badge-purple px-2 py-1" style="background-color: #6f42c1; color: white;">
+                        🏬 Store Pickup
+                      </span>
+                    @else
+                      <span class="badge badge-info px-2 py-1">
+                        🛵 Home Delivery
+                      </span>
+                    @endif
+                  </td>
+                  <td>
+                    @if($order->order_type === 'pickup')
+                      <div class="font-weight-bold text-dark">{{ $order->pickup_date ?? 'Today' }}</div>
+                      <div class="badge badge-light border text-xs text-secondary mt-1">
+                        <i class="far fa-clock mr-1"></i>{{ $order->pickup_time ?? '06:00 AM - 11:00 PM' }}
+                      </div>
+                    @else
+                      <span class="text-muted small">Standard Delivery</span>
+                    @endif
+                  </td>
+                  <td>
+                    <div class="font-weight-bold text-dark">₹{{ number_format($order->grand_total, 2) }}</div>
+                    <div class="text-muted text-xs">{{ strtoupper($order->payment_method) }} ({{ $order->payment_status }})</div>
+                  </td>
+                  <td>
+                    @php
+                      $statusBadges = [
+                        'Pending' => 'badge-warning',
+                        'Processing' => 'badge-info',
+                        'Out for Delivery' => 'badge-primary',
+                        'Delivered' => 'badge-success',
+                        'Cancelled' => 'badge-danger'
+                      ];
+                      $badgeClass = $statusBadges[$order->status] ?? 'badge-secondary';
+                    @endphp
+                    <span class="badge {{ $badgeClass }} px-2 py-1">
+                      {{ $order->status }}
+                    </span>
+                  </td>
+                  <td class="pr-4 text-right">
+                    <a href="/admin/orders/{{ $order->id }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                      <i class="fas fa-eye mr-1"></i> View Details
+                    </a>
+                  </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" class="text-center py-5 text-muted">
-                        <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
-                        No orders found.
-                    </td>
+                  <td colspan="7" class="text-center py-5 text-muted">
+                    <i class="fas fa-inbox fa-2x d-block mb-2 text-secondary"></i>
+                    No orders found matching criteria.
+                  </td>
                 </tr>
                 @endforelse
-            </tbody>
-        </table>
-    </div>
-    @if($orders->hasPages())
-    <div class="card-footer bg-white border-0 py-3">
-        {{ $orders->withQueryString()->links() }}
-    </div>
-    @endif
+              </tbody>
+            </table>
+          </div>
+          @if($orders->hasPages())
+          <div class="card-footer bg-white py-3">
+            {{ $orders->withQueryString()->links() }}
+          </div>
+          @endif
+        </div>
+      </div>
+    </section>
+  </div>
 </div>
-@endsection
+
+<script href="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+</body>
+</html>
