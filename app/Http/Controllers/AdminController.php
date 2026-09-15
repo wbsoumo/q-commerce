@@ -561,6 +561,14 @@ class AdminController extends Controller
         // Automatically check column existence in production database
         $hasOrderTypeColumn = Schema::hasColumn('orders', 'order_type');
 
+        if (!Schema::hasColumn('orders', 'payment_status')) {
+            try {
+                Schema::table('orders', function ($table) {
+                    $table->string('payment_status')->default('Pending')->after('payment_method');
+                });
+            } catch (\Exception $e) {}
+        }
+
         if (!$hasOrderTypeColumn) {
             // Dynamically add columns if missing on production server database
             try {
