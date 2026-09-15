@@ -11,12 +11,12 @@
           <li class="nav-header text-uppercase text-muted small font-weight-bold">Store Management</li>
           <li class="nav-item">
             <a href="/admin/store-manager" class="nav-link {{ request()->is('admin/store-manager*') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-user-cog text-info"></i><p>Manager Dashboard</p>
+              <i class="nav-icon fas fa-user-cog text-light"></i><p>Manager Dashboard</p>
             </a>
           </li>
           <li class="nav-item">
             <a href="/admin/stores/{{ auth()->user()->store_id }}/settings" class="nav-link {{ request()->is('admin/stores/*/settings') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-sliders-h text-warning"></i><p>Branch Settings</p>
+              <i class="nav-icon fas fa-sliders-h text-light"></i><p>Branch Settings</p>
             </a>
           </li>
         @else
@@ -24,81 +24,81 @@
           <li class="nav-header text-uppercase text-muted small font-weight-bold">Main Dashboard</li>
           <li class="nav-item">
             <a href="/admin" class="nav-link {{ request()->is('admin') && !request()->is('admin/*') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-chart-line text-info"></i><p>Analytics Overview</p>
+              <i class="nav-icon fas fa-chart-line text-light"></i><p>Analytics Overview</p>
             </a>
           </li>
 
           <li class="nav-header text-uppercase text-muted small font-weight-bold">App & Store Customizer</li>
           <li class="nav-item">
             <a href="/admin/homepage-customizer" class="nav-link {{ request()->is('admin/homepage-customizer*') ? 'active bg-success' : '' }}">
-              <i class="nav-icon fas fa-desktop text-success"></i>
+              <i class="nav-icon fas fa-desktop text-light"></i>
               <p>App Home Customizer <span class="right badge badge-success">Live</span></p>
             </a>
           </li>
           <li class="nav-item">
-            <a href="/admin/coupons" class="nav-link {{ request()->is('admin/coupons*') ? 'active bg-warning text-dark' : '' }}">
-              <i class="nav-icon fas fa-ticket-alt text-warning"></i>
+            <a href="/admin/coupons" class="nav-link {{ request()->is('admin/coupons*') ? 'active bg-success' : '' }}">
+              <i class="nav-icon fas fa-ticket-alt text-light"></i>
               <p>Coupons & Offers Engine</p>
             </a>
           </li>
           <li class="nav-item">
             <a href="/admin/stores" class="nav-link {{ request()->is('admin/stores*') && !request()->is('admin/stores/*/settings') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-store text-primary"></i><p>Stores & Dark Hubs</p>
+              <i class="nav-icon fas fa-store text-light"></i><p>Stores & Dark Hubs</p>
             </a>
           </li>
 
           <li class="nav-header text-uppercase text-muted small font-weight-bold">Catalog & Inventory</li>
           <li class="nav-item">
             <a href="/admin/categories" class="nav-link {{ request()->is('admin/categories*') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-th-large text-warning"></i><p>Categories</p>
+              <i class="nav-icon fas fa-th-large text-light"></i><p>Categories</p>
             </a>
           </li>
           <li class="nav-item">
             <a href="/admin/products" class="nav-link {{ request()->is('admin/products*') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-boxes text-info"></i><p>Product Catalog</p>
+              <i class="nav-icon fas fa-boxes text-light"></i><p>Product Catalog</p>
             </a>
           </li>
           <li class="nav-item">
             <a href="/admin/store-manager" class="nav-link {{ request()->is('admin/store-manager*') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-cubes text-teal"></i><p>Store Inventory Matrix</p>
+              <i class="nav-icon fas fa-cubes text-light"></i><p>Store Inventory Matrix</p>
             </a>
           </li>
           <li class="nav-item">
             <a href="/admin/inventory/transactions" class="nav-link {{ request()->is('admin/inventory/transactions*') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-history text-secondary"></i><p>Inventory Audit Logs</p>
+              <i class="nav-icon fas fa-history text-light"></i><p>Inventory Audit Logs</p>
             </a>
           </li>
           <li class="nav-item">
             <a href="/admin/inventory/alerts" class="nav-link {{ request()->is('admin/inventory/alerts*') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-exclamation-triangle text-danger"></i><p>Low Stock Alerts</p>
+              <i class="nav-icon fas fa-exclamation-triangle text-light"></i><p>Low Stock Alerts</p>
             </a>
           </li>
 
           <li class="nav-header text-uppercase text-muted small font-weight-bold">Orders & Logistics</li>
           <li class="nav-item">
-            <a href="/admin/orders" class="nav-link {{ request()->is('admin/orders*') ? 'active bg-purple' : '' }}">
-              <i class="nav-icon fas fa-shopping-bag text-warning"></i>
+            <a href="/admin/orders" class="nav-link {{ request()->is('admin/orders*') ? 'active bg-success' : '' }}">
+              <i class="nav-icon fas fa-shopping-bag text-light"></i>
               <p>Orders & Pickup Details</p>
             </a>
           </li>
           <li class="nav-item">
             <a href="/admin/customers" class="nav-link {{ request()->is('admin/customers*') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-users text-primary"></i><p>Customers</p>
+              <i class="nav-icon fas fa-users text-light"></i><p>Customers</p>
             </a>
           </li>
           <li class="nav-item">
             <a href="/admin/staff" class="nav-link {{ request()->is('admin/staff*') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-user-shield text-indigo"></i><p>Staff & Roles</p>
+              <i class="nav-icon fas fa-user-shield text-light"></i><p>Staff & Roles</p>
             </a>
           </li>
           <li class="nav-item">
             <a href="/admin/deliveries" class="nav-link {{ request()->is('admin/deliveries*') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-motorcycle text-success"></i><p>Deliveries & Riders</p>
+              <i class="nav-icon fas fa-motorcycle text-light"></i><p>Deliveries & Riders</p>
             </a>
           </li>
           <li class="nav-item">
             <a href="/admin/delivery-zones" class="nav-link {{ request()->is('admin/delivery-zones*') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-map-marked-alt text-purple"></i><p>Delivery Coverage</p>
+              <i class="nav-icon fas fa-map-marked-alt text-light"></i><p>Delivery Coverage</p>
             </a>
           </li>
         @endif
