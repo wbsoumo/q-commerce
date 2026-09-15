@@ -647,6 +647,11 @@ class AdminController extends Controller
 
     public function updateOrderStatus(Request $request, $id)
     {
+        // Auto-widen status column from ENUM to VARCHAR(50) to prevent truncation errors
+        try {
+            DB::statement("ALTER TABLE orders MODIFY COLUMN status VARCHAR(50) DEFAULT 'Pending'");
+        } catch (\Exception $e) {}
+
         $newStatus = $request->input('status');
         $riderId = $request->input('delivery_partner_id');
         $order = DB::table('orders')->where('id', $id)->first();
