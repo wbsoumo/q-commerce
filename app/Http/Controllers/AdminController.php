@@ -1003,6 +1003,90 @@ class AdminController extends Controller
     // 8. Enterprise Coupon Management
     public function coupons()
     {
+        // Auto-check table existence on remote production DB
+        if (!Schema::hasTable('coupons')) {
+            try {
+                Schema::create('coupons', function ($table) {
+                    $table->id();
+                    $table->string('code')->unique();
+                    $table->string('title');
+                    $table->text('description')->nullable();
+                    $table->enum('discount_type', ['flat', 'percentage', 'free_delivery'])->default('flat');
+                    $table->decimal('discount_value', 10, 2)->default(0.00);
+                    $table->decimal('max_discount_amount', 10, 2)->nullable();
+                    $table->decimal('min_cart_amount', 10, 2)->default(0.00);
+                    $table->boolean('is_free_delivery')->default(false);
+                    $table->boolean('is_first_order_only')->default(false);
+                    $table->enum('allowed_order_type', ['all', 'delivery', 'pickup'])->default('all');
+                    $table->foreignId('allowed_store_id')->nullable()->constrained('stores')->onDelete('set null');
+                    $table->text('allowed_user_phones')->nullable();
+                    $table->boolean('restrict_one_device')->default(false);
+                    $table->string('allowed_payment_method')->nullable();
+                    $table->integer('max_global_uses')->nullable();
+                    $table->integer('max_uses_per_user')->default(1);
+                    $table->integer('total_uses_count')->default(0);
+                    $table->timestamp('start_date')->nullable();
+                    $table->timestamp('end_date')->nullable();
+                    $table->boolean('is_active')->default(true);
+                    $table->timestamps();
+                });
+
+                Schema::create('coupon_redemptions', function ($table) {
+                    $table->id();
+                    $table->foreignId('coupon_id')->constrained('coupons')->onDelete('cascade');
+                    $table->foreignId('order_id')->nullable()->constrained('orders')->onDelete('set null');
+                    $table->string('user_phone');
+                    $table->string('device_id')->nullable();
+                    $table->decimal('discount_amount', 10, 2);
+                    $table->timestamps();
+                });
+
+                // Seed initial bank coupons
+                DB::table('coupons')->insert([
+                    [
+                        'code' => 'ONECARD30',
+                        'title' => 'Flat ₹30 Off',
+                        'description' => 'Applicable on transactions using OneCard Credit Cards. Max discount ₹30.',
+                        'discount_type' => 'flat',
+                        'discount_value' => 30.00,
+                        'min_cart_amount' => 149.00,
+                        'allowed_order_type' => 'all',
+                        'is_active' => true,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ],
+                    [
+                        'code' => 'DIGISMART',
+                        'title' => 'Get 10% OFF upto ₹200',
+                        'description' => 'Applicable on Standard Chartered Digismart Card. Max discount ₹200.',
+                        'discount_type' => 'percentage',
+                        'discount_value' => 10.00,
+                        'max_discount_amount' => 200.00,
+                        'min_cart_amount' => 199.00,
+                        'allowed_order_type' => 'all',
+                        'is_active' => true,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ],
+                    [
+                        'code' => 'FREEDEL',
+                        'title' => 'Get FREE Delivery',
+                        'description' => 'Waives standard delivery charges on Home Delivery orders.',
+                        'discount_type' => 'free_delivery',
+                        'discount_value' => 25.00,
+                        'is_free_delivery' => true,
+                        'min_cart_amount' => 99.00,
+                        'allowed_order_type' => 'delivery',
+                        'is_active' => true,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ],
+                ]);
+            } catch (\Exception $e) {
+                // Table created concurrently
+            }
+        }
+
         $coupons = DB::table('coupons')
             ->leftJoin('stores', 'coupons.allowed_store_id', '=', 'stores.id')
             ->select('coupons.*', 'stores.name as store_name')
