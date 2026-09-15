@@ -40,6 +40,7 @@
                   <th>Phone Number</th>
                   <th>Status</th>
                   <th>VIP Flag</th>
+                  <th>Wallet Balance</th>
                   <th>Total Orders</th>
                   <th>Total Spent</th>
                   <th>Last Order</th>
@@ -62,6 +63,7 @@
                       <span class="badge badge-light">Regular</span>
                     @endif
                   </td>
+                  <td><span class="badge badge-success font-weight-bold" style="font-size: 13px;"><i class="fas fa-wallet mr-1"></i> ₹{{ number_format($c->wallet_balance ?? 0, 2) }}</span></td>
                   <td><span class="badge badge-info">{{ $c->total_orders }} orders</span></td>
                   <td class="text-success font-weight-bold">₹{{ $c->total_spent }}</td>
                   <td>{{ $c->last_order_at ?? 'N/A' }}</td>
@@ -70,7 +72,7 @@
                   </td>
                 </tr>
                 @empty
-                <tr><td colspan="9" class="text-center py-4">No customer profiles found.</td></tr>
+                <tr><td colspan="10" class="text-center py-4">No customer profiles found.</td></tr>
                 @endforelse
               </tbody>
             </table>

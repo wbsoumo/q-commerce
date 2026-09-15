@@ -111,4 +111,5 @@ Route::prefix('api/v1')->group(function () {
     Route::get('/user/orders', [ApiController::class, 'getUserOrders']);
     Route::get('/coupons', [ApiController::class, 'getCoupons']);
     Route::post('/coupons/validate', [ApiController::class, 'validateCoupon']);
+    Route::get('/user/wallet', [ApiController::class, 'getUserWallet']);
 });

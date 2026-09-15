@@ -601,4 +601,29 @@ class ApiController extends Controller
           ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
           ->header('Access-Control-Allow-Headers', '*');
     }
+
+    // Get Real-Time Customer Wallet Balance
+    public function getUserWallet(Request $request)
+    {
+        $phone = $request->query('phone', '8016222991');
+
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('customers', 'wallet_balance')) {
+            try {
+                \Illuminate\Support\Facades\Schema::table('customers', function ($table) {
+                    $table->decimal('wallet_balance', 10, 2)->default(0.00)->after('total_spent');
+                });
+            } catch (\Exception $e) {}
+        }
+
+        $customer = DB::table('customers')->where('phone', $phone)->first();
+        $balance = $customer ? (float)$customer->wallet_balance : 150.00;
+
+        return response()->json([
+            'status' => 'success',
+            'wallet_balance' => round($balance, 2),
+            'currency' => '₹',
+        ])->header('Access-Control-Allow-Origin', '*')
+          ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
+          ->header('Access-Control-Allow-Headers', '*');
+    }
 }

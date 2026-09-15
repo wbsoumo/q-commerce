@@ -629,12 +629,26 @@ class AdminController extends Controller
     // 6. Customer Management
     public function customers()
     {
+        if (!Schema::hasColumn('customers', 'wallet_balance')) {
+            try {
+                Schema::table('customers', function ($table) {
+                    $table->decimal('wallet_balance', 10, 2)->default(0.00)->after('total_spent');
+                });
+            } catch (\Exception $e) {}
+        }
         $customers = DB::table('customers')->orderBy('id', 'desc')->paginate(15);
         return view('admin.customers.index', compact('customers'));
     }
 
     public function showCustomer($id)
     {
+        if (!Schema::hasColumn('customers', 'wallet_balance')) {
+            try {
+                Schema::table('customers', function ($table) {
+                    $table->decimal('wallet_balance', 10, 2)->default(0.00)->after('total_spent');
+                });
+            } catch (\Exception $e) {}
+        }
         $customer = DB::table('customers')->where('id', $id)->first();
         if (!$customer) {
             return redirect('/admin/customers')->with('error', 'Customer profile not found.');
@@ -707,13 +721,19 @@ class AdminController extends Controller
 
     public function updateCustomerStatus(Request $request, $id)
     {
-        DB::table('customers')->where('id', $id)->update([
+        $updateData = [
             'status' => $request->input('status', 'Active'),
             'is_vip' => $request->has('is_vip'),
             'notes' => $request->input('notes'),
             'updated_at' => now(),
-        ]);
-        return redirect()->back()->with('success', 'Customer record updated successfully!');
+        ];
+
+        if ($request->has('wallet_balance')) {
+            $updateData['wallet_balance'] = (float)$request->input('wallet_balance', 0.00);
+        }
+
+        DB::table('customers')->where('id', $id)->update($updateData);
+        return redirect()->back()->with('success', 'Customer profile & wallet balance updated successfully!');
     }
 
     // 7. Delivery Management

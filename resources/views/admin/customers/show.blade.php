@@ -43,6 +43,15 @@
         <!-- Quick Summary Stats Widgets -->
         <div class="row">
           <div class="col-lg-3 col-6">
+            <div class="small-box bg-success">
+              <div class="inner">
+                <h3>₹{{ number_format($customer->wallet_balance ?? 0.00, 2) }}</h3>
+                <p>Available Wallet Balance</p>
+              </div>
+              <div class="icon"><i class="fas fa-wallet"></i></div>
+            </div>
+          </div>
+          <div class="col-lg-3 col-6">
             <div class="small-box bg-info">
               <div class="inner">
                 <h3>{{ $totalOrdersCount }}</h3>
@@ -52,12 +61,12 @@
             </div>
           </div>
           <div class="col-lg-3 col-6">
-            <div class="small-box bg-success">
+            <div class="small-box bg-teal">
               <div class="inner">
                 <h3>₹{{ number_format($totalSpentAmount, 2) }}</h3>
                 <p>Lifetime Spending</p>
               </div>
-              <div class="icon"><i class="fas fa-wallet"></i></div>
+              <div class="icon"><i class="fas fa-coins"></i></div>
             </div>
           </div>
           <div class="col-lg-3 col-6">
@@ -67,15 +76,6 @@
                 <p>Successfully Delivered</p>
               </div>
               <div class="icon"><i class="fas fa-check-circle"></i></div>
-            </div>
-          </div>
-          <div class="col-lg-3 col-6">
-            <div class="small-box bg-warning">
-              <div class="inner">
-                <h3>{{ count($savedAddresses) }}</h3>
-                <p>Saved Delivery Addresses</p>
-              </div>
-              <div class="icon"><i class="fas fa-map-marker-alt"></i></div>
             </div>
           </div>
         </div>
@@ -107,6 +107,16 @@
                     <div class="custom-control custom-switch mb-3">
                       <input type="checkbox" class="custom-control-input" id="vipSwitch" name="is_vip" {{ !empty($customer->is_vip) ? 'checked' : '' }}>
                       <label class="custom-control-label font-weight-bold text-warning" for="vipSwitch"><i class="fas fa-crown mr-1"></i> VIP Customer Flag</label>
+                    </div>
+                    <div class="form-group">
+                      <label class="font-weight-bold text-success"><i class="fas fa-wallet mr-1"></i> Customer Wallet Balance (₹)</label>
+                      <div class="input-group">
+                        <div class="input-group-prepend">
+                          <span class="input-group-text font-weight-bold bg-success text-white">₹</span>
+                        </div>
+                        <input type="number" step="0.01" min="0" name="wallet_balance" class="form-control font-weight-bold" value="{{ number_format($customer->wallet_balance ?? 0.00, 2, '.', '') }}" placeholder="0.00">
+                      </div>
+                      <small class="form-text text-muted">Update or credit wallet cash for this customer directly.</small>
                     </div>
                     <div class="form-group">
                       <label class="font-weight-bold">Internal Admin Notes</label>
