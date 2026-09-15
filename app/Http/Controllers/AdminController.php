@@ -545,7 +545,25 @@ class AdminController extends Controller
         return redirect()->back()->with('success', 'Stock adjusted successfully and transaction logged!');
     }
 
-    // 4. Order Details & Timeline History
+    // 4. Order Management & Details
+    public function orders(Request $request)
+    {
+        $query = DB::table('orders')
+            ->leftJoin('stores', 'orders.store_id', '=', 'stores.id')
+            ->select('orders.*', 'stores.name as store_name');
+
+        if ($request->filled('type')) {
+            $query->where('orders.order_type', $request->type);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('orders.status', $request->status);
+        }
+
+        $orders = $query->orderBy('orders.id', 'desc')->paginate(15);
+        return view('admin.orders.index', compact('orders'));
+    }
+
     public function showOrder($id)
     {
         $order = DB::table('orders')->where('id', $id)->first();

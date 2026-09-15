@@ -74,6 +74,7 @@ Route::middleware(['admin.only'])->group(function () {
     Route::get('/admin/inventory/alerts', [AdminController::class, 'inventoryAlerts']);
 
     // Orders & Customers
+    Route::get('/admin/orders', [AdminController::class, 'orders']);
     Route::get('/admin/orders/{id}', [AdminController::class, 'showOrder']);
     Route::post('/admin/orders/{id}/update-status', [AdminController::class, 'updateOrderStatus']);
     Route::get('/admin/customers', [AdminController::class, 'customers']);
