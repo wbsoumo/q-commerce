@@ -58,6 +58,15 @@
                   </div>
 
                   <div class="form-group">
+                    <label for="visibility" class="font-weight-bold">Coupon Access & Visibility <span class="text-danger">*</span></label>
+                    <select name="visibility" id="visibility" class="form-control font-weight-bold">
+                      <option value="public">🌐 Public Coupon (Visible in App Coupon List)</option>
+                      <option value="private">🔒 Private Coupon (Hidden from list, valid ONLY by typing code)</option>
+                    </select>
+                    <small class="form-text text-muted">Private coupons will not be displayed in the app list; users must type the exact code manually.</small>
+                  </div>
+
+                  <div class="form-group">
                     <label for="title" class="font-weight-bold">Coupon Title <span class="text-danger">*</span></label>
                     <input type="text" name="title" id="title" class="form-control" placeholder="e.g. Flat ₹30 Off or Get 10% OFF upto ₹200" required>
                   </div>

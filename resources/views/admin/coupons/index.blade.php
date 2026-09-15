@@ -71,6 +71,11 @@
                       <span class="badge badge-warning text-dark border px-2 py-1 font-monospace mr-1">
                         {{ $coupon->code }}
                       </span>
+                      @if(isset($coupon->visibility) && $coupon->visibility === 'private')
+                        <span class="badge badge-dark text-xs"><i class="fas fa-lock mr-1"></i>Private Code</span>
+                      @else
+                        <span class="badge badge-light border text-xs text-muted"><i class="fas fa-globe mr-1"></i>Public Offer</span>
+                      @endif
                     </div>
                     <div class="font-weight-bold text-sm text-dark mt-1">{{ $coupon->title }}</div>
                     <div class="text-muted text-xs">{{ Str::limit($coupon->description, 60) }}</div>

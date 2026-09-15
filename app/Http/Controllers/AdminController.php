@@ -1025,6 +1025,7 @@ class AdminController extends Controller
                     $table->integer('max_global_uses')->nullable();
                     $table->integer('max_uses_per_user')->default(1);
                     $table->integer('total_uses_count')->default(0);
+                    $table->enum('visibility', ['public', 'private'])->default('public')->after('code');
                     $table->timestamp('start_date')->nullable();
                     $table->timestamp('end_date')->nullable();
                     $table->boolean('is_active')->default(true);
@@ -1122,6 +1123,7 @@ class AdminController extends Controller
 
         DB::table('coupons')->insert([
             'code' => strtoupper(trim($validated['code'])),
+            'visibility' => $request->input('visibility', 'public'),
             'title' => $validated['title'],
             'description' => $validated['description'],
             'discount_type' => $validated['discount_type'],

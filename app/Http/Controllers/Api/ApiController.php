@@ -455,12 +455,16 @@ class ApiController extends Controller
           ->header('Access-Control-Allow-Headers', '*');
     }
 
-    // Get Active Coupons List
+    // Get Active Public Coupons List (Private coupons hidden from list, valid via typing code)
     public function getCoupons(Request $request)
     {
-        $coupons = DB::table('coupons')
-            ->where('is_active', true)
-            ->where(function($q) {
+        // Safe check for visibility column
+        $query = DB::table('coupons')->where('is_active', true);
+        if (\Illuminate\Support\Facades\Schema::hasColumn('coupons', 'visibility')) {
+            $query->where('visibility', 'public');
+        }
+
+        $coupons = $query->where(function($q) {
                 $q->whereNull('start_date')->orWhere('start_date', '<=', now());
             })
             ->where(function($q) {
