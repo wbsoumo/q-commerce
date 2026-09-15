@@ -643,6 +643,7 @@ class AdminController extends Controller
     public function updateOrderStatus(Request $request, $id)
     {
         $newStatus = $request->input('status');
+        $riderId = $request->input('delivery_partner_id');
         $order = DB::table('orders')->where('id', $id)->first();
 
         if ($order) {
@@ -652,10 +653,35 @@ class AdminController extends Controller
                 'order_id' => $id,
                 'previous_status' => $order->status,
                 'new_status' => $newStatus,
-                'reason' => $request->input('reason', 'Status updated by Admin'),
+                'reason' => $request->input('reason', "Transitioned to {$newStatus}"),
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+
+            if (!empty($riderId)) {
+                $existingDel = DB::table('deliveries')->where('order_id', $id)->first();
+                if ($existingDel) {
+                    DB::table('deliveries')->where('id', $existingDel->id)->update([
+                        'delivery_partner_id' => $riderId,
+                        'delivery_status' => ($newStatus === 'Delivered') ? 'Delivered' : 'Assigned',
+                        'updated_at' => now(),
+                    ]);
+                } else {
+                    DB::table('deliveries')->insert([
+                        'order_id' => $id,
+                        'store_id' => $order->store_id ?? 1,
+                        'delivery_partner_id' => $riderId,
+                        'delivery_status' => ($newStatus === 'Delivered') ? 'Delivered' : 'Assigned',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            } elseif ($newStatus === 'Delivered') {
+                DB::table('deliveries')->where('order_id', $id)->update([
+                    'delivery_status' => 'Delivered',
+                    'updated_at' => now(),
+                ]);
+            }
 
             // Release or Consume Stock based on status lifecycle
             $items = DB::table('order_items')->where('order_id', $id)->get();
@@ -668,7 +694,7 @@ class AdminController extends Controller
             }
         }
 
-        return redirect()->back()->with('success', "Order status updated to {$newStatus}!");
+        return redirect()->back()->with('success', "Order status successfully updated to {$newStatus}!");
     }
 
     // 6. Customer Management

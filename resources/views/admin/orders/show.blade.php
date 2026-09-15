@@ -101,59 +101,137 @@
             <div class="card card-outline card-primary">
               <div class="card-header"><h3 class="card-title font-weight-bold"><i class="fas fa-tasks mr-2"></i>Status Lifecycle Control</h3></div>
               <div class="card-body">
-                @if(($order->order_type ?? 'delivery') === 'delivery')
-                  <div class="card card-outline card-warning mb-3">
-                    <div class="card-header font-weight-bold py-2"><i class="fas fa-motorcycle text-warning mr-1"></i> Delivery Partner Assignment</div>
-                    <div class="card-body p-3">
-                      @if($delivery && !empty($delivery->rider_name))
-                        <div class="alert alert-success p-2 small mb-2">
-                          <i class="fas fa-user-check mr-1"></i> <strong>Assigned Rider:</strong> {{ $delivery->rider_name }} ({{ $delivery->rider_phone }})<br>
-                          <span class="text-muted">Status: {{ $delivery->delivery_status }}</span>
-                        </div>
-                      @else
-                        <div class="alert alert-danger p-2 small mb-2">
-                          <i class="fas fa-exclamation-triangle mr-1"></i> Delivery partner will be assigned soon...
-                        </div>
-                      @endif
+                
+                @php
+                  $currentStatus = $order->status ?? 'Pending';
+                  $orderType = $order->order_type ?? 'delivery';
+                  $isPickup = $orderType === 'pickup';
+                @endphp
 
-                      <form action="/admin/deliveries/assign" method="POST">
-                        @csrf
-                        <input type="hidden" name="delivery_id" value="{{ $delivery->id ?? '' }}">
-                        <div class="form-group mb-2">
-                          <label class="small font-weight-bold">Select & Assign Delivery Executive</label>
-                          <select name="delivery_partner_id" class="form-control form-control-sm font-weight-bold" required>
-                            <option value="">-- Choose Active Rider --</option>
-                            @foreach($riders as $r)
-                              <option value="{{ $r->id }}" {{ ($delivery->delivery_partner_id ?? null) == $r->id ? 'selected' : '' }}>
-                                {{ $r->name }} ({{ $r->phone }})
-                              </option>
-                            @endforeach
-                          </select>
-                        </div>
-                        <button type="submit" class="btn btn-sm btn-warning btn-block font-weight-bold">
-                          <i class="fas fa-motorcycle mr-1"></i> Assign Delivery Executive
-                        </button>
-                      </form>
+                <!-- Lifecycle Step Progress Header -->
+                <div class="mb-3 text-center">
+                  <div class="btn-group btn-group-toggle w-100 mb-2">
+                    <span class="btn btn-xs {{ in_array($currentStatus, ['Pending', 'Confirmed', 'Processing', 'Preparing', 'Out for Delivery', 'Ready for Pickup', 'Delivered']) ? 'btn-success' : 'btn-light border' }}">1. Confirmed</span>
+                    <span class="btn btn-xs {{ in_array($currentStatus, ['Processing', 'Preparing', 'Out for Delivery', 'Ready for Pickup', 'Delivered']) ? 'btn-success' : 'btn-light border' }}">2. Processing</span>
+                    <span class="btn btn-xs {{ in_array($currentStatus, ['Out for Delivery', 'Ready for Pickup', 'Delivered']) ? 'btn-success' : 'btn-light border' }}">{{ $isPickup ? '3. Ready' : '3. Out for Delivery' }}</span>
+                    <span class="btn btn-xs {{ $currentStatus === 'Delivered' ? 'btn-success' : 'btn-light border' }}">4. Delivered</span>
+                  </div>
+                </div>
+
+                <!-- Next Stage Action Control (No Dropdown) -->
+                @if($currentStatus === 'Pending' || $currentStatus === 'Confirmed')
+                  <!-- Stage 1 -> Stage 2: Confirmed to Processing -->
+                  <form action="/admin/orders/{{ $order->id }}/update-status" method="POST">
+                    @csrf
+                    <input type="hidden" name="status" value="Processing">
+                    <div class="alert alert-info p-3 mb-3">
+                      <i class="fas fa-box-open mr-2"></i> <strong>Next Step: Advance Order to Processing</strong><br>
+                      <span class="small">Mark order as accepted and start preparing items in store.</span>
                     </div>
+                    <button type="submit" class="btn btn-lg btn-block btn-primary font-weight-bold py-3 shadow-sm">
+                      <i class="fas fa-boxes mr-2"></i> Advance to Processing 📦
+                    </button>
+                  </form>
+
+                @elseif($currentStatus === 'Processing' || $currentStatus === 'Preparing')
+                  <!-- Stage 2 -> Stage 3 -->
+                  @if(!$isPickup)
+                    <!-- Home Delivery: Prompt Delivery Partner Assignment for Out for Delivery -->
+                    <form action="/admin/orders/{{ $order->id }}/update-status" method="POST">
+                      @csrf
+                      <input type="hidden" name="status" value="Out for Delivery">
+                      
+                      <div class="card card-outline card-warning mb-3">
+                        <div class="card-header py-2 font-weight-bold text-dark">
+                          <i class="fas fa-motorcycle text-warning mr-1"></i> Select Delivery Partner for Dispatch
+                        </div>
+                        <div class="card-body p-3">
+                          @if($delivery && !empty($delivery->rider_name))
+                            <div class="alert alert-success p-2 small mb-2">
+                              <i class="fas fa-user-check mr-1"></i> <strong>Assigned Rider:</strong> {{ $delivery->rider_name }} ({{ $delivery->rider_phone }})
+                            </div>
+                          @else
+                            <div class="alert alert-warning p-2 small mb-2">
+                              <i class="fas fa-exclamation-triangle mr-1"></i> Assign a delivery partner to dispatch this order:
+                            </div>
+                          @endif
+
+                          <div class="form-group mb-0">
+                            <label class="small font-weight-bold">Delivery Executive</label>
+                            <select name="delivery_partner_id" class="form-control font-weight-bold" required>
+                              <option value="">-- Select Active Delivery Executive --</option>
+                              @foreach($riders as $r)
+                                <option value="{{ $r->id }}" {{ ($delivery->delivery_partner_id ?? null) == $r->id ? 'selected' : '' }}>
+                                  {{ $r->name }} ({{ $r->phone }})
+                                </option>
+                              @endforeach
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button type="submit" class="btn btn-lg btn-block btn-warning text-dark font-weight-bold py-3 shadow-sm">
+                        <i class="fas fa-motorcycle mr-2"></i> Dispatch: Out for Delivery 🛵
+                      </button>
+                    </form>
+                  @else
+                    <!-- Store Pickup: Mark Ready for Pickup -->
+                    <form action="/admin/orders/{{ $order->id }}/update-status" method="POST">
+                      @csrf
+                      <input type="hidden" name="status" value="Ready for Pickup">
+                      <div class="alert alert-purple p-3 mb-3" style="background-color: #f3e5f5; color: #6a1b9a;">
+                        <i class="fas fa-store mr-2"></i> <strong>Next Step: Ready for Store Pickup</strong><br>
+                        <span class="small">Notify customer that their pickup order is ready.</span>
+                      </div>
+                      <button type="submit" class="btn btn-lg btn-block font-weight-bold py-3 text-white shadow-sm" style="background-color: #6f42c1;">
+                        <i class="fas fa-store mr-2"></i> Mark Ready for Store Pickup 🏬
+                      </button>
+                    </form>
+                  @endif
+
+                @elseif($currentStatus === 'Out for Delivery' || $currentStatus === 'Ready for Pickup')
+                  <!-- Stage 3 -> Stage 4: Mark Delivered -->
+                  @if(!$isPickup && $delivery && !empty($delivery->rider_name))
+                    <div class="alert alert-success p-2 small mb-3">
+                      <i class="fas fa-user-check mr-1"></i> <strong>Assigned Rider:</strong> {{ $delivery->rider_name }} ({{ $delivery->rider_phone }})
+                    </div>
+                  @endif
+
+                  <form action="/admin/orders/{{ $order->id }}/update-status" method="POST">
+                    @csrf
+                    <input type="hidden" name="status" value="Delivered">
+                    <div class="alert alert-success p-3 mb-3">
+                      <i class="fas fa-check-circle mr-2"></i> <strong>Next Step: Complete Order</strong><br>
+                      <span class="small">Mark order as delivered successfully.</span>
+                    </div>
+                    <button type="submit" class="btn btn-lg btn-block btn-success font-weight-bold py-3 shadow-sm">
+                      <i class="fas fa-check-circle mr-2"></i> {{ $isPickup ? 'Mark Picked Up & Completed ✅' : 'Mark as Delivered ✅' }}
+                    </button>
+                  </form>
+
+                @elseif($currentStatus === 'Delivered')
+                  <!-- Order Delivered State -->
+                  <div class="alert alert-success p-3 text-center mb-3">
+                    <i class="fas fa-check-circle fa-2x d-block mb-2 text-success"></i>
+                    <h5 class="font-weight-bold mb-1">Order Delivered Successfully!</h5>
+                    <span class="small text-muted">This order has completed all lifecycle stages.</span>
+                  </div>
+                @else
+                  <div class="alert alert-secondary p-3 text-center mb-3">
+                    <h5 class="font-weight-bold mb-1">Status: {{ $currentStatus }}</h5>
                   </div>
                 @endif
 
-                <form action="/admin/orders/{{ $order->id }}/update-status" method="POST">
-                  @csrf
-                  <div class="form-group">
-                    <label>Update Order Status</label>
-                    <select name="status" class="form-control font-weight-bold">
-                      @foreach(['Pending', 'Confirmed', 'Preparing', 'Out for Delivery', 'Delivered', 'Cancelled', 'Refunded'] as $st)
-                        <option value="{{ $st }}" {{ $order->status === $st ? 'selected' : '' }}>{{ $st }}</option>
-                      @endforeach
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label>Status Change Reason / Notes</label>
-                    <input type="text" name="reason" class="form-control" placeholder="Optional notes for status update">
-                  </div>
-                  <button type="submit" class="btn btn-primary btn-block font-weight-bold"><i class="fas fa-sync mr-1"></i> Transition Order Status</button>
-                </form>
+                @if($currentStatus !== 'Delivered' && $currentStatus !== 'Cancelled')
+                  <hr>
+                  <form action="/admin/orders/{{ $order->id }}/update-status" method="POST" onsubmit="return confirm('Are you sure you want to cancel this order?');">
+                    @csrf
+                    <input type="hidden" name="status" value="Cancelled">
+                    <button type="submit" class="btn btn-sm btn-outline-danger btn-block font-weight-bold">
+                      <i class="fas fa-times-circle mr-1"></i> Cancel Order
+                    </button>
+                  </form>
+                @endif
 
                 <hr>
                 <h5 class="font-weight-bold"><i class="fas fa-history mr-1"></i> Order Status Audit History</h5>
