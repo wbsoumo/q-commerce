@@ -558,6 +558,11 @@ class AdminController extends Controller
     // 4. Order Management & Details
     public function orders(Request $request)
     {
+        // Automatically widen status column from ENUM to VARCHAR(50) to prevent truncation errors
+        try {
+            DB::statement("ALTER TABLE orders MODIFY COLUMN status VARCHAR(50) DEFAULT 'Pending'");
+        } catch (\Exception $e) {}
+
         // Automatically check column existence in production database
         $hasOrderTypeColumn = Schema::hasColumn('orders', 'order_type');
 
