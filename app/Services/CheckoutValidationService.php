@@ -31,12 +31,14 @@ class CheckoutValidationService
             throw new Exception("Store Unavailable: " . $opStatus['reason']);
         }
 
-        // 2. Validate Customer Distance & Delivery Coverage
-        $distanceKm = 2.0; // Default estimate
-        if ($userLat && $userLng && $store->latitude && $store->longitude) {
-            $distanceKm = self::haversineDistance($store->latitude, $store->longitude, $userLat, $userLng);
-            if ($distanceKm > ($store->delivery_radius_km ?? 10.0)) {
-                throw new Exception("Delivery location is outside the store's operating radius ({$store->delivery_radius_km} km).");
+        // 2. Validate Customer Distance & Delivery Coverage (Bypass radius check for Store Pickup)
+        $orderType = $data['order_type'] ?? 'delivery';
+        $maxRadius = (float)($store->delivery_radius_km ?? 15.0);
+
+        if ($orderType !== 'pickup' && $userLat && $userLng && !empty($store->latitude) && !empty($store->longitude)) {
+            $distanceKm = self::haversineDistance((float)$store->latitude, (float)$store->longitude, (float)$userLat, (float)$userLng);
+            if ($distanceKm > $maxRadius) {
+                throw new Exception("Delivery location is outside the store's operating radius (" . number_format($maxRadius, 2) . " km). Distance is " . number_format($distanceKm, 2) . " km.");
             }
         }
 
