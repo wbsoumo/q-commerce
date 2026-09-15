@@ -463,14 +463,13 @@ class AdminController extends Controller
 
         $promoCardsInput = $request->input('promo_cards', []);
 
-        // Process file uploads for promo card images if present
+        // Process file uploads for promo card images if present (compress & convert to WebP)
         if ($request->hasFile('promo_card_files')) {
             foreach ($request->file('promo_card_files') as $idx => $file) {
                 if ($file && $file->isValid()) {
-                    $filename = 'promo_' . time() . '_' . $idx . '.' . $file->getClientOriginalExtension();
-                    $file->move(public_path('uploads/promos'), $filename);
+                    $webpUrl = $this->convertToWebP($file, 'uploads/promos', 'promo_' . $idx);
                     if (isset($promoCardsInput[$idx])) {
-                        $promoCardsInput[$idx]['img'] = '/uploads/promos/' . $filename;
+                        $promoCardsInput[$idx]['img'] = $webpUrl;
                     }
                 }
             }
@@ -920,5 +919,45 @@ class AdminController extends Controller
         DB::table('categories')->where('id', $id)->update($updateData);
 
         return redirect('/admin/categories')->with('success', 'Category updated successfully!');
+    }
+
+    /**
+     * Helper to process, compress and convert uploaded image files to high-performance WebP format (~35KB typical)
+     */
+    private function convertToWebP($file, $destinationDir, $prefix = 'img')
+    {
+        $dirPath = public_path($destinationDir);
+        if (!file_exists($dirPath)) {
+            mkdir($dirPath, 0755, true);
+        }
+
+        $fileName = $prefix . '_' . time() . '_' . uniqid() . '.webp';
+        $fullPath = $dirPath . '/' . $fileName;
+
+        $sourcePath = $file->getRealPath();
+        $mime = $file->getMimeType();
+
+        $image = null;
+        if (str_contains($mime, 'png') && function_exists('imagecreatefrompng')) {
+            $image = @imagecreatefrompng($sourcePath);
+        } elseif ((str_contains($mime, 'jpeg') || str_contains($mime, 'jpg')) && function_exists('imagecreatefromjpeg')) {
+            $image = @imagecreatefromjpeg($sourcePath);
+        } elseif (str_contains($mime, 'webp') && function_exists('imagecreatefromwebp')) {
+            $image = @imagecreatefromwebp($sourcePath);
+        } elseif (str_contains($mime, 'gif') && function_exists('imagecreatefromgif')) {
+            $image = @imagecreatefromgif($sourcePath);
+        }
+
+        if ($image && function_exists('imagewebp')) {
+            imagealphablending($image, true);
+            imagesavealpha($image, true);
+            imagewebp($image, $fullPath, 82);
+            imagedestroy($image);
+            return '/' . trim($destinationDir, '/') . '/' . $fileName;
+        }
+
+        $fallbackName = $prefix . '_' . time() . '_' . $file->getClientOriginalName();
+        $file->move($dirPath, $fallbackName);
+        return '/' . trim($destinationDir, '/') . '/' . $fallbackName;
     }
 }
