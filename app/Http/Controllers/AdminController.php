@@ -11,29 +11,6 @@ use Illuminate\Support\Str;
 
 class AdminController extends Controller
 {
-    // Auto Database Import & Installer Route
-    public function importDatabase()
-    {
-        try {
-            Artisan::call('migrate:fresh', ['--force' => true]);
-            Artisan::call('db:seed', [
-                '--class' => 'Database\\Seeders\\QCommerceSeeder',
-                '--force' => true
-            ]);
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Multi-Vendor Multi-Store Database tables successfully imported & seeded!',
-                'timestamp' => now()->toDateTimeString()
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Database import failed: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
     // Professional Dashboard View
     public function dashboard()
     {

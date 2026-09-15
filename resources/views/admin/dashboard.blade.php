@@ -25,11 +25,6 @@
       <li class="nav-item d-none d-sm-inline-block"><a href="/admin/store-manager" class="nav-link text-primary font-weight-bold"><i class="fas fa-store mr-1"></i>Store Manager Portal</a></li>
     </ul>
     <ul class="navbar-nav ml-auto">
-      <li class="nav-item">
-        <a class="btn btn-outline-success btn-sm font-weight-bold" href="/import-database" target="_blank" onclick="return confirm('Import/Reset Database schema & multi-store seed data?')">
-          <i class="fas fa-database mr-1"></i> Import Database Tables
-        </a>
-      </li>
     </ul>
   </nav>
 

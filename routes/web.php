@@ -89,9 +89,6 @@ Route::middleware(['admin.only'])->group(function () {
     // Staff Management
     Route::get('/admin/staff', [AdminController::class, 'staffMembers']);
     Route::post('/admin/staff/store', [AdminController::class, 'storeStaffMember']);
-
-    // Database Importer
-    Route::get('/import-database', [AdminController::class, 'importDatabase']);
 });
 
 // High-Performance REST API Routes for Flutter App

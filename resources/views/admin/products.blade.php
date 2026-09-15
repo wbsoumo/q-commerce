@@ -70,7 +70,7 @@
                 </tr>
                 @empty
                 <tr>
-                  <td colspan="7" class="text-center py-4">No products found. <a href="/import-database">Click here to import default database tables and sample products.</a></td>
+                  <td colspan="7" class="text-center py-4">No products found.</td>
                 </tr>
                 @endforelse
               </tbody>

@@ -80,11 +80,6 @@
             </a>
           </li>
           <li class="nav-header">SYSTEM</li>
-          <li class="nav-item">
-            <a href="/import-database" class="nav-link text-warning" onclick="return confirm('Import/Reset Database Tables?')">
-              <i class="nav-icon fas fa-file-import"></i><p>Import Database</p>
-            </a>
-          </li>
         @endif
         <li class="nav-item mt-2">
           <form action="/logout" method="POST" id="logout-form">
