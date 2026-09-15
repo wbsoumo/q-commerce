@@ -101,12 +101,49 @@
             <div class="card card-outline card-primary">
               <div class="card-header"><h3 class="card-title font-weight-bold"><i class="fas fa-tasks mr-2"></i>Status Lifecycle Control</h3></div>
               <div class="card-body">
+                @if(($order->order_type ?? 'delivery') === 'delivery')
+                  <div class="card card-outline card-warning mb-3">
+                    <div class="card-header font-weight-bold py-2"><i class="fas fa-motorcycle text-warning mr-1"></i> Delivery Partner Assignment</div>
+                    <div class="card-body p-3">
+                      @if($delivery && !empty($delivery->rider_name))
+                        <div class="alert alert-success p-2 small mb-2">
+                          <i class="fas fa-user-check mr-1"></i> <strong>Assigned Rider:</strong> {{ $delivery->rider_name }} ({{ $delivery->rider_phone }})<br>
+                          <span class="text-muted">Status: {{ $delivery->delivery_status }}</span>
+                        </div>
+                      @else
+                        <div class="alert alert-danger p-2 small mb-2">
+                          <i class="fas fa-exclamation-triangle mr-1"></i> Delivery partner will be assigned soon...
+                        </div>
+                      @endif
+
+                      <form action="/admin/deliveries/assign" method="POST">
+                        @csrf
+                        <input type="hidden" name="delivery_id" value="{{ $delivery->id ?? '' }}">
+                        <div class="form-group mb-2">
+                          <label class="small font-weight-bold">Select & Assign Delivery Executive</label>
+                          <select name="delivery_partner_id" class="form-control form-control-sm font-weight-bold" required>
+                            <option value="">-- Choose Active Rider --</option>
+                            @foreach($riders as $r)
+                              <option value="{{ $r->id }}" {{ ($delivery->delivery_partner_id ?? null) == $r->id ? 'selected' : '' }}>
+                                {{ $r->name }} ({{ $r->phone }})
+                              </option>
+                            @endforeach
+                          </select>
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-warning btn-block font-weight-bold">
+                          <i class="fas fa-motorcycle mr-1"></i> Assign Delivery Executive
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                @endif
+
                 <form action="/admin/orders/{{ $order->id }}/update-status" method="POST">
                   @csrf
                   <div class="form-group">
-                    <label>Update Status</label>
+                    <label>Update Order Status</label>
                     <select name="status" class="form-control font-weight-bold">
-                      @foreach(['Pending', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Out for Delivery', 'Delivered', 'Cancelled', 'Refunded'] as $st)
+                      @foreach(['Pending', 'Confirmed', 'Preparing', 'Out for Delivery', 'Delivered', 'Cancelled', 'Refunded'] as $st)
                         <option value="{{ $st }}" {{ $order->status === $st ? 'selected' : '' }}>{{ $st }}</option>
                       @endforeach
                     </select>

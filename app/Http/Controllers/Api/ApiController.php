@@ -445,6 +445,13 @@ class ApiController extends Controller
             $ord->pickup_details = $ord->order_type === 'pickup'
                 ? DB::table('store_pickup_orders')->where('order_id', $ord->id)->first()
                 : null;
+            $ord->delivery_details = $ord->order_type === 'delivery'
+                ? DB::table('deliveries')
+                    ->leftJoin('delivery_partners', 'deliveries.delivery_partner_id', '=', 'delivery_partners.id')
+                    ->select('deliveries.*', 'delivery_partners.name as rider_name', 'delivery_partners.phone as rider_phone')
+                    ->where('deliveries.order_id', $ord->id)
+                    ->first()
+                : null;
         }
 
         return response()->json([

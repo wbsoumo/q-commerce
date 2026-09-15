@@ -588,11 +588,38 @@ class AdminController extends Controller
     public function showOrder($id)
     {
         $order = DB::table('orders')->where('id', $id)->first();
+        if (!$order) {
+            return redirect('/admin/orders')->with('error', 'Order not found.');
+        }
+
         $items = DB::table('order_items')->where('order_id', $id)->get();
         $history = DB::table('order_status_histories')->where('order_id', $id)->orderBy('created_at', 'asc')->get();
-        $delivery = DB::table('deliveries')->where('order_id', $id)->first();
+        
+        // Ensure delivery record exists if Home Delivery order
+        $delivery = DB::table('deliveries')
+            ->leftJoin('delivery_partners', 'deliveries.delivery_partner_id', '=', 'delivery_partners.id')
+            ->select('deliveries.*', 'delivery_partners.name as rider_name', 'delivery_partners.phone as rider_phone')
+            ->where('deliveries.order_id', $id)
+            ->first();
 
-        return view('admin.orders.show', compact('order', 'items', 'history', 'delivery'));
+        if (!$delivery && ($order->order_type ?? 'delivery') === 'delivery') {
+            $delId = DB::table('deliveries')->insertGetId([
+                'order_id' => $id,
+                'store_id' => $order->store_id ?? 1,
+                'delivery_status' => 'Waiting for Assignment',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $delivery = DB::table('deliveries')
+                ->leftJoin('delivery_partners', 'deliveries.delivery_partner_id', '=', 'delivery_partners.id')
+                ->select('deliveries.*', 'delivery_partners.name as rider_name', 'delivery_partners.phone as rider_phone')
+                ->where('deliveries.id', $delId)
+                ->first();
+        }
+
+        $riders = DB::table('delivery_partners')->where('status', 'Active')->get();
+
+        return view('admin.orders.show', compact('order', 'items', 'history', 'delivery', 'riders'));
     }
 
     public function updateOrderStatus(Request $request, $id)
