@@ -149,6 +149,43 @@ return new class extends Migration
             $table->enum('pickup_status', ['Scheduled', 'Ready for Pickup', 'Picked Up', 'Cancelled'])->default('Scheduled');
             $table->timestamps();
         });
+
+        // 11. Enterprise Coupons & Offers Table
+        Schema::create('coupons', function (Blueprint $table) {
+            $table->id();
+            $table->string('code')->unique();
+            $table->string('title');
+            $table->text('description')->nullable();
+            $table->enum('discount_type', ['flat', 'percentage', 'free_delivery'])->default('flat');
+            $table->decimal('discount_value', 10, 2)->default(0.00);
+            $table->decimal('max_discount_amount', 10, 2)->nullable();
+            $table->decimal('min_cart_amount', 10, 2)->default(0.00);
+            $table->boolean('is_free_delivery')->default(false);
+            $table->boolean('is_first_order_only')->default(false);
+            $table->enum('allowed_order_type', ['all', 'delivery', 'pickup'])->default('all');
+            $table->foreignId('allowed_store_id')->nullable()->constrained('stores')->onDelete('set null');
+            $table->text('allowed_user_phones')->nullable();
+            $table->boolean('restrict_one_device')->default(false);
+            $table->string('allowed_payment_method')->nullable();
+            $table->integer('max_global_uses')->nullable();
+            $table->integer('max_uses_per_user')->default(1);
+            $table->integer('total_uses_count')->default(0);
+            $table->timestamp('start_date')->nullable();
+            $table->timestamp('end_date')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
+        // 12. Coupon Redemptions Security Audit Table
+        Schema::create('coupon_redemptions', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('coupon_id')->constrained('coupons')->onDelete('cascade');
+            $table->foreignId('order_id')->nullable()->constrained('orders')->onDelete('set null');
+            $table->string('user_phone');
+            $table->string('device_id')->nullable();
+            $table->decimal('discount_amount', 10, 2);
+            $table->timestamps();
+        });
     }
 
     public function down(): void

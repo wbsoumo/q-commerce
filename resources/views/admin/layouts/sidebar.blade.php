@@ -36,6 +36,12 @@
             </a>
           </li>
           <li class="nav-item">
+            <a href="/admin/coupons" class="nav-link {{ request()->is('admin/coupons*') ? 'active bg-warning text-dark' : '' }}">
+              <i class="nav-icon fas fa-ticket-alt text-warning"></i>
+              <p>Coupons & Offers Engine</p>
+            </a>
+          </li>
+          <li class="nav-item">
             <a href="/admin/stores" class="nav-link {{ request()->is('admin/stores*') && !request()->is('admin/stores/*/settings') ? 'active' : '' }}">
               <i class="nav-icon fas fa-store text-primary"></i><p>Stores & Dark Hubs</p>
             </a>

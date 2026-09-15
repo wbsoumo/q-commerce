@@ -454,4 +454,147 @@ class ApiController extends Controller
           ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
           ->header('Access-Control-Allow-Headers', '*');
     }
+
+    // Get Active Coupons List
+    public function getCoupons(Request $request)
+    {
+        $coupons = DB::table('coupons')
+            ->where('is_active', true)
+            ->where(function($q) {
+                $q->whereNull('start_date')->orWhere('start_date', '<=', now());
+            })
+            ->where(function($q) {
+                $q->whereNull('end_date')->orWhere('end_date', '>=', now());
+            })
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $coupons,
+        ])->header('Access-Control-Allow-Origin', '*')
+          ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
+          ->header('Access-Control-Allow-Headers', '*');
+    }
+
+    // High-Security Coupon Validation & Rule Engine Endpoint
+    public function validateCoupon(Request $request)
+    {
+        $code = strtoupper(trim($request->input('code', '')));
+        $subtotal = (float)$request->input('subtotal', 0.0);
+        $phone = $request->input('user_phone', '8016222991');
+        $deviceId = $request->input('device_id', '');
+        $orderType = $request->input('order_type', 'delivery');
+        $storeId = $request->input('store_id', 1);
+
+        $coupon = DB::table('coupons')->where('code', $code)->first();
+
+        if (!$coupon) {
+            return response()->json(['status' => 'error', 'message' => 'Invalid coupon code. Please check and try again.']);
+        }
+
+        if (!$coupon->is_active) {
+            return response()->json(['status' => 'error', 'message' => 'This coupon has expired or is inactive.']);
+        }
+
+        // Rule 1: Validity Window
+        if ($coupon->start_date && now()->lt(\Carbon\Carbon::parse($coupon->start_date))) {
+            return response()->json(['status' => 'error', 'message' => 'This coupon offer has not started yet.']);
+        }
+        if ($coupon->end_date && now()->gt(\Carbon\Carbon::parse($coupon->end_date))) {
+            return response()->json(['status' => 'error', 'message' => 'This coupon offer has expired.']);
+        }
+
+        // Rule 2: Minimum Cart Subtotal
+        if ($subtotal < (float)$coupon->min_cart_amount) {
+            $diff = (float)$coupon->min_cart_amount - $subtotal;
+            return response()->json([
+                'status' => 'error',
+                'message' => "Add items worth ₹" . number_format($diff, 0) . " more to apply coupon $code.",
+                'required_min' => (float)$coupon->min_cart_amount
+            ]);
+        }
+
+        // Rule 3: Fulfillment Type (Pickup vs Delivery)
+        if ($coupon->allowed_order_type !== 'all' && $coupon->allowed_order_type !== $orderType) {
+            $modeText = $coupon->allowed_order_type === 'pickup' ? 'Store Pickup' : 'Home Delivery';
+            return response()->json(['status' => 'error', 'message' => "Coupon $code is valid only for $modeText orders."]);
+        }
+
+        // Rule 4: Store Specific
+        if ($coupon->allowed_store_id && (int)$coupon->allowed_store_id !== (int)$storeId) {
+            return response()->json(['status' => 'error', 'message' => "Coupon $code is not applicable for your selected darkstore."]);
+        }
+
+        // Rule 5: User Phone Restrictions
+        if (!empty($coupon->allowed_user_phones)) {
+            $allowedPhones = array_map('trim', explode(',', $coupon->allowed_user_phones));
+            if (!in_array($phone, $allowedPhones)) {
+                return response()->json(['status' => 'error', 'message' => "Coupon $code is exclusive to selected accounts."]);
+            }
+        }
+
+        // Rule 6: Device Fingerprint Lock (1 Device 1 Time Apply)
+        if ($coupon->restrict_one_device && !empty($deviceId)) {
+            $deviceUsed = DB::table('coupon_redemptions')
+                ->where('coupon_id', $coupon->id)
+                ->where('device_id', $deviceId)
+                ->exists();
+            if ($deviceUsed) {
+                return response()->json(['status' => 'error', 'message' => "Coupon $code has already been redeemed on this device."]);
+            }
+        }
+
+        // Rule 7: Per-User Redemption Limit
+        $userRedemptionsCount = DB::table('coupon_redemptions')
+            ->where('coupon_id', $coupon->id)
+            ->where('user_phone', $phone)
+            ->count();
+        if ($userRedemptionsCount >= (int)$coupon->max_uses_per_user) {
+            return response()->json(['status' => 'error', 'message' => "You have reached the maximum limit for coupon $code."]);
+        }
+
+        // Rule 8: Global Redemption Budget Limit
+        if ($coupon->max_global_uses && (int)$coupon->total_uses_count >= (int)$coupon->max_global_uses) {
+            return response()->json(['status' => 'error', 'message' => "Coupon $code offer limit reached."]);
+        }
+
+        // Rule 9: First Order Only
+        if ($coupon->is_first_order_only) {
+            $hasPreviousOrders = DB::table('orders')->where('user_phone', $phone)->exists();
+            if ($hasPreviousOrders) {
+                return response()->json(['status' => 'error', 'message' => "Coupon $code is valid for new customers on first order only."]);
+            }
+        }
+
+        // Calculate Discount Amount
+        $discount = 0.0;
+        if ($coupon->discount_type === 'flat') {
+            $discount = (float)$coupon->discount_value;
+        } elseif ($coupon->discount_type === 'percentage') {
+            $discount = ($subtotal * (float)$coupon->discount_value) / 100.0;
+            if ($coupon->max_discount_amount && $discount > (float)$coupon->max_discount_amount) {
+                $discount = (float)$coupon->max_discount_amount;
+            }
+        } elseif ($coupon->discount_type === 'free_delivery') {
+            $discount = 25.0; // Waives standard delivery fee
+        }
+
+        if ($discount > $subtotal) {
+            $discount = $subtotal;
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => "Coupon $code applied successfully!",
+            'data' => [
+                'code' => $coupon->code,
+                'title' => $coupon->title,
+                'discount_type' => $coupon->discount_type,
+                'discount_amount' => round($discount, 2),
+                'is_free_delivery' => (bool)$coupon->is_free_delivery,
+            ]
+        ])->header('Access-Control-Allow-Origin', '*')
+          ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
+          ->header('Access-Control-Allow-Headers', '*');
+    }
 }

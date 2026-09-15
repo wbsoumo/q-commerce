@@ -90,6 +90,13 @@ Route::middleware(['admin.only'])->group(function () {
     // Staff Management
     Route::get('/admin/staff', [AdminController::class, 'staffMembers']);
     Route::post('/admin/staff/store', [AdminController::class, 'storeStaffMember']);
+
+    // Coupon & Offers Management
+    Route::get('/admin/coupons', [AdminController::class, 'coupons']);
+    Route::get('/admin/coupons/create', [AdminController::class, 'createCoupon']);
+    Route::post('/admin/coupons/store', [AdminController::class, 'storeCoupon']);
+    Route::post('/admin/coupons/{id}/toggle', [AdminController::class, 'toggleCoupon']);
+    Route::delete('/admin/coupons/{id}', [AdminController::class, 'deleteCoupon']);
 });
 
 // High-Performance REST API Routes for Flutter App
@@ -102,4 +109,6 @@ Route::prefix('api/v1')->group(function () {
     Route::get('/user/addresses', [ApiController::class, 'getAddresses']);
     Route::post('/user/addresses/store', [ApiController::class, 'storeAddress']);
     Route::get('/user/orders', [ApiController::class, 'getUserOrders']);
+    Route::get('/coupons', [ApiController::class, 'getCoupons']);
+    Route::post('/coupons/validate', [ApiController::class, 'validateCoupon']);
 });

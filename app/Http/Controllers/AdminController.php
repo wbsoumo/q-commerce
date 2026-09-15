@@ -999,4 +999,85 @@ class AdminController extends Controller
         $file->move($dirPath, $fallbackName);
         return '/' . trim($destinationDir, '/') . '/' . $fallbackName;
     }
+
+    // 8. Enterprise Coupon Management
+    public function coupons()
+    {
+        $coupons = DB::table('coupons')
+            ->leftJoin('stores', 'coupons.allowed_store_id', '=', 'stores.id')
+            ->select('coupons.*', 'stores.name as store_name')
+            ->orderBy('coupons.id', 'desc')
+            ->get();
+        return view('admin.coupons.index', compact('coupons'));
+    }
+
+    public function createCoupon()
+    {
+        $stores = DB::table('stores')->where('is_active', true)->get();
+        return view('admin.coupons.create', compact('stores'));
+    }
+
+    public function storeCoupon(Request $request)
+    {
+        $validated = $request->validate([
+            'code' => 'required|string|unique:coupons,code',
+            'title' => 'required|string',
+            'description' => 'nullable|string',
+            'discount_type' => 'required|in:flat,percentage,free_delivery',
+            'discount_value' => 'required|numeric|min:0',
+            'max_discount_amount' => 'nullable|numeric|min:0',
+            'min_cart_amount' => 'nullable|numeric|min:0',
+            'allowed_order_type' => 'required|in:all,delivery,pickup',
+            'allowed_store_id' => 'nullable|exists:stores,id',
+            'allowed_user_phones' => 'nullable|string',
+            'max_global_uses' => 'nullable|integer|min:1',
+            'max_uses_per_user' => 'required|integer|min:1',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+        ]);
+
+        DB::table('coupons')->insert([
+            'code' => strtoupper(trim($validated['code'])),
+            'title' => $validated['title'],
+            'description' => $validated['description'],
+            'discount_type' => $validated['discount_type'],
+            'discount_value' => $validated['discount_value'],
+            'max_discount_amount' => $validated['max_discount_amount'] ?? null,
+            'min_cart_amount' => $validated['min_cart_amount'] ?? 0.00,
+            'is_free_delivery' => $validated['discount_type'] === 'free_delivery' || $request->has('is_free_delivery'),
+            'is_first_order_only' => $request->has('is_first_order_only'),
+            'allowed_order_type' => $validated['allowed_order_type'],
+            'allowed_store_id' => $validated['allowed_store_id'] ?? null,
+            'allowed_user_phones' => $validated['allowed_user_phones'] ?? null,
+            'restrict_one_device' => $request->has('restrict_one_device'),
+            'allowed_payment_method' => $request->input('allowed_payment_method'),
+            'max_global_uses' => $validated['max_global_uses'] ?? null,
+            'max_uses_per_user' => $validated['max_uses_per_user'] ?? 1,
+            'start_date' => $validated['start_date'] ? Carbon\Carbon::parse($validated['start_date']) : null,
+            'end_date' => $validated['end_date'] ? Carbon\Carbon::parse($validated['end_date']) : null,
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return redirect('/admin/coupons')->with('success', 'Coupon created successfully with configured security rules!');
+    }
+
+    public function toggleCoupon($id)
+    {
+        $coupon = DB::table('coupons')->where('id', $id)->first();
+        if ($coupon) {
+            DB::table('coupons')->where('id', $id)->update([
+                'is_active' => !$coupon->is_active,
+                'updated_at' => now(),
+            ]);
+        }
+        return redirect()->back()->with('success', 'Coupon status updated successfully!');
+    }
+
+    public function deleteCoupon($id)
+    {
+        DB::table('coupons')->where('id', $id)->delete();
+        return redirect()->back()->with('success', 'Coupon deleted successfully!');
+    }
 }
