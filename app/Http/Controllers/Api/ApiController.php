@@ -437,7 +437,11 @@ class ApiController extends Controller
             ->get();
 
         foreach ($orders as $ord) {
-            $ord->items = DB::table('order_items')->where('order_id', $ord->id)->get();
+            $ord->items = DB::table('order_items')
+                ->leftJoin('products', 'order_items.product_id', '=', 'products.id')
+                ->select('order_items.*', 'products.image as product_image', 'products.unit')
+                ->where('order_items.order_id', $ord->id)
+                ->get();
             $ord->status_history = DB::table('order_status_histories')
                 ->where('order_id', $ord->id)
                 ->orderBy('created_at', 'asc')
