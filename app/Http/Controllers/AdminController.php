@@ -1088,11 +1088,22 @@ class AdminController extends Controller
             }
         }
 
+        // Auto-check visibility column existence on remote production DB
+        if (Schema::hasTable('coupons') && !Schema::hasColumn('coupons', 'visibility')) {
+            try {
+                Schema::table('coupons', function ($table) {
+                    $table->enum('visibility', ['public', 'private'])->default('public')->after('code');
+                });
+            } catch (\Exception $e) {
+                // Column added concurrently
+            }
+        }
+
         $query = DB::table('coupons')
             ->leftJoin('stores', 'coupons.allowed_store_id', '=', 'stores.id')
             ->select('coupons.*', 'stores.name as store_name');
 
-        if (request()->filled('visibility')) {
+        if (Schema::hasColumn('coupons', 'visibility') && request()->filled('visibility')) {
             $query->where('coupons.visibility', request('visibility'));
         }
 
