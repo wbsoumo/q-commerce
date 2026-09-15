@@ -68,7 +68,13 @@
             </a>
           </li>
 
-          <li class="nav-header text-uppercase text-muted small font-weight-bold">Logistics & Users</li>
+          <li class="nav-header text-uppercase text-muted small font-weight-bold">Orders & Logistics</li>
+          <li class="nav-item">
+            <a href="/admin/orders" class="nav-link {{ request()->is('admin/orders*') ? 'active bg-purple' : '' }}">
+              <i class="nav-icon fas fa-shopping-bag text-warning"></i>
+              <p>Orders & Pickup Details</p>
+            </a>
+          </li>
           <li class="nav-item">
             <a href="/admin/customers" class="nav-link {{ request()->is('admin/customers*') ? 'active' : '' }}">
               <i class="nav-icon fas fa-users text-primary"></i><p>Customers</p>
