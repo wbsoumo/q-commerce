@@ -462,6 +462,20 @@ class AdminController extends Controller
         }
 
         $promoCardsInput = $request->input('promo_cards', []);
+
+        // Process file uploads for promo card images if present
+        if ($request->hasFile('promo_card_files')) {
+            foreach ($request->file('promo_card_files') as $idx => $file) {
+                if ($file && $file->isValid()) {
+                    $filename = 'promo_' . time() . '_' . $idx . '.' . $file->getClientOriginalExtension();
+                    $file->move(public_path('uploads/promos'), $filename);
+                    if (isset($promoCardsInput[$idx])) {
+                        $promoCardsInput[$idx]['img'] = '/uploads/promos/' . $filename;
+                    }
+                }
+            }
+        }
+
         $promoGridJson = !empty($promoCardsInput) ? json_encode(array_values($promoCardsInput)) : null;
 
         DB::table('stores')->update([
