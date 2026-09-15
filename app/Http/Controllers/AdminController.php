@@ -1088,11 +1088,15 @@ class AdminController extends Controller
             }
         }
 
-        $coupons = DB::table('coupons')
+        $query = DB::table('coupons')
             ->leftJoin('stores', 'coupons.allowed_store_id', '=', 'stores.id')
-            ->select('coupons.*', 'stores.name as store_name')
-            ->orderBy('coupons.id', 'desc')
-            ->get();
+            ->select('coupons.*', 'stores.name as store_name');
+
+        if (request()->filled('visibility')) {
+            $query->where('coupons.visibility', request('visibility'));
+        }
+
+        $coupons = $query->orderBy('coupons.id', 'desc')->get();
         return view('admin.coupons.index', compact('coupons'));
     }
 

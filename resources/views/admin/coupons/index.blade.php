@@ -49,6 +49,28 @@
           </div>
         @endif
 
+        <!-- Visibility Filter Toolbar -->
+        <div class="card card-outline card-warning shadow-sm mb-3">
+          <div class="card-body p-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+              <div class="btn-group btn-group-toggle mb-2 mb-md-0" data-toggle="buttons">
+                <a href="/admin/coupons" class="btn btn-outline-dark btn-sm {{ !request('visibility') ? 'active font-weight-bold' : '' }}">
+                  <i class="fas fa-list mr-1"></i> All Coupons ({{ count($coupons) }})
+                </a>
+                <a href="/admin/coupons?visibility=public" class="btn btn-outline-success btn-sm {{ request('visibility') === 'public' ? 'active font-weight-bold' : '' }}">
+                  <i class="fas fa-globe mr-1"></i> 🌐 Public Offers
+                </a>
+                <a href="/admin/coupons?visibility=private" class="btn btn-outline-dark btn-sm {{ request('visibility') === 'private' ? 'active font-weight-bold' : '' }}">
+                  <i class="fas fa-lock mr-1"></i> 🔒 Private Codes (Hidden from App List)
+                </a>
+              </div>
+              <div class="text-muted text-xs">
+                <i class="fas fa-info-circle mr-1"></i> Private codes are hidden from app list & valid only via manual typing.
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="card shadow-sm border-0 rounded-4">
           <div class="card-body p-0 table-responsive">
             <table class="table table-hover align-middle mb-0">
