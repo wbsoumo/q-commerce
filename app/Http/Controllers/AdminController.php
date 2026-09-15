@@ -451,20 +451,25 @@ class AdminController extends Controller
 
         // Check & create columns if missing
         $storeCols = \Illuminate\Support\Facades\Schema::getColumnListing('stores');
-        if (!in_array('banner_color', $storeCols) || !in_array('search_hint', $storeCols)) {
+        if (!in_array('banner_color', $storeCols) || !in_array('search_hint', $storeCols) || !in_array('promo_grid_json', $storeCols)) {
             \Illuminate\Support\Facades\Schema::table('stores', function ($table) use ($storeCols) {
                 if (!in_array('banner_title', $storeCols)) $table->string('banner_title')->nullable()->default('Mega Diwali Sale');
                 if (!in_array('banner_subtitle', $storeCols)) $table->string('banner_subtitle')->nullable();
                 if (!in_array('banner_color', $storeCols)) $table->string('banner_color')->nullable()->default('#0c831f');
                 if (!in_array('search_hint', $storeCols)) $table->string('search_hint')->nullable()->default('milk, atta, chips, diwali lights');
+                if (!in_array('promo_grid_json', $storeCols)) $table->json('promo_grid_json')->nullable();
             });
         }
+
+        $promoCardsInput = $request->input('promo_cards', []);
+        $promoGridJson = !empty($promoCardsInput) ? json_encode(array_values($promoCardsInput)) : null;
 
         DB::table('stores')->update([
             'banner_title' => $bannerTitle,
             'banner_subtitle' => $bannerSubtitle,
             'banner_color' => $bannerColor,
             'search_hint' => $searchHint,
+            'promo_grid_json' => $promoGridJson,
             'updated_at' => now(),
         ]);
 

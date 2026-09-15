@@ -123,9 +123,74 @@
               </div>
             </div>
           </div>
-          <!-- 3. FEATURED PRODUCTS CUSTOM SELECTION -->
+          <!-- 3. PROMO GRID BANNERS (4 CARDS SECTION) CUSTOMIZATION -->
+          <div class="card card-danger card-outline">
+            <div class="card-header"><h3 class="card-title font-weight-bold text-dark"><i class="fas fa-th-large mr-2"></i>3. Promo Grid Banners (4 Featured Cards)</h3></div>
+            <div class="card-body">
+              <p class="text-muted">Set titles, image URLs, and link each promo card to a specific Category or Product. When clicked in the app, it opens the linked category/product items.</p>
+              
+              @php
+                $promoCards = json_decode($config->promo_grid_json ?? '[]', true);
+                if (empty($promoCards)) {
+                    $promoCards = [
+                        ["title" => "Lights, Diyas & Candles", "img" => "image 50.png", "target_type" => "category", "target_id" => "1"],
+                        ["title" => "Diwali Gifts", "img" => "image 51.png", "target_type" => "category", "target_id" => "2"],
+                        ["title" => "Appliances & Gadgets", "img" => "image 52.png", "target_type" => "category", "target_id" => "3"],
+                        ["title" => "Home & Living", "img" => "image 53.png", "target_type" => "category", "target_id" => "4"],
+                    ];
+                }
+              @endphp
+
+              <div class="row">
+                @foreach([0, 1, 2, 3] as $idx)
+                  @php $card = $promoCards[$idx] ?? []; @endphp
+                  <div class="col-md-6 mb-4">
+                    <div class="border rounded p-3 bg-light shadow-sm">
+                      <h5 class="font-weight-bold text-danger border-bottom pb-2">
+                        <i class="fas fa-image mr-1"></i> Promo Card #{{ $idx + 1 }}
+                      </h5>
+                      <div class="form-group mb-2">
+                        <label class="small font-weight-bold">Card Title</label>
+                        <input type="text" name="promo_cards[{{ $idx }}][title]" class="form-control form-control-sm" value="{{ $card['title'] ?? '' }}" placeholder="Card Title">
+                      </div>
+                      <div class="form-group mb-2">
+                        <label class="small font-weight-bold">Image File / Web URL</label>
+                        <input type="text" name="promo_cards[{{ $idx }}][img]" class="form-control form-control-sm" value="{{ $card['img'] ?? '' }}" placeholder="e.g. image 50.png or https://...">
+                      </div>
+                      <div class="row">
+                        <div class="col-md-6 form-group mb-2">
+                          <label class="small font-weight-bold">Link Type</label>
+                          <select name="promo_cards[{{ $idx }}][target_type]" class="form-control form-control-sm">
+                            <option value="category" {{ ($card['target_type'] ?? '') == 'category' ? 'selected' : '' }}>Category</option>
+                            <option value="product" {{ ($card['target_type'] ?? '') == 'product' ? 'selected' : '' }}>Specific Product</option>
+                          </select>
+                        </div>
+                        <div class="col-md-6 form-group mb-2">
+                          <label class="small font-weight-bold">Select Category / Product</label>
+                          <select name="promo_cards[{{ $idx }}][target_id]" class="form-control form-control-sm">
+                            <optgroup label="Categories">
+                              @foreach($categories as $cat)
+                                <option value="cat_{{ $cat->id }}" {{ ($card['target_id'] ?? '') == 'cat_'.$cat->id || ($card['target_id'] ?? '') == $cat->id ? 'selected' : '' }}>Category: {{ $cat->name }}</option>
+                              @endforeach
+                            </optgroup>
+                            <optgroup label="Products">
+                              @foreach($products as $p)
+                                <option value="prod_{{ $p->id }}" {{ ($card['target_id'] ?? '') == 'prod_'.$p->id ? 'selected' : '' }}>Product: {{ $p->name }}</option>
+                              @endforeach
+                            </optgroup>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                @endforeach
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. FEATURED PRODUCTS CUSTOM SELECTION -->
           <div class="card card-warning card-outline">
-            <div class="card-header"><h3 class="card-title font-weight-bold text-dark"><i class="fas fa-gem mr-2"></i>3. Select Products To Show On Main Page</h3></div>
+            <div class="card-header"><h3 class="card-title font-weight-bold text-dark"><i class="fas fa-gem mr-2"></i>4. Select Products To Show On Main Page</h3></div>
             <div class="card-body">
               <p class="text-muted">Select specific products from your catalog that will be pinned as <strong>Featured</strong> on the home page front screen.</p>
               <div class="row">

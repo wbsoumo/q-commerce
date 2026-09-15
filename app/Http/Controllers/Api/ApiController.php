@@ -58,6 +58,9 @@ class ApiController extends Controller
                 ? "We are currently not available at your location. Distance to nearest store is " . round($minDistanceKm, 1) . " km (Coverage limit: " . ($selectedStore->delivery_radius_km ?? 15) . " km)."
                 : $opStatus['reason'];
             $selectedStore->delivery_time_mins = $selectedStore->estimated_delivery_time_mins ?? 15;
+            $selectedStore->promo_cards = isset($selectedStore->promo_grid_json) && !empty($selectedStore->promo_grid_json)
+                ? json_decode($selectedStore->promo_grid_json, true)
+                : null;
         }
 
         return response()->json([
