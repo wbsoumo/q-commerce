@@ -82,19 +82,32 @@
               </div>
 
               <div class="row">
-                <div class="col-md-3 form-group">
+                <div class="col-md-4 form-group">
+                  <label class="font-weight-bold text-success"><i class="fas fa-compass mr-1"></i> Delivery Radius (km)</label>
+                  <div class="input-group">
+                    <input type="number" step="0.5" min="1" max="50" name="delivery_radius_km" class="form-control font-weight-bold" value="{{ $store->delivery_radius_km ?? 5.0 }}" required>
+                    <div class="input-group-append">
+                      <span class="input-group-text font-weight-bold">KM</span>
+                    </div>
+                  </div>
+                  <small class="form-text text-muted">Maximum distance in KM this store can serve.</small>
+                </div>
+                <div class="col-md-4 form-group">
                   <label>Min. Order Amount (₹)</label>
                   <input type="number" step="0.01" name="min_order_amount" class="form-control" value="{{ $store->min_order_amount ?? 0 }}" required>
                 </div>
-                <div class="col-md-3 form-group">
+                <div class="col-md-4 form-group">
                   <label>Standard Delivery Fee (₹)</label>
                   <input type="number" step="0.01" name="delivery_fee" class="form-control" value="{{ $store->delivery_fee ?? 15 }}" required>
                 </div>
-                <div class="col-md-3 form-group">
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 form-group">
                   <label>Free Delivery Threshold (₹)</label>
                   <input type="number" step="0.01" name="free_delivery_threshold" class="form-control" value="{{ $store->free_delivery_threshold ?? 299 }}" required>
                 </div>
-                <div class="col-md-3 form-group">
+                <div class="col-md-6 form-group">
                   <label>Est. Delivery Time (Mins)</label>
                   <input type="number" name="estimated_delivery_time_mins" class="form-control" value="{{ $store->estimated_delivery_time_mins ?? 15 }}" required>
                 </div>
