@@ -93,42 +93,7 @@ class AdminController extends Controller
         return redirect('/admin/stores')->with('success', 'Store and Store Manager created successfully!');
     }
 
-    // Store Settings View
-    public function storeSettings($id)
-    {
-        $store = DB::table('stores')->where('id', $id)->first();
-        if (!$store) {
-            return redirect('/admin/stores')->with('error', 'Store not found.');
-        }
-        return view('admin.stores.settings', compact('store'));
-    }
 
-    // Update Store Operational Settings (Hours, Delivery Radius & Thresholds)
-    public function updateStoreSettings(Request $request, $id)
-    {
-        $updateData = [
-            'status' => $request->input('status', 'Active'),
-            'opening_time' => $request->input('opening_time', '06:00:00'),
-            'closing_time' => $request->input('closing_time', '23:00:00'),
-            'vacation_mode' => $request->has('vacation_mode'),
-            'temporary_closure_reason' => $request->input('temporary_closure_reason'),
-            'banner_title' => $request->input('banner_title', 'Mega Diwali Sale'),
-            'banner_subtitle' => $request->input('banner_subtitle', 'Upto 50% Off'),
-            'min_order_amount' => (float)$request->input('min_order_amount', 0.00),
-            'delivery_fee' => (float)$request->input('delivery_fee', 15.00),
-            'free_delivery_threshold' => (float)$request->input('free_delivery_threshold', 299.00),
-            'estimated_delivery_time_mins' => (int)$request->input('estimated_delivery_time_mins', 15),
-            'updated_at' => now(),
-        ];
-
-        if ($request->has('delivery_radius_km')) {
-            $updateData['delivery_radius_km'] = (float)$request->input('delivery_radius_km', 5.00);
-        }
-
-        DB::table('stores')->where('id', $id)->update($updateData);
-
-        return redirect('/admin/stores')->with('success', 'Store operational settings and delivery radius updated successfully!');
-    }
 
     // Products List View (Global & Store Specific Filter + Search)
     public function products(Request $request)
@@ -451,6 +416,10 @@ class AdminController extends Controller
 
         $updateData['banner_title'] = $request->input('banner_title', 'Mega Diwali Sale');
         $updateData['banner_subtitle'] = $request->input('banner_subtitle');
+
+        if ($request->has('delivery_radius_km')) {
+            $updateData['delivery_radius_km'] = (float)$request->input('delivery_radius_km', 5.00);
+        }
 
         try {
             DB::table('stores')->where('id', $id)->update($updateData);
