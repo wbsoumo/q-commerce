@@ -97,7 +97,13 @@ return new class extends Migration
             $table->decimal('delivery_fee', 10, 2)->default(15.00);
             $table->decimal('grand_total', 10, 2);
             $table->string('payment_method')->default('PhonePe UPI');
-            $table->enum('status', ['Pending', 'Confirmed', 'Packing', 'Out for Delivery', 'Delivered', 'Cancelled'])->default('Pending');
+            $table->enum('order_type', ['delivery', 'pickup'])->default('delivery');
+            $table->date('pickup_date')->nullable();
+            $table->string('pickup_time')->nullable();
+            $table->string('receiver_name')->nullable();
+            $table->string('receiver_phone')->nullable();
+            $table->boolean('is_for_someone_else')->default(false);
+            $table->enum('status', ['Pending', 'Confirmed', 'Packing', 'Out for Delivery', 'Ready for Pickup', 'Delivered', 'Cancelled'])->default('Pending');
             $table->timestamps();
         });
 
@@ -128,10 +134,26 @@ return new class extends Migration
             $table->boolean('is_default')->default(false);
             $table->timestamps();
         });
+
+        // 10. Dedicated Store Pickup Orders Table
+        Schema::create('store_pickup_orders', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('order_id')->constrained()->onDelete('cascade');
+            $table->foreignId('store_id')->nullable()->constrained()->onDelete('set null');
+            $table->string('customer_name');
+            $table->string('customer_phone');
+            $table->date('pickup_date');
+            $table->string('pickup_slot_time');
+            $table->string('store_opening_time')->default('06:00 AM');
+            $table->string('store_closing_time')->default('11:00 PM');
+            $table->enum('pickup_status', ['Scheduled', 'Ready for Pickup', 'Picked Up', 'Cancelled'])->default('Scheduled');
+            $table->timestamps();
+        });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('store_pickup_orders');
         Schema::dropIfExists('order_items');
         Schema::dropIfExists('orders');
         Schema::dropIfExists('store_product_inventories');

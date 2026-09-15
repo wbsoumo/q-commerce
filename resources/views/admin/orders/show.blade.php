@@ -43,8 +43,32 @@
             <div class="card card-outline card-success">
               <div class="card-header"><h3 class="card-title font-weight-bold"><i class="fas fa-receipt mr-2"></i>Order Summary</h3></div>
               <div class="card-body">
-                <p><strong>Customer:</strong> {{ $order->user_name }} ({{ $order->user_phone }})</p>
-                <p><strong>Address:</strong> {{ $order->delivery_address }}</p>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <p class="mb-0"><strong>Customer:</strong> {{ $order->user_name }} ({{ $order->user_phone }})</p>
+                  @if(($order->order_type ?? 'delivery') === 'pickup')
+                    <span class="badge badge-warning p-2 font-weight-bold"><i class="fas fa-store mr-1"></i> STORE PICKUP ORDER</span>
+                  @else
+                    <span class="badge badge-info p-2 font-weight-bold"><i class="fas fa-truck mr-1"></i> HOME DELIVERY</span>
+                  @endif
+                </div>
+
+                @if(!empty($order->is_for_someone_else) || !empty($order->receiver_name))
+                  <div class="alert alert-warning p-2 small mb-3">
+                    <i class="fas fa-user-friends mr-1"></i> <strong>Order for Someone Else:</strong><br>
+                    <strong>Receiver Name:</strong> {{ $order->receiver_name ?? 'N/A' }} | <strong>Receiver Phone:</strong> {{ $order->receiver_phone ?? 'N/A' }}
+                  </div>
+                @endif
+
+                @if(($order->order_type ?? 'delivery') === 'pickup')
+                  <div class="alert alert-info p-2 small mb-3">
+                    <i class="fas fa-clock mr-1"></i> <strong>Pickup Schedule & Store Window:</strong><br>
+                    <strong>Scheduled Date:</strong> {{ $order->pickup_date ?? date('Y-m-d') }} | <strong>Time Slot:</strong> {{ $order->pickup_time ?? '10:00 AM - 11:00 AM' }}<br>
+                    <span class="text-muted">Store Hours: {{ $order->pickup_details->store_opening_time ?? '06:00 AM' }} - {{ $order->pickup_details->store_closing_time ?? '11:00 PM' }}</span>
+                  </div>
+                @else
+                  <p><strong>Delivery Address:</strong> {{ $order->delivery_address }}</p>
+                @endif
+
                 <p><strong>Payment Method:</strong> {{ $order->payment_method }}</p>
                 <hr>
                 <h5 class="font-weight-bold">Items Purchased</h5>

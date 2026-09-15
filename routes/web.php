@@ -100,4 +100,5 @@ Route::prefix('api/v1')->group(function () {
     Route::post('/orders', [ApiController::class, 'createOrder']);
     Route::get('/user/addresses', [ApiController::class, 'getAddresses']);
     Route::post('/user/addresses/store', [ApiController::class, 'storeAddress']);
+    Route::get('/user/orders', [ApiController::class, 'getUserOrders']);
 });

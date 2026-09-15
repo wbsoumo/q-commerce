@@ -238,8 +238,12 @@ class ApiController extends Controller
                 'store_id' => $request->input('store_id', 1)
             ]));
 
-            return DB::transaction(function() use ($validatedData, $checkoutResult, $request) {
-                $orderNumber = 'ORD-' . strtoupper(uniqid());
+            $orderType = $request->input('order_type', 'delivery');
+            $deliveryFee = $orderType === 'pickup' ? 0.00 : $checkoutResult['delivery_fee'];
+            $grandTotal = $checkoutResult['subtotal'] + $deliveryFee;
+
+            return DB::transaction(function() use ($validatedData, $checkoutResult, $request, $orderType, $deliveryFee, $grandTotal) {
+                $orderNumber = ($orderType === 'pickup' ? 'PICK-' : 'ORD-') . strtoupper(uniqid());
 
                 // 1. Insert Order Record
                 $orderId = DB::table('orders')->insertGetId([
@@ -247,17 +251,41 @@ class ApiController extends Controller
                     'store_id' => $checkoutResult['store_id'],
                     'user_name' => $validatedData['user_name'],
                     'user_phone' => $validatedData['user_phone'],
-                    'delivery_address' => $validatedData['delivery_address'],
+                    'delivery_address' => $orderType === 'pickup' ? 'Self Pickup at Store' : $validatedData['delivery_address'],
                     'latitude' => $request->input('latitude', 23.4126),
                     'longitude' => $request->input('longitude', 88.4292),
                     'subtotal' => $checkoutResult['subtotal'],
-                    'delivery_fee' => $checkoutResult['delivery_fee'],
-                    'grand_total' => $checkoutResult['grand_total'],
+                    'delivery_fee' => $deliveryFee,
+                    'grand_total' => $grandTotal,
                     'payment_method' => $request->input('payment_method', 'PhonePe UPI'),
+                    'order_type' => $orderType,
+                    'pickup_date' => $request->input('pickup_date'),
+                    'pickup_time' => $request->input('pickup_time'),
+                    'receiver_name' => $request->input('receiver_name'),
+                    'receiver_phone' => $request->input('receiver_phone'),
+                    'is_for_someone_else' => $request->input('is_for_someone_else', false),
                     'status' => 'Pending',
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+
+                // 1b. Insert Store Pickup Record if Pickup Order
+                if ($orderType === 'pickup') {
+                    $store = DB::table('stores')->where('id', $checkoutResult['store_id'])->first();
+                    DB::table('store_pickup_orders')->insert([
+                        'order_id' => $orderId,
+                        'store_id' => $checkoutResult['store_id'],
+                        'customer_name' => $request->input('receiver_name') ?: $validatedData['user_name'],
+                        'customer_phone' => $request->input('receiver_phone') ?: $validatedData['user_phone'],
+                        'pickup_date' => $request->input('pickup_date') ?: now()->toDateString(),
+                        'pickup_slot_time' => $request->input('pickup_time') ?: '10:00 AM - 11:00 AM',
+                        'store_opening_time' => $store->opening_time ?? '06:00 AM',
+                        'store_closing_time' => $store->closing_time ?? '11:00 PM',
+                        'pickup_status' => 'Scheduled',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
 
                 // 2. Insert Order Items & Reserve Stock
                 foreach ($checkoutResult['items'] as $item) {
@@ -287,7 +315,7 @@ class ApiController extends Controller
                     'order_id' => $orderId,
                     'previous_status' => null,
                     'new_status' => 'Pending',
-                    'reason' => 'Customer created order via Mobile App',
+                    'reason' => $orderType === 'pickup' ? 'Customer placed Store Pickup order' : 'Customer placed Home Delivery order',
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -297,7 +325,7 @@ class ApiController extends Controller
                 if ($customer) {
                     DB::table('customers')->where('id', $customer->id)->update([
                         'total_orders' => $customer->total_orders + 1,
-                        'total_spent' => $customer->total_spent + $checkoutResult['grand_total'],
+                        'total_spent' => $customer->total_spent + $grandTotal,
                         'last_order_at' => now(),
                         'updated_at' => now(),
                     ]);
@@ -307,7 +335,7 @@ class ApiController extends Controller
                         'phone' => $validatedData['user_phone'],
                         'status' => 'Active',
                         'total_orders' => 1,
-                        'total_spent' => $checkoutResult['grand_total'],
+                        'total_spent' => $grandTotal,
                         'last_order_at' => now(),
                         'created_at' => now(),
                         'updated_at' => now(),
@@ -318,7 +346,8 @@ class ApiController extends Controller
                     'status' => 'success',
                     'message' => 'Order placed successfully and stock reserved.',
                     'order_number' => $orderNumber,
-                    'grand_total' => $checkoutResult['grand_total'],
+                    'grand_total' => $grandTotal,
+                    'order_type' => $orderType,
                 ], 201);
             });
 
@@ -394,5 +423,35 @@ class ApiController extends Controller
                 'message' => $e->getMessage(),
             ], 422)->header('Access-Control-Allow-Origin', '*');
         }
+    }
+
+    // Get Real-Time User Orders & Live Lifecycle Tracking for Mobile App
+    public function getUserOrders(Request $request)
+    {
+        $phone = $request->query('phone', '8016222991');
+
+        $orders = DB::table('orders')
+            ->where('user_phone', $phone)
+            ->orWhere('receiver_phone', $phone)
+            ->orderBy('id', 'desc')
+            ->get();
+
+        foreach ($orders as $ord) {
+            $ord->items = DB::table('order_items')->where('order_id', $ord->id)->get();
+            $ord->status_history = DB::table('order_status_histories')
+                ->where('order_id', $ord->id)
+                ->orderBy('created_at', 'asc')
+                ->get();
+            $ord->pickup_details = $ord->order_type === 'pickup'
+                ? DB::table('store_pickup_orders')->where('order_id', $ord->id)->first()
+                : null;
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $orders,
+        ])->header('Access-Control-Allow-Origin', '*')
+          ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
+          ->header('Access-Control-Allow-Headers', '*');
     }
 }
