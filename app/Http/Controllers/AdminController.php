@@ -1089,14 +1089,12 @@ class AdminController extends Controller
         }
 
         // Auto-check visibility column existence on remote production DB
-        if (Schema::hasTable('coupons') && !Schema::hasColumn('coupons', 'visibility')) {
-            try {
-                Schema::table('coupons', function ($table) {
-                    $table->enum('visibility', ['public', 'private'])->default('public')->after('code');
-                });
-            } catch (\Exception $e) {
-                // Column added concurrently
+        try {
+            if (!Schema::hasColumn('coupons', 'visibility')) {
+                DB::statement("ALTER TABLE `coupons` ADD `visibility` ENUM('public', 'private') NOT NULL DEFAULT 'public' AFTER `code`");
             }
+        } catch (\Exception $e) {
+            // Column already added or exception ignored
         }
 
         $query = DB::table('coupons')
