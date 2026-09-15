@@ -139,7 +139,7 @@
                   </td>
                   <td>
                     <div class="font-weight-bold text-dark">₹{{ number_format($order->grand_total, 2) }}</div>
-                    <div class="text-muted text-xs">{{ strtoupper($order->payment_method) }} ({{ $order->payment_status }})</div>
+                    <div class="text-muted text-xs">{{ strtoupper($order->payment_method ?? 'COD') }} ({{ $order->payment_status ?? 'Pending' }})</div>
                   </td>
                   <td>
                     @php
