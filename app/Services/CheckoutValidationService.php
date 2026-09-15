@@ -34,12 +34,14 @@ class CheckoutValidationService
         // 2. Validate Customer Distance & Delivery Coverage (Bypass radius check for Store Pickup)
         $orderType = $data['order_type'] ?? 'delivery';
         $maxRadius = (float)($store->delivery_radius_km ?? 15.0);
+        $distanceKm = 0.0;
 
-        if ($orderType !== 'pickup' && $userLat && $userLng && !empty($store->latitude) && !empty($store->longitude)) {
+        if ($userLat && $userLng && !empty($store->latitude) && !empty($store->longitude)) {
             $distanceKm = self::haversineDistance((float)$store->latitude, (float)$store->longitude, (float)$userLat, (float)$userLng);
-            if ($distanceKm > $maxRadius) {
-                throw new Exception("Delivery location is outside the store's operating radius (" . number_format($maxRadius, 2) . " km). Distance is " . number_format($distanceKm, 2) . " km.");
-            }
+        }
+
+        if ($orderType !== 'pickup' && $distanceKm > 0 && $distanceKm > $maxRadius) {
+            throw new Exception("Delivery location is outside the store's operating radius (" . number_format($maxRadius, 2) . " km). Distance is " . number_format($distanceKm, 2) . " km.");
         }
 
         // 3. Validate Products, Prices, and Stock Reservation
