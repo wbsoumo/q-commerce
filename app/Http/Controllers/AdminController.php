@@ -548,11 +548,32 @@ class AdminController extends Controller
     // 4. Order Management & Details
     public function orders(Request $request)
     {
+        // Automatically check column existence in production database
+        $hasOrderTypeColumn = Schema::hasColumn('orders', 'order_type');
+
+        if (!$hasOrderTypeColumn) {
+            // Dynamically add columns if missing on production server database
+            try {
+                Schema::table('orders', function ($table) {
+                    $table->enum('order_type', ['delivery', 'pickup'])->default('delivery')->after('payment_method');
+                    $table->date('pickup_date')->nullable()->after('order_type');
+                    $table->string('pickup_time')->nullable()->after('pickup_date');
+                    $table->string('receiver_name')->nullable()->after('pickup_time');
+                    $table->string('receiver_phone')->nullable()->after('receiver_name');
+                    $table->boolean('is_for_someone_else')->default(false)->after('receiver_phone');
+                });
+                $hasOrderTypeColumn = true;
+            } catch (\Exception $e) {
+                // Column might have been added concurrently
+                $hasOrderTypeColumn = Schema::hasColumn('orders', 'order_type');
+            }
+        }
+
         $query = DB::table('orders')
             ->leftJoin('stores', 'orders.store_id', '=', 'stores.id')
             ->select('orders.*', 'stores.name as store_name');
 
-        if ($request->filled('type')) {
+        if ($hasOrderTypeColumn && $request->filled('type')) {
             $query->where('orders.order_type', $request->type);
         }
 
@@ -561,7 +582,7 @@ class AdminController extends Controller
         }
 
         $orders = $query->orderBy('orders.id', 'desc')->paginate(15);
-        return view('admin.orders.index', compact('orders'));
+        return view('admin.orders.index', compact('orders', 'hasOrderTypeColumn'));
     }
 
     public function showOrder($id)

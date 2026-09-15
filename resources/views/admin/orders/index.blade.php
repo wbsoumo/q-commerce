@@ -110,14 +110,14 @@
                   <td>
                     <div class="font-weight-bold text-dark">{{ $order->user_name }}</div>
                     <div class="text-muted small">{{ $order->user_phone }}</div>
-                    @if($order->is_for_someone_else)
+                    @if(!empty($order->is_for_someone_else))
                       <span class="badge badge-warning text-dark text-xs mt-1">
                         <i class="fas fa-gift mr-1"></i> For: {{ $order->receiver_name }} ({{ $order->receiver_phone }})
                       </span>
                     @endif
                   </td>
                   <td>
-                    @if($order->order_type === 'pickup')
+                    @if(isset($order->order_type) && $order->order_type === 'pickup')
                       <span class="badge badge-purple px-2 py-1" style="background-color: #6f42c1; color: white;">
                         🏬 Store Pickup
                       </span>
@@ -128,7 +128,7 @@
                     @endif
                   </td>
                   <td>
-                    @if($order->order_type === 'pickup')
+                    @if(isset($order->order_type) && $order->order_type === 'pickup')
                       <div class="font-weight-bold text-dark">{{ $order->pickup_date ?? 'Today' }}</div>
                       <div class="badge badge-light border text-xs text-secondary mt-1">
                         <i class="far fa-clock mr-1"></i>{{ $order->pickup_time ?? '06:00 AM - 11:00 PM' }}
