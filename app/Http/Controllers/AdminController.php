@@ -420,6 +420,10 @@ class AdminController extends Controller
         if ($request->has('delivery_radius_km')) {
             $updateData['delivery_radius_km'] = (float)$request->input('delivery_radius_km', 5.00);
         }
+        if ($request->filled('latitude') && $request->filled('longitude')) {
+            $updateData['latitude'] = (float)$request->input('latitude');
+            $updateData['longitude'] = (float)$request->input('longitude');
+        }
 
         try {
             DB::table('stores')->where('id', $id)->update($updateData);
