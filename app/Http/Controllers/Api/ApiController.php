@@ -80,13 +80,27 @@ class ApiController extends Controller
             $minDistanceKm = $selectedStore->calculated_distance_km;
         }
 
-        // Fetch Global App Settings safely so color & labels remain uniform globally across all stores
-        $globalBannerColor = '#0C831F';
-        $globalBannerTitle = 'Ganesh Chaturthi';
+        // Fetch Global App Settings dynamically from app_settings table or active stores configuration
+        $globalBannerColor = null;
+        $globalBannerTitle = null;
+
         if (\Illuminate\Support\Facades\Schema::hasTable('app_settings')) {
             $appSettings = DB::table('app_settings')->first();
-            $globalBannerColor = $appSettings->banner_color ?? '#0C831F';
-            $globalBannerTitle = $appSettings->banner_title ?? 'Ganesh Chaturthi';
+            if ($appSettings) {
+                $globalBannerColor = $appSettings->banner_color ?? null;
+                $globalBannerTitle = $appSettings->banner_title ?? null;
+            }
+        }
+
+        if ($selectedStore) {
+            $globalBannerColor = $globalBannerColor ?? $selectedStore->banner_color ?? null;
+            $globalBannerTitle = $globalBannerTitle ?? $selectedStore->banner_title ?? null;
+        }
+
+        if (empty($globalBannerColor) || empty($globalBannerTitle)) {
+            $fallbackStore = DB::table('stores')->where('is_active', true)->first();
+            $globalBannerColor = $globalBannerColor ?? $fallbackStore->banner_color ?? '#0C831F';
+            $globalBannerTitle = $globalBannerTitle ?? $fallbackStore->banner_title ?? 'Mega Diwali Sale';
         }
 
         if ($selectedStore) {
