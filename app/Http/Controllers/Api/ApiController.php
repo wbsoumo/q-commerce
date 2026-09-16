@@ -49,6 +49,11 @@ class ApiController extends Controller
             }
         }
 
+        // Fetch Global App Settings so color & labels remain uniform globally across all stores
+        $appSettings = DB::table('app_settings')->first();
+        $globalBannerColor = $appSettings->banner_color ?? '#0C831F';
+        $globalBannerTitle = $appSettings->banner_title ?? 'Ganesh Chaturthi';
+
         if ($selectedStore) {
             $opStatus = StoreOperationalService::checkStoreStatus($selectedStore);
             $selectedStore->is_operational = $isWithinCoverage && $opStatus['is_operational'];
@@ -58,6 +63,8 @@ class ApiController extends Controller
                 ? "We are currently not available at your location. Distance to nearest store is " . round($minDistanceKm, 1) . " km (Coverage limit: " . ($selectedStore->delivery_radius_km ?? 15) . " km)."
                 : $opStatus['reason'];
             $selectedStore->delivery_time_mins = $selectedStore->estimated_delivery_time_mins ?? 15;
+            $selectedStore->banner_color = $globalBannerColor;
+            $selectedStore->banner_title = $globalBannerTitle;
             $selectedStore->promo_cards = isset($selectedStore->promo_grid_json) && !empty($selectedStore->promo_grid_json)
                 ? json_decode($selectedStore->promo_grid_json, true)
                 : null;
@@ -66,10 +73,16 @@ class ApiController extends Controller
         return response()->json([
             'status' => 'success',
             'is_serviceable' => $isWithinCoverage,
+            'global_settings' => [
+                'banner_color' => $globalBannerColor,
+                'banner_title' => $globalBannerTitle,
+            ],
             'store' => $selectedStore ?? [
                 'name' => 'Krishnanagar Main Store',
                 'address' => '11E Krishnanagar Main Road',
                 'delivery_time_mins' => 15,
+                'banner_color' => $globalBannerColor,
+                'banner_title' => $globalBannerTitle,
                 'is_operational' => true,
                 'is_serviceable' => true,
                 'closure_reason' => 'Store is open and operational.',
