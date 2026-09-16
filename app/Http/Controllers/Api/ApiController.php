@@ -15,19 +15,26 @@ class ApiController extends Controller
     // Auto-Select Store based on user coordinates & Operational Check
     public function selectStore(Request $request)
     {
-        $lat = (float)$request->query('lat', 23.4013);
-        $lng = (float)$request->query('lng', 88.5010);
+        $latInput = $request->query('lat');
+        $lngInput = $request->query('lng');
+
+        // Default to Krishnanagar coords if null/invalid
+        $lat = ($latInput !== null && is_numeric($latInput)) ? (float)$latInput : 23.4013;
+        $lng = ($lngInput !== null && is_numeric($lngInput)) ? (float)$lngInput : 88.5010;
 
         // Fetch all active stores
         $stores = DB::table('stores')->where('is_active', true)->get();
 
-        $selectedStore = null;
-        $minDistanceKm = 999999;
-        $isWithinCoverage = false;
+        $eligibleStores = [];
+        $allStoresWithDistance = [];
 
         foreach ($stores as $store) {
-            $storeLat = (float)($store->latitude ?? 23.4013);
-            $storeLng = (float)($store->longitude ?? 88.5010);
+            if ($store->latitude === null || $store->longitude === null) {
+                continue;
+            }
+
+            $storeLat = (float)$store->latitude;
+            $storeLng = (float)$store->longitude;
             $radiusKm = (float)($store->delivery_radius_km ?? 15.0);
 
             // Haversine distance calculation formula
@@ -40,28 +47,56 @@ class ApiController extends Controller
             $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
             $distanceKm = $earthRadiusKm * $c;
 
-            if ($distanceKm < $minDistanceKm) {
-                $minDistanceKm = $distanceKm;
-                $selectedStore = $store;
-                if ($distanceKm <= $radiusKm) {
-                    $isWithinCoverage = true;
-                }
+            $storeObj = clone $store;
+            $storeObj->calculated_distance_km = $distanceKm;
+
+            $allStoresWithDistance[] = $storeObj;
+
+            // Delivery eligibility check takes priority over distance
+            if ($distanceKm <= $radiusKm) {
+                $eligibleStores[] = $storeObj;
             }
         }
 
-        // Fetch Global App Settings so color & labels remain uniform globally across all stores
-        $appSettings = DB::table('app_settings')->first();
-        $globalBannerColor = $appSettings->banner_color ?? '#0C831F';
-        $globalBannerTitle = $appSettings->banner_title ?? 'Ganesh Chaturthi';
+        $selectedStore = null;
+        $isWithinCoverage = false;
+        $minDistanceKm = 999999.0;
+
+        if (!empty($eligibleStores)) {
+            // Sort eligible stores by distance ascending
+            usort($eligibleStores, function ($a, $b) {
+                return $a->calculated_distance_km <=> $b->calculated_distance_km;
+            });
+            $selectedStore = $eligibleStores[0];
+            $isWithinCoverage = true;
+            $minDistanceKm = $selectedStore->calculated_distance_km;
+        } elseif (!empty($allStoresWithDistance)) {
+            // No store eligible: pick nearest overall store for messaging
+            usort($allStoresWithDistance, function ($a, $b) {
+                return $a->calculated_distance_km <=> $b->calculated_distance_km;
+            });
+            $selectedStore = $allStoresWithDistance[0];
+            $isWithinCoverage = false;
+            $minDistanceKm = $selectedStore->calculated_distance_km;
+        }
+
+        // Fetch Global App Settings safely so color & labels remain uniform globally across all stores
+        $globalBannerColor = '#0C831F';
+        $globalBannerTitle = 'Ganesh Chaturthi';
+        if (\Illuminate\Support\Facades\Schema::hasTable('app_settings')) {
+            $appSettings = DB::table('app_settings')->first();
+            $globalBannerColor = $appSettings->banner_color ?? '#0C831F';
+            $globalBannerTitle = $appSettings->banner_title ?? 'Ganesh Chaturthi';
+        }
 
         if ($selectedStore) {
             $opStatus = StoreOperationalService::checkStoreStatus($selectedStore);
-            $selectedStore->is_operational = $isWithinCoverage && $opStatus['is_operational'];
+            $selectedStore->is_operational = $isWithinCoverage && ($opStatus['is_operational'] ?? true);
             $selectedStore->is_serviceable = $isWithinCoverage;
             $selectedStore->distance_km = round($minDistanceKm, 2);
             $selectedStore->closure_reason = !$isWithinCoverage
-                ? "We are currently not available at your location. Distance to nearest store is " . round($minDistanceKm, 1) . " km (Coverage limit: " . ($selectedStore->delivery_radius_km ?? 15) . " km)."
-                : $opStatus['reason'];
+                ? "We are currently not available at your location. Distance to nearest store (" . ($selectedStore->name ?? 'Store') . ") is " . round($minDistanceKm, 1) . " km (Coverage limit: " . ($selectedStore->delivery_radius_km ?? 15) . " km)."
+                : ($opStatus['reason'] ?? 'Store is open and operational.');
             $selectedStore->delivery_time_mins = $selectedStore->estimated_delivery_time_mins ?? 15;
             $selectedStore->banner_color = $globalBannerColor;
             $selectedStore->banner_title = $globalBannerTitle;

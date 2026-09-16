@@ -9,23 +9,69 @@ class QCommerceSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Seed Store
-        DB::table('stores')->updateOrInsert(
-            ['id' => 1],
+        // 1. Seed Multi-Region Dark Stores
+        $stores = [
             [
+                'id' => 1,
                 'name' => 'Blinkit Krishnanagar Dark Store',
                 'code' => 'KNGR-DS01',
                 'address' => 'RATANR FLAT, 11E Krishnanagar Main Hub',
                 'latitude' => 23.4013,
                 'longitude' => 88.5010,
-                'delivery_radius_km' => 5.00,
+                'delivery_radius_km' => 15.00,
                 'city' => 'Krishnanagar',
                 'pincode' => '741101',
                 'is_active' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]
-        );
+            ],
+            [
+                'id' => 2,
+                'name' => 'Blinkit Kolkata Central Dark Store',
+                'code' => 'KOL-DS02',
+                'address' => 'Park Street Express Delivery Hub, Kolkata',
+                'latitude' => 22.5726,
+                'longitude' => 88.3639,
+                'delivery_radius_km' => 15.00,
+                'city' => 'Kolkata',
+                'pincode' => '700016',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 3,
+                'name' => 'Blinkit Siliguri City Dark Store',
+                'code' => 'SLG-DS03',
+                'address' => 'Hill Cart Road Main Hub, Siliguri',
+                'latitude' => 26.7271,
+                'longitude' => 88.3953,
+                'delivery_radius_km' => 15.00,
+                'city' => 'Siliguri',
+                'pincode' => '734001',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 4,
+                'name' => 'Blinkit Kalyani Tech Park Hub',
+                'code' => 'KLY-DS04',
+                'address' => 'KGEC Campus Road, Block C, Kalyani',
+                'latitude' => 22.9750,
+                'longitude' => 88.4344,
+                'delivery_radius_km' => 12.00,
+                'city' => 'Kalyani',
+                'pincode' => '741235',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ];
+
+        foreach ($stores as $store) {
+            DB::table('stores')->updateOrInsert(['id' => $store['id']], $store);
+        }
 
         // 2. Seed Categories with web images (HTTPS URLs)
         $categories = [
