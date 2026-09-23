@@ -148,9 +148,10 @@ class FcmNotificationService
             $base64UrlClaim = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($claim));
 
             $signatureInput = $base64UrlHeader . "." . $base64UrlClaim;
-            $privateKey = $sa['private_key'];
+            $privateKey = str_replace('\n', "\n", $sa['private_key']);
 
             $binarySignature = '';
+
             openssl_sign($signatureInput, $binarySignature, $privateKey, 'SHA256');
             $base64UrlSignature = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($binarySignature));
 
