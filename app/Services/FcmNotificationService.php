@@ -51,6 +51,7 @@ class FcmNotificationService
             'order_id' => $orderId ? (string)$orderId : '',
         ];
 
+        $errorNote = "";
         // Attempt HTTP v1 or Fallback OAuth Dispatch
         if ($serviceAccount && isset($serviceAccount['client_email'], $serviceAccount['private_key'], $serviceAccount['project_id'])) {
             $accessToken = self::getOAuthToken($serviceAccount);
@@ -83,10 +84,16 @@ class FcmNotificationService
 
                     if ($response->successful()) {
                         $sentCount++;
+                    } else {
+                        $errorNote = " (API Error: " . ($response->json()['error']['message'] ?? $response->status()) . ")";
                     }
                     $responseData[] = $response->json();
                 }
+            } else {
+                $errorNote = " (OAuth Token Generation Failed - Check Private Key)";
             }
+        } else {
+            $errorNote = " (Firebase Service Account JSON missing. Please upload your JSON in the 'Firebase JSON Config' tab above)";
         }
 
         // Record log in notification_logs
@@ -97,19 +104,29 @@ class FcmNotificationService
             'target_type' => $targetType,
             'target_phone' => $targetPhone,
             'order_id' => $orderId ? (string)$orderId : null,
-            'status' => (!empty($tokens) && $sentCount > 0) ? 'sent' : 'queued',
+            'status' => ($sentCount > 0) ? 'sent' : 'queued',
             'response_data' => json_encode($responseData),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
+        if ($sentCount > 0) {
+            return [
+                'status' => 'success',
+                'message' => "Successfully sent $sentCount push notification(s) out of " . count($tokens) . " target device(s)!",
+                'sent_count' => $sentCount,
+                'total_tokens' => count($tokens),
+            ];
+        }
+
         return [
-            'status' => 'success',
-            'message' => "Notification processed. Target Tokens: " . count($tokens) . ", Sent: $sentCount",
+            'status' => 'warning',
+            'message' => "Notification queued for " . count($tokens) . " device(s), but Sent count is 0" . $errorNote,
             'sent_count' => $sentCount,
             'total_tokens' => count($tokens),
         ];
     }
+
 
     /**
      * Generate OAuth2 Access Token using Service Account Private Key without external composer dependencies

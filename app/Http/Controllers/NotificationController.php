@@ -91,6 +91,11 @@ class NotificationController extends Controller
             $orderId
         );
 
+        if ($result['status'] === 'warning') {
+            return redirect()->back()->with('warning', $result['message']);
+        }
+
         return redirect()->back()->with('success', $result['message']);
     }
 }
+
