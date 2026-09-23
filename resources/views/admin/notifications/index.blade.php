@@ -243,8 +243,8 @@
                                     <tr>
                                         <td colspan="7" class="text-center text-muted py-4">No notifications dispatched yet.</td>
                                     </tr>
-                                @empty
                                 @endforelse
+
                             </tbody>
                         </table>
                     </div>
