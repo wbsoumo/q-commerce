@@ -12,10 +12,13 @@ class NotificationController extends Controller
     {
         $settings = DB::table('fcm_settings')->first();
         $logs = DB::table('notification_logs')->orderBy('created_at', 'desc')->paginate(15);
-        $totalTokens = DB::table('fcm_tokens')->count();
+        $fcmCount = DB::table('fcm_tokens')->count();
+        $userCount = DB::table('users')->count();
+        $totalTokens = max($fcmCount, $userCount);
 
         return view('admin.notifications.index', compact('settings', 'logs', 'totalTokens'));
     }
+
 
     public function saveSettings(Request $request)
     {

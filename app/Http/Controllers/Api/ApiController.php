@@ -750,7 +750,18 @@ class ApiController extends Controller
             'updated_at' => now(),
         ]);
 
+        // Auto-seed initial device FCM token record
+        DB::table('fcm_tokens')->updateOrInsert(
+            ['user_phone' => $phone],
+            [
+                'fcm_token' => 'fcm_' . md5($phone . $deviceInfo),
+                'device_type' => 'android',
+                'updated_at' => now(),
+            ]
+        );
+
         $token = 'sb_token_' . md5($userId . time() . rand(1000, 9999));
+
 
         return response()->json([
             'status' => 'success',
