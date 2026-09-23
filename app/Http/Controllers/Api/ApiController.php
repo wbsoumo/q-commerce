@@ -829,5 +829,44 @@ class ApiController extends Controller
             ]
         ])->header('Access-Control-Allow-Origin', '*');
     }
+
+    // Register/Update User Device FCM Push Token
+    public function registerFcmToken(Request $request)
+    {
+        $rawPhone = trim($request->input('phone', '8016222991'));
+        $fcmToken = trim($request->input('fcm_token', ''));
+        $deviceType = $request->input('device_type', 'android');
+
+        if (empty($fcmToken)) {
+            return response()->json(['status' => 'error', 'message' => 'FCM Token is required.'], 400);
+        }
+
+        $phoneDigits = preg_replace('/[^0-9]/', '', $rawPhone);
+        $phone = (strlen($phoneDigits) === 10) ? '+91' . $phoneDigits : '+' . $phoneDigits;
+
+        $existing = DB::table('fcm_tokens')->where('fcm_token', $fcmToken)->first();
+
+        if ($existing) {
+            DB::table('fcm_tokens')->where('id', $existing->id)->update([
+                'user_phone' => $phone,
+                'device_type' => $deviceType,
+                'updated_at' => now(),
+            ]);
+        } else {
+            DB::table('fcm_tokens')->insert([
+                'user_phone' => $phone,
+                'fcm_token' => $fcmToken,
+                'device_type' => $deviceType,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'FCM token registered successfully!'
+        ])->header('Access-Control-Allow-Origin', '*');
+    }
 }
+
 

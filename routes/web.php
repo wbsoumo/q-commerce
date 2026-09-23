@@ -97,13 +97,20 @@ Route::middleware(['admin.only'])->group(function () {
     Route::post('/admin/coupons/store', [AdminController::class, 'storeCoupon']);
     Route::post('/admin/coupons/{id}/toggle', [AdminController::class, 'toggleCoupon']);
     Route::delete('/admin/coupons/{id}', [AdminController::class, 'deleteCoupon']);
+
+    // Firebase Push Notification Center
+    Route::get('/admin/notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
+    Route::post('/admin/notifications/settings', [\App\Http\Controllers\NotificationController::class, 'saveSettings']);
+    Route::post('/admin/notifications/send', [\App\Http\Controllers\NotificationController::class, 'sendManual']);
 });
 
 // High-Performance REST API Routes for Flutter App
 Route::prefix('api/v1')->group(function () {
     Route::post('/auth/register', [ApiController::class, 'register']);
     Route::post('/auth/login', [ApiController::class, 'login']);
+    Route::post('/user/fcm-token', [ApiController::class, 'registerFcmToken']);
     Route::get('/store/select', [ApiController::class, 'selectStore']);
+
 
     Route::get('/sync-check', [ApiController::class, 'checkSyncStatus']);
     Route::get('/categories', [ApiController::class, 'getCategories']);

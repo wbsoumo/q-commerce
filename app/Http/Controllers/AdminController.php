@@ -668,6 +668,19 @@ class AdminController extends Controller
                 'updated_at' => now(),
             ]);
 
+            // Dispatch Automatic Push Notification to Customer
+            try {
+                \App\Services\FcmNotificationService::sendNotification(
+                    "Order #{$order->order_number} Update 📦",
+                    "Your SB Mart order status is now: {$newStatus}. Tap to view live tracking.",
+                    'specific_user',
+                    $order->user_phone,
+                    null,
+                    $id
+                );
+            } catch (\Exception $e) {}
+
+
             if (!empty($riderId)) {
                 $existingDel = DB::table('deliveries')->where('order_id', $id)->first();
                 if ($existingDel) {

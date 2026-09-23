@@ -30,11 +30,18 @@
 
           <li class="nav-header text-uppercase text-muted small font-weight-bold">App & Store Customizer</li>
           <li class="nav-item">
+            <a href="/admin/notifications" class="nav-link {{ request()->is('admin/notifications*') ? 'active bg-success' : '' }}">
+              <i class="nav-icon fas fa-bell text-warning"></i>
+              <p>Push Notifications <span class="right badge badge-warning">FCM</span></p>
+            </a>
+          </li>
+          <li class="nav-item">
             <a href="/admin/homepage-customizer" class="nav-link {{ request()->is('admin/homepage-customizer*') ? 'active bg-success' : '' }}">
               <i class="nav-icon fas fa-desktop text-light"></i>
               <p>App Home Customizer <span class="right badge badge-success">Live</span></p>
             </a>
           </li>
+
           <li class="nav-item">
             <a href="/admin/coupons" class="nav-link {{ request()->is('admin/coupons*') ? 'active bg-success' : '' }}">
               <i class="nav-icon fas fa-ticket-alt text-light"></i>
