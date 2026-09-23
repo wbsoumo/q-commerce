@@ -1,9 +1,34 @@
-@extends('admin.layouts.app')
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Push Notification Center - SB Mart Admin</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+  <style>
+    .brand-link { background-color: #0c831f !important; }
+    .btn-success { background-color: #0c831f; border-color: #0c831f; }
+  </style>
+</head>
+<body class="hold-transition sidebar-mini layout-fixed">
+<div class="wrapper">
 
-@section('title', 'Push Notification Center - SB Mart Admin')
+  <!-- Navbar -->
+  <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+    <ul class="navbar-nav">
+      <li class="nav-item"><a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a></li>
+      <li class="nav-item d-none d-sm-inline-block"><a href="/admin" class="nav-link">Dashboard</a></li>
+      <li class="nav-item d-none d-sm-inline-block"><a href="/admin/notifications" class="nav-link active font-weight-bold">Notification Center</a></li>
+    </ul>
+  </nav>
 
-@section('content')
-<div class="content-wrapper p-4" style="background: #f4f6f9;">
+  <!-- Sidebar -->
+  @include('admin.layouts.sidebar')
+
+  <!-- Content Wrapper -->
+  <div class="content-wrapper p-4" style="background: #f4f6f9;">
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -218,6 +243,7 @@
                                     <tr>
                                         <td colspan="7" class="text-center text-muted py-4">No notifications dispatched yet.</td>
                                     </tr>
+                                @empty
                                 @endforelse
                             </tbody>
                         </table>
@@ -229,8 +255,12 @@
             </div>
         </div>
     </div>
+  </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
 <script>
     function toggleTargetInput(isSpecific) {
         document.getElementById('specificPhoneGroup').style.display = isSpecific ? 'block' : 'none';
@@ -269,4 +299,5 @@
         });
     }
 </script>
-@endsection
+</body>
+</html>
