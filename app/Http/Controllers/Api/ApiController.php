@@ -699,4 +699,135 @@ class ApiController extends Controller
           ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
           ->header('Access-Control-Allow-Headers', '*');
     }
+
+    // Register User with Phone, Password, IP and Device Data
+    public function register(Request $request)
+    {
+        $name = trim($request->input('name', ''));
+        $rawPhone = trim($request->input('phone', ''));
+        $password = trim($request->input('password', ''));
+        $deviceInfo = $request->input('device_info') ?? $request->header('User-Agent') ?? 'Mobile App';
+        $ipAddress = $request->ip() ?? '127.0.0.1';
+
+        if (empty($name) || empty($rawPhone) || empty($password)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Name, phone number, and password are required.'
+            ], 400);
+        }
+
+        // Format phone number with +91 if necessary
+        $phoneDigits = preg_replace('/[^0-9]/', '', $rawPhone);
+        if (strlen($phoneDigits) === 10) {
+            $phone = '+91' . $phoneDigits;
+        } elseif (strlen($phoneDigits) === 12 && str_starts_with($phoneDigits, '91')) {
+            $phone = '+' . $phoneDigits;
+        } else {
+            $phone = str_starts_with($rawPhone, '+') ? $rawPhone : '+' . $rawPhone;
+        }
+
+        // Check if phone already registered
+        $existingUser = DB::table('users')->where('phone', $phone)->first();
+        if ($existingUser) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Mobile number already registered. Please login instead.'
+            ], 422);
+        }
+
+        $email = $phoneDigits . '@sbmart.com';
+        $hashedPassword = \Illuminate\Support\Facades\Hash::make($password);
+
+        $userId = DB::table('users')->insertGetId([
+            'name' => $name,
+            'phone' => $phone,
+            'email' => $email,
+            'password' => $hashedPassword,
+            'device_info' => $deviceInfo,
+            'ip_address' => $ipAddress,
+            'role' => 'customer',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $token = 'sb_token_' . md5($userId . time() . rand(1000, 9999));
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Registration successful!',
+            'token' => $token,
+            'user' => [
+                'id' => $userId,
+                'name' => $name,
+                'phone' => $phone,
+                'email' => $email,
+                'device_info' => $deviceInfo,
+                'ip_address' => $ipAddress,
+            ]
+        ])->header('Access-Control-Allow-Origin', '*');
+    }
+
+    // Login User with Phone and Password
+    public function login(Request $request)
+    {
+        $rawPhone = trim($request->input('phone', ''));
+        $password = trim($request->input('password', ''));
+        $deviceInfo = $request->input('device_info') ?? $request->header('User-Agent') ?? 'Mobile App';
+        $ipAddress = $request->ip() ?? '127.0.0.1';
+
+        if (empty($rawPhone) || empty($password)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Phone number and password are required.'
+            ], 400);
+        }
+
+        // Format phone number with +91
+        $phoneDigits = preg_replace('/[^0-9]/', '', $rawPhone);
+        if (strlen($phoneDigits) === 10) {
+            $phone = '+91' . $phoneDigits;
+        } elseif (strlen($phoneDigits) === 12 && str_starts_with($phoneDigits, '91')) {
+            $phone = '+' . $phoneDigits;
+        } else {
+            $phone = str_starts_with($rawPhone, '+') ? $rawPhone : '+' . $rawPhone;
+        }
+
+        $user = DB::table('users')->where('phone', $phone)->first();
+
+        if (!$user) {
+            // Check fallback for 10 digit without prefix or email
+            $user = DB::table('users')->where('phone', $phoneDigits)->orWhere('email', $rawPhone)->first();
+        }
+
+        if (!$user || !\Illuminate\Support\Facades\Hash::check($password, $user->password)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid mobile number or password.'
+            ], 401);
+        }
+
+        // Update IP & Device Info on login
+        DB::table('users')->where('id', $user->id)->update([
+            'device_info' => $deviceInfo,
+            'ip_address' => $ipAddress,
+            'updated_at' => now(),
+        ]);
+
+        $token = 'sb_token_' . md5($user->id . time() . rand(1000, 9999));
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Login successful!',
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'phone' => $user->phone ?? $phone,
+                'email' => $user->email,
+                'device_info' => $deviceInfo,
+                'ip_address' => $ipAddress,
+            ]
+        ])->header('Access-Control-Allow-Origin', '*');
+    }
 }
+
