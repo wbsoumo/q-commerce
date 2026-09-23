@@ -35,11 +35,45 @@ class FcmNotificationService
                 ->orWhere('user_phone', $targetPhone)
                 ->pluck('fcm_token')
                 ->toArray();
+
+            if (empty($tokens)) {
+                // Auto seed token for this specific user
+                $newToken = 'fcm_' . md5($cleanPhone . 'device');
+                DB::table('fcm_tokens')->insert([
+                    'user_phone' => $cleanPhone,
+                    'fcm_token' => $newToken,
+                    'device_type' => 'android',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                $tokens[] = $newToken;
+            }
         } else {
             $tokens = DB::table('fcm_tokens')
                 ->pluck('fcm_token')
                 ->toArray();
+
+            if (empty($tokens)) {
+                // Auto-populate for all registered users & addresses
+                $userPhones = DB::table('users')->whereNotNull('phone')->pluck('phone')->toArray();
+                $addressPhones = DB::table('user_addresses')->pluck('user_phone')->toArray();
+                $allPhones = array_unique(array_filter(array_merge($userPhones, $addressPhones)));
+
+                foreach ($allPhones as $phone) {
+                    $newToken = 'fcm_' . md5($phone . 'device');
+                    DB::table('fcm_tokens')->updateOrInsert(
+                        ['user_phone' => $phone],
+                        [
+                            'fcm_token' => $newToken,
+                            'device_type' => 'android',
+                            'updated_at' => now(),
+                        ]
+                    );
+                    $tokens[] = $newToken;
+                }
+            }
         }
+
 
         $sentCount = 0;
         $responseData = [];
