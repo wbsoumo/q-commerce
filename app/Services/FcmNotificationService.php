@@ -103,8 +103,20 @@ class FcmNotificationService
                                 'body' => $body,
                             ],
                             'data' => $payloadData,
+                            'android' => [
+                                'priority' => 'high',
+                                'notification' => [
+                                    'sound' => 'default',
+                                    'channel_id' => 'high_importance_channel',
+                                    'notification_priority' => 'PRIORITY_MAX',
+                                    'visibility' => 'PUBLIC',
+                                    'default_sound' => true,
+                                    'default_vibrate_timings' => true,
+                                ],
+                            ],
                         ]
                     ];
+
 
                     if (!empty($imageUrl)) {
                         $message['message']['notification']['image'] = $imageUrl;

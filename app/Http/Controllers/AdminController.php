@@ -604,8 +604,22 @@ class AdminController extends Controller
             $query->where('orders.status', $request->status);
         }
 
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function($q) use ($search) {
+                $q->where('orders.order_number', 'like', "%{$search}%")
+                  ->orWhere('orders.user_name', 'like', "%{$search}%")
+                  ->orWhere('orders.user_phone', 'like', "%{$search}%");
+            });
+        }
+
+        $totalCount = DB::table('orders')->count();
+        $pendingCount = DB::table('orders')->where('status', 'Pending')->count();
+        $activeCount = DB::table('orders')->whereIn('status', ['Processing', 'Packing', 'Out for Delivery', 'Ready for Pickup'])->count();
+        $deliveredCount = DB::table('orders')->where('status', 'Delivered')->count();
+
         $orders = $query->orderBy('orders.id', 'desc')->paginate(15);
-        return view('admin.orders.index', compact('orders', 'hasOrderTypeColumn'));
+        return view('admin.orders.index', compact('orders', 'hasOrderTypeColumn', 'totalCount', 'pendingCount', 'activeCount', 'deliveredCount'));
     }
 
     public function showOrder($id)

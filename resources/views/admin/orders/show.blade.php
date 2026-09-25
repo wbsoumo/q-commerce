@@ -4,17 +4,27 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Order Timeline #{{ $order->order_number }}</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,600,700&display=fallback">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+  <style>
+    :root {
+      --primary-green: #0c831f;
+      --primary-hover: #096818;
+    }
+    .brand-link { background-color: var(--primary-green) !important; }
+    .btn-success { background-color: var(--primary-green); border-color: var(--primary-green); }
+    .btn-success:hover { background-color: var(--primary-hover); border-color: var(--primary-hover); }
+  </style>
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper">
-  <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+  <nav class="main-header navbar navbar-expand navbar-white navbar-light shadow-sm">
     <ul class="navbar-nav">
       <li class="nav-item"><a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a></li>
       <li class="nav-item d-none d-sm-inline-block"><a href="/admin" class="nav-link">Dashboard</a></li>
-      <li class="nav-item d-none d-sm-inline-block"><a href="#" class="nav-link active font-weight-bold">Order #{{ $order->order_number }}</a></li>
+      <li class="nav-item d-none d-sm-inline-block"><a href="/admin/orders" class="nav-link">Orders</a></li>
+      <li class="nav-item d-none d-sm-inline-block"><a href="#" class="nav-link active font-weight-bold text-success">Order #{{ $order->order_number }}</a></li>
     </ul>
   </nav>
 
@@ -260,6 +270,7 @@
   <footer class="main-footer"><strong>Copyright &copy; 2026 Q-Commerce Admin.</strong></footer>
 </div>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
 </body>
 </html>
