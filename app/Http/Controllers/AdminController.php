@@ -1118,61 +1118,34 @@ class AdminController extends Controller
 
     public function syncCategoryIcons()
     {
-        $categoryImages = [
-            'vegetables-fruits' => '/uploads/categories/01_vegetables_fruits.png',
-            'dairy-bread-eggs' => '/uploads/categories/02_dairy_bread_eggs.png',
-            'dairy-bread-milk' => '/uploads/categories/02_dairy_bread_eggs.png',
-            'snacks-beverages' => '/uploads/categories/03_snacks_beverages.png',
-            'personal-care' => '/uploads/categories/04_personal_care.png',
-            'home-care-cleaning' => '/uploads/categories/05_home_care_cleaning.png',
-            'atta-dal-rice' => '/uploads/categories/06_atta_dal_rice.png',
-            'oil-ghee-masala' => '/uploads/categories/07_oil_ghee_masala.png',
-            'instant-food' => '/uploads/categories/08_instant_food.png',
-            'beverages-drinks' => '/uploads/categories/09_beverages.png',
-            'baby-care' => '/uploads/categories/10_baby_care.png',
-            'pet-care' => '/uploads/categories/11_pet_care.png',
-            'frozen-food' => '/uploads/categories/12_frozen_food.png',
-            'bakery-sweets' => '/uploads/categories/13_bakery_sweets.png',
-            'biscuits-bakery' => '/uploads/categories/13_bakery_sweets.png',
-            'fresh-fruits' => '/uploads/categories/14_fresh_fruits.png',
-            'kitchen-household' => '/uploads/categories/15_kitchen_household.png',
-            'organic-healthy-living' => '/uploads/categories/16_organic_healthy_living.png',
+        $categoryCdnMap = [
+            'vegetables-fruits' => 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=200&q=80',
+            'dairy-bread-eggs' => 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=200&q=80',
+            'dairy-bread-milk' => 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=200&q=80',
+            'snacks-beverages' => 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=200&q=80',
+            'personal-care' => 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=200&q=80',
+            'home-care-cleaning' => 'https://images.unsplash.com/photo-1585421514284-efb74c2b69ba?w=200&q=80',
+            'atta-dal-rice' => 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=200&q=80',
+            'oil-ghee-masala' => 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=200&q=80',
+            'instant-food' => 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=200&q=80',
+            'beverages-drinks' => 'https://images.unsplash.com/photo-1527960471264-932f39eb5846?w=200&q=80',
+            'baby-care' => 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=200&q=80',
+            'pet-care' => 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=200&q=80',
+            'frozen-food' => 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&q=80',
+            'bakery-sweets' => 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=200&q=80',
+            'biscuits-bakery' => 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=200&q=80',
+            'fresh-fruits' => 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=200&q=80',
+            'kitchen-household' => 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=200&q=80',
+            'organic-healthy-living' => 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=200&q=80',
         ];
 
-        $cdnImages = [
-            'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=200&q=80',
-            'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=200&q=80',
-            'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=200&q=80',
-            'https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=200&q=80',
-            'https://images.unsplash.com/photo-1585421514284-efb74c2b69ba?w=200&q=80',
-            'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=200&q=80',
-            'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=200&q=80',
-            'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=200&q=80',
-            'https://images.unsplash.com/photo-1527960471264-932f39eb5846?w=200&q=80',
-            'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=200&q=80',
-            'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=200&q=80',
-            'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&q=80',
-            'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=200&q=80',
-            'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=200&q=80',
-            'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=200&q=80',
-            'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=200&q=80',
-        ];
-
+        $defaultCdnList = array_values($categoryCdnMap);
         $categories = DB::table('categories')->orderBy('id', 'asc')->get();
         $idx = 0;
+
         foreach ($categories as $cat) {
             $slug = strtolower(trim($cat->slug));
-            $imgPath = $categoryImages[$slug] ?? null;
-
-            if (!$imgPath) {
-                // If local file path doesn't exist, use distinct CDN image
-                $imgPath = $cdnImages[$idx % count($cdnImages)];
-            } else {
-                // Verify local file exists, otherwise fallback to CDN image
-                if (!file_exists(public_path(ltrim($imgPath, '/')))) {
-                    $imgPath = $cdnImages[$idx % count($cdnImages)];
-                }
-            }
+            $imgPath = $categoryCdnMap[$slug] ?? $defaultCdnList[$idx % count($defaultCdnList)];
 
             DB::table('categories')->where('id', $cat->id)->update([
                 'image' => $imgPath,
@@ -1181,7 +1154,7 @@ class AdminController extends Controller
             $idx++;
         }
 
-        return redirect('/admin/categories')->with('success', 'Synced 16 unique category icons successfully!');
+        return redirect('/admin/categories')->with('success', 'Synced HD category photos across all categories successfully!');
     }
 
     /**
