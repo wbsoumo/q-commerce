@@ -78,7 +78,7 @@
                             $catImg = '/' . ltrim($catImg, '/');
                         }
                       @endphp
-                      <img src="{{ $catImg }}" width="45" height="45" style="object-fit:cover; border-radius:8px;" class="border" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=100&q=80';">
+                      <img src="{{ $catImg }}" width="45" height="45" style="object-fit:cover; border-radius:8px;" class="border" onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name={{ urlencode($cat->name) }}&background=0c831f&color=fff&size=100';">
                     @else
                       <span class="badge badge-secondary">No Image</span>
                     @endif
