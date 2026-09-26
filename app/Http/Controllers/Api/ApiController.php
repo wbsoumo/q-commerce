@@ -937,9 +937,9 @@ class ApiController extends Controller
     // Get Active Promotional Sliders for App Home Screen
     public function getSliders()
     {
-        if (!Schema::hasTable('sliders')) {
-            try {
-                Schema::create('sliders', function ($table) {
+        try {
+            if (!\Illuminate\Support\Facades\Schema::hasTable('sliders')) {
+                \Illuminate\Support\Facades\Schema::create('sliders', function ($table) {
                     $table->id();
                     $table->string('title')->nullable();
                     $table->string('subtitle')->nullable();
@@ -947,57 +947,24 @@ class ApiController extends Controller
                     $table->string('cta_text')->default('Shop Now →');
                     $table->string('image')->nullable();
                     $table->string('bg_color')->default('#E8F5E9');
+                    $table->string('link_type')->default('category')->nullable();
+                    $table->unsignedBigInteger('category_id')->nullable();
                     $table->string('redirect_url')->nullable();
                     $table->integer('display_order')->default(1);
                     $table->boolean('is_active')->default(true);
                     $table->timestamps();
                 });
+            }
+        } catch (\Exception $e) {}
 
-                DB::table('sliders')->insert([
-                    [
-                        'title' => 'Big Savings Every Day',
-                        'subtitle' => 'Fresh products, great quality at lowest prices.',
-                        'offer_text' => 'UP TO 50% OFF',
-                        'cta_text' => 'Shop Now →',
-                        'image' => 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80',
-                        'bg_color' => '#E8F5E9',
-                        'display_order' => 1,
-                        'is_active' => true,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ],
-                    [
-                        'title' => 'Fresh Farm Vegetables',
-                        'subtitle' => 'Organically grown, handpicked fresh daily.',
-                        'offer_text' => 'MIN 30% OFF',
-                        'cta_text' => 'Order Fresh →',
-                        'image' => 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?auto=format&fit=crop&w=800&q=80',
-                        'bg_color' => '#FFF8E1',
-                        'display_order' => 2,
-                        'is_active' => true,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ],
-                    [
-                        'title' => 'Daily Dairy & Bakery',
-                        'subtitle' => 'Pure milk, butter, bread & fresh eggs in 15 mins.',
-                        'offer_text' => 'SPECIAL DEALS',
-                        'cta_text' => 'Explore Deals →',
-                        'image' => 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=800&q=80',
-                        'bg_color' => '#E3F2FD',
-                        'display_order' => 3,
-                        'is_active' => true,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ],
-                ]);
-            } catch (\Exception $e) {}
+        try {
+            $sliders = DB::table('sliders')
+                ->where('is_active', true)
+                ->orderBy('display_order', 'asc')
+                ->get();
+        } catch (\Exception $e) {
+            $sliders = [];
         }
-
-        $sliders = DB::table('sliders')
-            ->where('is_active', true)
-            ->orderBy('display_order', 'asc')
-            ->get();
 
         return response()->json([
             'status' => 'success',
