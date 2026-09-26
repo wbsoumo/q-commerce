@@ -1052,11 +1052,14 @@ class AdminController extends Controller
         ]);
 
         $imageUrl = $validated['image_url'] ?? null;
+        if ($imageUrl && str_starts_with($imageUrl, 'http://')) {
+            $imageUrl = preg_replace('/^http:/i', 'https:', $imageUrl);
+        }
         if ($request->hasFile('image_file')) {
             $file = $request->file('image_file');
             $filename = time() . '_' . $file->getClientOriginalName();
             $file->move(public_path('uploads/categories'), $filename);
-            $imageUrl = url('uploads/categories/' . $filename);
+            $imageUrl = secure_url('uploads/categories/' . $filename);
         }
 
         $slug = \Illuminate\Support\Str::slug($validated['name']) . '-' . rand(100, 999);
@@ -1099,9 +1102,13 @@ class AdminController extends Controller
             $file = $request->file('image_file');
             $filename = time() . '_' . $file->getClientOriginalName();
             $file->move(public_path('uploads/categories'), $filename);
-            $updateData['image'] = url('uploads/categories/' . $filename);
+            $updateData['image'] = secure_url('uploads/categories/' . $filename);
         } elseif (!empty($validated['image_url'])) {
-            $updateData['image'] = $validated['image_url'];
+            $img = $validated['image_url'];
+            if (str_starts_with($img, 'http://')) {
+                $img = preg_replace('/^http:/i', 'https:', $img);
+            }
+            $updateData['image'] = $img;
         }
 
         DB::table('categories')->where('id', $id)->update($updateData);

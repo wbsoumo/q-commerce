@@ -60,7 +60,13 @@
                   <td>{{ $cat->id }}</td>
                   <td>
                     @if(!empty($cat->image))
-                      <img src="{{ $cat->image }}" width="45" height="45" style="object-fit:cover; border-radius:8px;" class="border">
+                      @php
+                        $catImg = $cat->image;
+                        if (\Illuminate\Support\Str::startsWith($catImg, 'http://')) {
+                            $catImg = preg_replace('/^http:/i', 'https:', $catImg);
+                        }
+                      @endphp
+                      <img src="{{ $catImg }}" width="45" height="45" style="object-fit:cover; border-radius:8px;" class="border" onerror="this.onerror=null;this.src='https://via.placeholder.com/45?text=Img';">
                     @else
                       <span class="badge badge-secondary">No Image</span>
                     @endif
