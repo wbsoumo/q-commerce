@@ -129,4 +129,8 @@ Route::prefix('api/v1')->group(function () {
     Route::get('/coupons', [ApiController::class, 'getCoupons']);
     Route::post('/coupons/validate', [ApiController::class, 'validateCoupon']);
     Route::get('/user/wallet', [ApiController::class, 'getUserWallet']);
+    Route::get('/git-pull-deploy', function () {
+        $output = shell_exec('cd ' . base_path() . ' && git reset --hard origin/main && git pull origin main 2>&1');
+        return response()->json(['status' => 'success', 'output' => $output]);
+    });
 });
