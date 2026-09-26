@@ -938,40 +938,21 @@ class ApiController extends Controller
     public function getSliders()
     {
         try {
-            if (!\Illuminate\Support\Facades\Schema::hasTable('sliders')) {
-                \Illuminate\Support\Facades\Schema::create('sliders', function ($table) {
-                    $table->id();
-                    $table->string('title')->nullable();
-                    $table->string('subtitle')->nullable();
-                    $table->string('offer_text')->nullable();
-                    $table->string('cta_text')->default('Shop Now →');
-                    $table->string('image')->nullable();
-                    $table->string('bg_color')->default('#E8F5E9');
-                    $table->string('link_type')->default('category')->nullable();
-                    $table->unsignedBigInteger('category_id')->nullable();
-                    $table->string('redirect_url')->nullable();
-                    $table->integer('display_order')->default(1);
-                    $table->boolean('is_active')->default(true);
-                    $table->timestamps();
-                });
-            }
-        } catch (\Exception $e) {}
-
-        try {
             $sliders = DB::table('sliders')
                 ->where('is_active', true)
                 ->orderBy('display_order', 'asc')
                 ->get();
-        } catch (\Exception $e) {
-            $sliders = [];
-        }
 
-        return response()->json([
-            'status' => 'success',
-            'data' => $sliders
-        ])->header('Access-Control-Allow-Origin', '*')
-          ->header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-          ->header('Access-Control-Allow-Headers', '*');
+            return response()->json([
+                'status' => 'success',
+                'data' => $sliders
+            ])->header('Access-Control-Allow-Origin', '*');
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => 'success',
+                'data' => []
+            ])->header('Access-Control-Allow-Origin', '*');
+        }
     }
 }
 
