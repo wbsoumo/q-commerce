@@ -8,110 +8,113 @@
       <ul class="nav nav-pills nav-sidebar flex-column nav-child-indent" data-widget="treeview" role="menu" data-accordion="false">
         @if(auth()->user() && auth()->user()->role === 'store_manager')
           <!-- Store Manager Menu -->
-          <li class="nav-header text-uppercase text-muted small font-weight-bold">Store Management</li>
+          <li class="nav-header text-uppercase text-muted small font-weight-bold">Store Operations</li>
           <li class="nav-item">
-            <a href="/admin/store-manager" class="nav-link {{ request()->is('admin/store-manager*') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-user-cog text-light"></i><p>Manager Dashboard</p>
+            <a href="/admin/store-manager" class="nav-link {{ request()->is('admin/store-manager*') ? 'active bg-success' : '' }}">
+              <i class="nav-icon fas fa-chart-pie text-light"></i><p>Dashboard</p>
             </a>
           </li>
           <li class="nav-item">
-            <a href="/admin/stores/{{ auth()->user()->store_id }}/settings" class="nav-link {{ request()->is('admin/stores/*/settings') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-sliders-h text-light"></i><p>Branch Settings</p>
+            <a href="/admin/stores/{{ auth()->user()->store_id }}/settings" class="nav-link {{ request()->is('admin/stores/*/settings') ? 'active bg-success' : '' }}">
+              <i class="nav-icon fas fa-cog text-light"></i><p>Branch Settings</p>
             </a>
           </li>
         @else
-          <!-- Full Super Admin Menu -->
-          <li class="nav-header text-uppercase text-muted small font-weight-bold">Main Dashboard</li>
+          <!-- Full Super Admin Menu Organized by Operational Priority -->
+          
+          <!-- Priority 1: Overview -->
+          <li class="nav-header text-uppercase text-muted small font-weight-bold">Overview</li>
           <li class="nav-item">
-            <a href="/admin" class="nav-link {{ request()->is('admin') && !request()->is('admin/*') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-chart-line text-light"></i><p>Analytics Overview</p>
+            <a href="/admin" class="nav-link {{ request()->is('admin') && !request()->is('admin/*') ? 'active bg-success' : '' }}">
+              <i class="nav-icon fas fa-chart-line text-light"></i><p>Dashboard</p>
             </a>
           </li>
 
-          <li class="nav-header text-uppercase text-muted small font-weight-bold">App & Store Customizer</li>
-          <li class="nav-item">
-            <a href="/admin/notifications" class="nav-link {{ request()->is('admin/notifications*') ? 'active bg-success' : '' }}">
-              <i class="nav-icon fas fa-bell text-warning"></i>
-              <p>Push Notifications <span class="right badge badge-warning">FCM</span></p>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/admin/sliders" class="nav-link {{ request()->is('admin/sliders*') ? 'active bg-success' : '' }}">
-              <i class="nav-icon fas fa-images text-light"></i>
-              <p>Promotional Sliders <span class="right badge badge-success">New</span></p>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/admin/homepage-customizer" class="nav-link {{ request()->is('admin/homepage-customizer*') ? 'active bg-success' : '' }}">
-              <i class="nav-icon fas fa-desktop text-light"></i>
-              <p>App Home Customizer <span class="right badge badge-success">Live</span></p>
-            </a>
-          </li>
-
-          <li class="nav-item">
-            <a href="/admin/coupons" class="nav-link {{ request()->is('admin/coupons*') ? 'active bg-success' : '' }}">
-              <i class="nav-icon fas fa-ticket-alt text-light"></i>
-              <p>Coupons & Offers Engine</p>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/admin/stores" class="nav-link {{ request()->is('admin/stores*') && !request()->is('admin/stores/*/settings') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-store text-light"></i><p>Stores & Dark Hubs</p>
-            </a>
-          </li>
-
-          <li class="nav-header text-uppercase text-muted small font-weight-bold">Catalog & Inventory</li>
-          <li class="nav-item">
-            <a href="/admin/categories" class="nav-link {{ request()->is('admin/categories*') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-th-large text-light"></i><p>Categories</p>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/admin/products" class="nav-link {{ request()->is('admin/products*') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-boxes text-light"></i><p>Product Catalog</p>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/admin/store-manager" class="nav-link {{ request()->is('admin/store-manager*') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-cubes text-light"></i><p>Store Inventory Matrix</p>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/admin/inventory/transactions" class="nav-link {{ request()->is('admin/inventory/transactions*') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-history text-light"></i><p>Inventory Audit Logs</p>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/admin/inventory/alerts" class="nav-link {{ request()->is('admin/inventory/alerts*') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-exclamation-triangle text-light"></i><p>Low Stock Alerts</p>
-            </a>
-          </li>
-
-          <li class="nav-header text-uppercase text-muted small font-weight-bold">Orders & Logistics</li>
+          <!-- Priority 2: Daily Operations & Fulfillment -->
+          <li class="nav-header text-uppercase text-muted small font-weight-bold">Operations</li>
           <li class="nav-item">
             <a href="/admin/orders" class="nav-link {{ request()->is('admin/orders*') ? 'active bg-success' : '' }}">
-              <i class="nav-icon fas fa-shopping-bag text-light"></i>
-              <p>Orders & Pickup Details</p>
+              <i class="nav-icon fas fa-shopping-bag text-warning"></i>
+              <p>Orders</p>
             </a>
           </li>
           <li class="nav-item">
-            <a href="/admin/customers" class="nav-link {{ request()->is('admin/customers*') ? 'active' : '' }}">
+            <a href="/admin/customers" class="nav-link {{ request()->is('admin/customers*') ? 'active bg-success' : '' }}">
               <i class="nav-icon fas fa-users text-light"></i><p>Customers</p>
             </a>
           </li>
           <li class="nav-item">
-            <a href="/admin/staff" class="nav-link {{ request()->is('admin/staff*') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-user-shield text-light"></i><p>Staff & Roles</p>
+            <a href="/admin/deliveries" class="nav-link {{ request()->is('admin/deliveries*') ? 'active bg-success' : '' }}">
+              <i class="nav-icon fas fa-motorcycle text-light"></i><p>Deliveries</p>
+            </a>
+          </li>
+
+          <!-- Priority 3: Catalog & Inventory Management -->
+          <li class="nav-header text-uppercase text-muted small font-weight-bold">Catalog & Inventory</li>
+          <li class="nav-item">
+            <a href="/admin/categories" class="nav-link {{ request()->is('admin/categories*') ? 'active bg-success' : '' }}">
+              <i class="nav-icon fas fa-th-large text-light"></i><p>Categories</p>
             </a>
           </li>
           <li class="nav-item">
-            <a href="/admin/deliveries" class="nav-link {{ request()->is('admin/deliveries*') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-motorcycle text-light"></i><p>Deliveries & Riders</p>
+            <a href="/admin/products" class="nav-link {{ request()->is('admin/products*') ? 'active bg-success' : '' }}">
+              <i class="nav-icon fas fa-boxes text-light"></i><p>Products</p>
             </a>
           </li>
           <li class="nav-item">
-            <a href="/admin/delivery-zones" class="nav-link {{ request()->is('admin/delivery-zones*') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-map-marked-alt text-light"></i><p>Delivery Coverage</p>
+            <a href="/admin/store-manager" class="nav-link {{ request()->is('admin/store-manager*') ? 'active bg-success' : '' }}">
+              <i class="nav-icon fas fa-cubes text-light"></i><p>Inventory</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/admin/inventory/alerts" class="nav-link {{ request()->is('admin/inventory/alerts*') ? 'active bg-success' : '' }}">
+              <i class="nav-icon fas fa-exclamation-triangle text-warning"></i><p>Stock Alerts</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/admin/inventory/transactions" class="nav-link {{ request()->is('admin/inventory/transactions*') ? 'active bg-success' : '' }}">
+              <i class="nav-icon fas fa-history text-light"></i><p>Stock Logs</p>
+            </a>
+          </li>
+
+          <!-- Priority 4: Marketing & App Customization -->
+          <li class="nav-header text-uppercase text-muted small font-weight-bold">Marketing & App</li>
+          <li class="nav-item">
+            <a href="/admin/sliders" class="nav-link {{ request()->is('admin/sliders*') ? 'active bg-success' : '' }}">
+              <i class="nav-icon fas fa-images text-light"></i><p>Sliders</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/admin/homepage-customizer" class="nav-link {{ request()->is('admin/homepage-customizer*') ? 'active bg-success' : '' }}">
+              <i class="nav-icon fas fa-desktop text-light"></i><p>Home Design</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/admin/coupons" class="nav-link {{ request()->is('admin/coupons*') ? 'active bg-success' : '' }}">
+              <i class="nav-icon fas fa-ticket-alt text-light"></i><p>Coupons</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/admin/notifications" class="nav-link {{ request()->is('admin/notifications*') ? 'active bg-success' : '' }}">
+              <i class="nav-icon fas fa-bell text-light"></i><p>Notifications</p>
+            </a>
+          </li>
+
+          <!-- Priority 5: Stores & System Settings -->
+          <li class="nav-header text-uppercase text-muted small font-weight-bold">Store & System</li>
+          <li class="nav-item">
+            <a href="/admin/stores" class="nav-link {{ request()->is('admin/stores*') && !request()->is('admin/stores/*/settings') ? 'active bg-success' : '' }}">
+              <i class="nav-icon fas fa-store text-light"></i><p>Stores</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/admin/delivery-zones" class="nav-link {{ request()->is('admin/delivery-zones*') ? 'active bg-success' : '' }}">
+              <i class="nav-icon fas fa-map-marked-alt text-light"></i><p>Coverage</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/admin/staff" class="nav-link {{ request()->is('admin/staff*') ? 'active bg-success' : '' }}">
+              <i class="nav-icon fas fa-user-shield text-light"></i><p>Staff</p>
             </a>
           </li>
         @endif
@@ -121,7 +124,7 @@
           <form action="/logout" method="POST" id="logout-form">
             @csrf
             <a href="#" class="nav-link text-danger" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-              <i class="nav-icon fas fa-sign-out-alt"></i><p class="font-weight-bold">Logout System</p>
+              <i class="nav-icon fas fa-sign-out-alt"></i><p class="font-weight-bold">Logout</p>
             </a>
           </form>
         </li>
