@@ -678,7 +678,7 @@ class ApiController extends Controller
     // Get Real-Time Customer Wallet Balance
     public function getUserWallet(Request $request)
     {
-        $phone = $request->query('phone', '8016222991');
+        $rawPhone = trim($request->query('phone', $request->input('phone', '')));
 
         if (!\Illuminate\Support\Facades\Schema::hasColumn('customers', 'wallet_balance')) {
             try {
@@ -688,8 +688,50 @@ class ApiController extends Controller
             } catch (\Exception $e) {}
         }
 
-        $customer = DB::table('customers')->where('phone', $phone)->first();
-        $balance = $customer ? (float)$customer->wallet_balance : 150.00;
+        if (empty($rawPhone)) {
+            return response()->json([
+                'status' => 'success',
+                'wallet_balance' => 0.00,
+                'currency' => '₹',
+            ])->header('Access-Control-Allow-Origin', '*')
+              ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
+              ->header('Access-Control-Allow-Headers', '*');
+        }
+
+        $phoneDigits = preg_replace('/[^0-9]/', '', $rawPhone);
+        $phoneWithPlus = strlen($phoneDigits) === 10 ? '+91' . $phoneDigits : '+' . $phoneDigits;
+
+        $customer = DB::table('customers')
+            ->where('phone', $rawPhone)
+            ->orWhere('phone', $phoneWithPlus)
+            ->orWhere('phone', $phoneDigits)
+            ->first();
+
+        if (!$customer) {
+            $user = DB::table('users')
+                ->where('phone', $rawPhone)
+                ->orWhere('phone', $phoneWithPlus)
+                ->orWhere('phone', $phoneDigits)
+                ->first();
+
+            if ($user) {
+                DB::table('customers')->insert([
+                    'name' => $user->name ?? 'Customer',
+                    'phone' => $user->phone,
+                    'status' => 'Active',
+                    'total_orders' => 0,
+                    'total_spent' => 0.00,
+                    'wallet_balance' => 0.00,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                $balance = 0.00;
+            } else {
+                $balance = 0.00;
+            }
+        } else {
+            $balance = (float)($customer->wallet_balance ?? 0.00);
+        }
 
         return response()->json([
             'status' => 'success',
