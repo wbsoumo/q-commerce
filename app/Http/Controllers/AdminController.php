@@ -1401,6 +1401,13 @@ class AdminController extends Controller
     public function sliders()
     {
         $this->ensureSlidersTableExists();
+        try {
+            DB::table('sliders')->where('image', 'LIKE', '%localhost%')->get()->each(function($s) {
+                $cleanPath = preg_replace('/^https?:\/\/[^\/]+\//', '', $s->image);
+                DB::table('sliders')->where('id', $s->id)->update(['image' => $cleanPath]);
+            });
+        } catch (\Exception $e) {}
+
         $sliders = DB::table('sliders')->orderBy('display_order', 'asc')->get();
         $categories = DB::table('categories')->where('is_active', true)->get();
         return view('admin.sliders.index', compact('sliders', 'categories'));
@@ -1413,9 +1420,9 @@ class AdminController extends Controller
         $imageUrl = $request->input('image_url');
         if ($request->hasFile('image_file')) {
             $file = $request->file('image_file');
-            $filename = time() . '_' . $file->getClientOriginalName();
+            $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $file->getClientOriginalName());
             $file->move(public_path('uploads/sliders'), $filename);
-            $imageUrl = asset('uploads/sliders/' . $filename);
+            $imageUrl = 'uploads/sliders/' . $filename;
         }
 
         DB::table('sliders')->insert([
