@@ -111,6 +111,22 @@
                   </div>
                 </div>
               </div>
+
+              <!-- FEATURE & BESTSELLER FLAGS -->
+              <div class="row bg-light p-3 rounded mb-3 border">
+                <div class="col-md-6 form-group mb-0">
+                  <div class="custom-control custom-switch custom-switch-off-danger custom-switch-on-warning">
+                    <input type="checkbox" name="is_bestseller" value="1" class="custom-control-input" id="mgrIsBestsellerCreate">
+                    <label class="custom-control-label font-weight-bold text-warning" for="mgrIsBestsellerCreate"><i class="fas fa-fire text-danger mr-1"></i> 🔥 Best Seller Product (Show in Bestsellers)</label>
+                  </div>
+                </div>
+                <div class="col-md-6 form-group mb-0">
+                  <div class="custom-control custom-switch custom-switch-off-danger custom-switch-on-success">
+                    <input type="checkbox" name="is_featured" value="1" class="custom-control-input" id="mgrIsFeaturedCreate">
+                    <label class="custom-control-label font-weight-bold text-success" for="mgrIsFeaturedCreate"><i class="fas fa-bolt text-warning mr-1"></i> ⚡ Super Savings Product (Show in Super Savings)</label>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

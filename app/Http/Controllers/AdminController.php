@@ -183,6 +183,7 @@ class AdminController extends Controller
             'mrp' => $validated['mrp'],
             'stock' => $validated['stock'],
             'scope' => $validated['scope'],
+            'is_bestseller' => $request->has('is_bestseller') ? true : false,
             'is_featured' => $request->has('is_featured') ? true : false,
             'image' => $imagePath,
             'gallery' => !empty($galleryPaths) ? json_encode($galleryPaths) : null,
@@ -252,6 +253,7 @@ class AdminController extends Controller
             'mrp' => $validated['mrp'],
             'stock' => $validated['stock'],
             'scope' => $validated['scope'],
+            'is_bestseller' => $request->has('is_bestseller') ? true : false,
             'is_featured' => $request->has('is_featured') ? true : false,
             'description' => $request->input('description', ''),
             'updated_at' => now(),
@@ -1330,6 +1332,8 @@ class AdminController extends Controller
                     $table->string('cta_text')->default('Shop Now →');
                     $table->string('image')->nullable();
                     $table->string('bg_color')->default('#E8F5E9');
+                    $table->string('link_type')->default('category')->nullable();
+                    $table->unsignedBigInteger('category_id')->nullable();
                     $table->string('redirect_url')->nullable();
                     $table->integer('display_order')->default(1);
                     $table->boolean('is_active')->default(true);
@@ -1343,8 +1347,10 @@ class AdminController extends Controller
                         'subtitle' => 'Fresh products, great quality at lowest prices.',
                         'offer_text' => 'UP TO 50% OFF',
                         'cta_text' => 'Shop Now →',
-                        'image' => 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80',
+                        'image' => 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80',
                         'bg_color' => '#E8F5E9',
+                        'link_type' => 'category',
+                        'category_id' => 1,
                         'display_order' => 1,
                         'is_active' => true,
                         'created_at' => now(),
@@ -1355,8 +1361,10 @@ class AdminController extends Controller
                         'subtitle' => 'Organically grown, handpicked fresh daily.',
                         'offer_text' => 'MIN 30% OFF',
                         'cta_text' => 'Order Fresh →',
-                        'image' => 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?auto=format&fit=crop&w=800&q=80',
+                        'image' => 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?auto=format&fit=crop&w=1200&q=80',
                         'bg_color' => '#FFF8E1',
+                        'link_type' => 'category',
+                        'category_id' => 1,
                         'display_order' => 2,
                         'is_active' => true,
                         'created_at' => now(),
@@ -1367,14 +1375,25 @@ class AdminController extends Controller
                         'subtitle' => 'Pure milk, butter, bread & fresh eggs in 15 mins.',
                         'offer_text' => 'SPECIAL DEALS',
                         'cta_text' => 'Explore Deals →',
-                        'image' => 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=800&q=80',
+                        'image' => 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=1200&q=80',
                         'bg_color' => '#E3F2FD',
+                        'link_type' => 'category',
+                        'category_id' => 2,
                         'display_order' => 3,
                         'is_active' => true,
                         'created_at' => now(),
                         'updated_at' => now(),
                     ],
                 ]);
+            } catch (\Exception $e) {}
+        } else {
+            try {
+                if (!Schema::hasColumn('sliders', 'category_id')) {
+                    Schema::table('sliders', function ($table) {
+                        $table->string('link_type')->default('category')->nullable();
+                        $table->unsignedBigInteger('category_id')->nullable();
+                    });
+                }
             } catch (\Exception $e) {}
         }
     }
@@ -1383,7 +1402,8 @@ class AdminController extends Controller
     {
         $this->ensureSlidersTableExists();
         $sliders = DB::table('sliders')->orderBy('display_order', 'asc')->get();
-        return view('admin.sliders.index', compact('sliders'));
+        $categories = DB::table('categories')->where('is_active', true)->get();
+        return view('admin.sliders.index', compact('sliders', 'categories'));
     }
 
     public function storeSlider(Request $request)
@@ -1403,7 +1423,9 @@ class AdminController extends Controller
             'subtitle' => $request->input('subtitle'),
             'offer_text' => $request->input('offer_text'),
             'cta_text' => $request->input('cta_text', 'Shop Now →'),
-            'image' => $imageUrl ?? 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80',
+            'image' => $imageUrl ?? 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80',
+            'link_type' => $request->input('link_type', 'category'),
+            'category_id' => $request->input('category_id'),
             'redirect_url' => $request->input('redirect_url'),
             'display_order' => (int)$request->input('display_order', 1),
             'is_active' => true,

@@ -198,6 +198,8 @@ class ManagerController extends Controller
             'name' => $validated['name'],
             'sku' => $validated['sku'],
             'unit' => $validated['unit'],
+            'is_bestseller' => $request->has('is_bestseller') ? true : false,
+            'is_featured' => $request->has('is_featured') ? true : false,
             'description' => $request->input('description', ''),
             'updated_at' => now(),
         ];
@@ -414,6 +416,8 @@ class ManagerController extends Controller
             'stock' => $validated['stock'],
             'scope' => 'store_specific',
             'store_id' => $storeId,
+            'is_bestseller' => $request->has('is_bestseller') ? true : false,
+            'is_featured' => $request->has('is_featured') ? true : false,
             'image' => $imagePath,
             'gallery' => !empty($galleryPaths) ? json_encode($galleryPaths) : null,
             'description' => $request->input('description', ''),

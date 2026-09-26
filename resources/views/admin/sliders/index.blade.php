@@ -167,16 +167,43 @@
                 <input type="number" name="display_order" class="form-control" value="1" min="1">
               </div>
             </div>
+            <!-- LINK & ACTION CONFIGURATION -->
+            <div class="card card-outline card-success p-3 mb-3 bg-light border">
+              <h6 class="font-weight-bold text-success mb-2"><i class="fas fa-link mr-1"></i> Banner Click Link Action</h6>
+              <div class="row">
+                <div class="col-md-6 form-group">
+                  <label class="font-weight-bold">Link Type Target</label>
+                  <select name="link_type" class="form-control font-weight-bold">
+                    <option value="category">Category Page (Open selected Category)</option>
+                    <option value="url">Search Query / Custom Page Link</option>
+                  </select>
+                </div>
+                <div class="col-md-6 form-group">
+                  <label class="font-weight-bold">Select Target Category</label>
+                  <select name="category_id" class="form-control font-weight-bold">
+                    <option value="">-- Select Target Category --</option>
+                    @foreach($categories as $cat)
+                      <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                    @endforeach
+                  </select>
+                </div>
+              </div>
+              <div class="form-group mb-0">
+                <label class="font-weight-bold">Or Search Query / Custom Page URL</label>
+                <input type="text" name="redirect_url" class="form-control" placeholder="e.g. bestseller or /category/1">
+              </div>
+            </div>
+
             <div class="row">
               <div class="col-md-6 form-group">
-                <label class="font-weight-bold">Banner Image Upload</label>
-                <input type="file" name="image_file" class="form-control-file" accept="image/*">
-                <small class="text-muted d-block mt-1">Or provide Image URL below:</small>
-                <input type="url" name="image_url" class="form-control mt-1" placeholder="https://example.com/banner.jpg">
+                <label class="font-weight-bold">Banner Image Upload <span class="text-danger">*</span></label>
+                <input type="file" name="image_file" class="form-control-file border p-1 rounded w-100 bg-white" accept="image/*">
+                <small class="text-muted d-block mt-1">Or direct Image URL below:</small>
+                <input type="url" name="image_url" class="form-control mt-1" placeholder="https://images.unsplash.com/photo-...">
               </div>
               <div class="col-md-6 form-group">
-                <label class="font-weight-bold">Optional Redirect URL</label>
-                <input type="text" name="redirect_url" class="form-control" placeholder="e.g. /category/1 or search query">
+                <label class="font-weight-bold">Display Order</label>
+                <input type="number" name="display_order" class="form-control" value="1" min="1">
               </div>
             </div>
           </div>
@@ -189,7 +216,7 @@
     </div>
   </div>
 
-  @include('admin.layouts.footer')
+  <footer class="main-footer text-muted text-center py-3"><strong>Copyright &copy; 2026 Q-Commerce Admin.</strong></footer>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
