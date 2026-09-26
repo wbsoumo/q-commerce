@@ -64,9 +64,8 @@
                 <tr>
                   <th style="width: 60px;">Order</th>
                   <th>Banner Image</th>
-                  <th>Title & Subtitle</th>
-                  <th>Badge Offer</th>
-                  <th>CTA Button</th>
+                  <th>Title</th>
+                  <th>Target Category / Link</th>
                   <th>Status</th>
                   <th class="text-right" style="width: 180px;">Actions</th>
                 </tr>
@@ -77,20 +76,28 @@
                     <td class="font-weight-bold text-center align-middle">{{ $slider->display_order }}</td>
                     <td class="align-middle">
                       @if($slider->image)
-                        <img src="{{ $slider->image }}" alt="Slider Banner" class="slider-img-preview">
+                        <img src="{{ str_contains($slider->image, 'http') ? $slider->image : asset($slider->image) }}" alt="Slider Banner" class="slider-img-preview" errorBuilder="this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&q=80'">
                       @else
                         <span class="badge badge-secondary p-2"><i class="fas fa-image mr-1"></i> No Image</span>
                       @endif
                     </td>
                     <td class="align-middle">
-                      <strong class="text-dark d-block" style="font-size: 15px;">{{ $slider->title ?? 'Untitled Banner' }}</strong>
-                      <small class="text-muted">{{ $slider->subtitle ?? '-' }}</small>
+                      <strong class="text-dark d-block" style="font-size: 15px;">{{ $slider->title ?? 'Promotional Banner' }}</strong>
+                      @if($slider->subtitle)
+                        <small class="text-muted">{{ $slider->subtitle }}</small>
+                      @endif
                     </td>
                     <td class="align-middle">
-                      <span class="badge badge-warning font-weight-bold px-2 py-1">{{ $slider->offer_text ?? 'NO OFFER' }}</span>
-                    </td>
-                    <td class="align-middle">
-                      <span class="badge badge-dark px-2 py-1"><i class="fas fa-arrow-right mr-1 text-success"></i>{{ $slider->cta_text ?? 'Shop Now' }}</span>
+                      @if($slider->category_id)
+                        @php
+                          $targetCat = DB::table('categories')->where('id', $slider->category_id)->first();
+                        @endphp
+                        <span class="badge badge-success font-weight-bold px-2 py-1"><i class="fas fa-th-large mr-1"></i>{{ $targetCat->name ?? ('Category #' . $slider->category_id) }}</span>
+                      @elseif($slider->redirect_url)
+                        <span class="badge badge-info font-weight-bold px-2 py-1"><i class="fas fa-link mr-1"></i>{{ $slider->redirect_url }}</span>
+                      @else
+                        <span class="badge badge-secondary font-weight-bold px-2 py-1"><i class="fas fa-folder mr-1"></i>Default Category</span>
+                      @endif
                     </td>
                     <td class="align-middle">
                       @if($slider->is_active)
