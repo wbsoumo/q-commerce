@@ -85,7 +85,7 @@
                         }
                       @endphp
                       @if($imgSrc)
-                        <img src="{{ $imgSrc }}" alt="Slider Banner" class="slider-img-preview" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&q=80'">
+                        <img src="{{ $imgSrc }}" alt="Slider Banner" class="slider-img-preview">
                       @else
                         <span class="badge badge-secondary p-2"><i class="fas fa-image mr-1"></i> No Image</span>
                       @endif
