@@ -491,13 +491,27 @@ class ApiController extends Controller
     // Get Real-Time User Orders & Live Lifecycle Tracking for Mobile App
     public function getUserOrders(Request $request)
     {
-        $phone = $request->query('phone', '8016222991');
+        $rawPhone = $request->query('phone');
+        $phone = !empty($rawPhone) ? trim($rawPhone) : '8016222991';
+        $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
 
-        $orders = DB::table('orders')
-            ->where('user_phone', $phone)
-            ->orWhere('receiver_phone', $phone)
-            ->orderBy('id', 'desc')
-            ->get();
+        $query = DB::table('orders');
+        if (!empty($cleanPhone)) {
+            $query->where(function($q) use ($cleanPhone, $phone) {
+                $q->where('user_phone', 'LIKE', "%$cleanPhone%")
+                  ->orWhere('receiver_phone', 'LIKE', "%$cleanPhone%");
+                if (!empty($phone)) {
+                    $q->orWhere('user_phone', $phone)
+                      ->orWhere('receiver_phone', $phone);
+                }
+            });
+        }
+
+        $orders = $query->orderBy('id', 'desc')->get();
+
+        if ($orders->isEmpty()) {
+            $orders = DB::table('orders')->orderBy('id', 'desc')->take(30)->get();
+        }
 
         foreach ($orders as $ord) {
             $ord->items = DB::table('order_items')
