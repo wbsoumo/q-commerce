@@ -75,8 +75,14 @@
                   <tr>
                     <td class="font-weight-bold text-center align-middle">{{ $slider->display_order }}</td>
                     <td class="align-middle">
-                      @if($slider->image)
-                        <img src="{{ str_contains($slider->image, 'http') ? $slider->image : asset($slider->image) }}" alt="Slider Banner" class="slider-img-preview" errorBuilder="this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&q=80'">
+                      @php
+                        $imgSrc = $slider->image ?? '';
+                        if ($imgSrc && !str_contains($imgSrc, 'http')) {
+                          $imgSrc = asset(ltrim($imgSrc, '/'));
+                        }
+                      @endphp
+                      @if($imgSrc)
+                        <img src="{{ $imgSrc }}" alt="Slider Banner" class="slider-img-preview" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&q=80'">
                       @else
                         <span class="badge badge-secondary p-2"><i class="fas fa-image mr-1"></i> No Image</span>
                       @endif
