@@ -214,10 +214,15 @@
 
             <div class="row">
               <div class="col-md-6 form-group">
-                <label class="font-weight-bold">Banner Image Upload <span class="text-danger">*</span></label>
-                <input type="file" name="image_file" class="form-control-file border p-1 rounded w-100 bg-white" accept="image/*">
-                <small class="text-muted d-block mt-1">Or direct Image URL below:</small>
-                <input type="url" name="image_url" class="form-control mt-1" placeholder="https://images.unsplash.com/photo-...">
+                <label class="font-weight-bold">Upload Banner File OR Paste Direct URL <span class="text-danger">*</span></label>
+                <input type="file" name="image_file" class="form-control-file border p-1 rounded w-100 bg-white mb-2" accept="image/*">
+                <input type="url" name="image_url" id="modal_image_url" class="form-control" placeholder="https://images.unsplash.com/photo-...">
+                <small class="text-muted d-block mt-1">Quick Unsplash Presets:</small>
+                <div class="btn-group btn-group-sm mt-1" role="group">
+                  <button type="button" class="btn btn-outline-secondary btn-xs" onclick="document.getElementById('modal_image_url').value='https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80'">Fresh Vegetables</button>
+                  <button type="button" class="btn btn-outline-secondary btn-xs" onclick="document.getElementById('modal_image_url').value='https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=1200&q=80'">Dairy & Bread</button>
+                  <button type="button" class="btn btn-outline-secondary btn-xs" onclick="document.getElementById('modal_image_url').value='https://images.unsplash.com/photo-1621996346565-e3d5d6281292?auto=format&fit=crop&w=1200&q=80'">Snacks & Munchies</button>
+                </div>
               </div>
               <div class="col-md-6 form-group">
                 <label class="font-weight-bold">Display Order</label>

@@ -1417,12 +1417,22 @@ class AdminController extends Controller
     {
         $this->ensureSlidersTableExists();
 
-        $imageUrl = $request->input('image_url');
-        if ($request->hasFile('image_file')) {
+        $imageUrl = null;
+        if ($request->hasFile('image_file') && $request->file('image_file')->isValid()) {
             $file = $request->file('image_file');
             $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $file->getClientOriginalName());
-            $file->move(public_path('uploads/sliders'), $filename);
+            $destinationPath = public_path('uploads/sliders');
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0755, true);
+            }
+            $file->move($destinationPath, $filename);
             $imageUrl = 'uploads/sliders/' . $filename;
+        } elseif ($request->filled('image_url')) {
+            $imageUrl = trim($request->input('image_url'));
+        }
+
+        if (empty($imageUrl)) {
+            $imageUrl = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80';
         }
 
         DB::table('sliders')->insert([
@@ -1430,7 +1440,7 @@ class AdminController extends Controller
             'subtitle' => $request->input('subtitle'),
             'offer_text' => $request->input('offer_text'),
             'cta_text' => $request->input('cta_text', 'Shop Now →'),
-            'image' => $imageUrl ?? 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80',
+            'image' => $imageUrl,
             'link_type' => $request->input('link_type', 'category'),
             'category_id' => $request->input('category_id'),
             'redirect_url' => $request->input('redirect_url'),
