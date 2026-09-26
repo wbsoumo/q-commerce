@@ -744,6 +744,25 @@ class AdminController extends Controller
                 });
             } catch (\Exception $e) {}
         }
+
+        // Auto-sync registered users into customers table if missing
+        $registeredUsers = DB::table('users')->where('role', 'customer')->get();
+        foreach ($registeredUsers as $u) {
+            $exists = DB::table('customers')->where('phone', $u->phone)->first();
+            if (!$exists) {
+                DB::table('customers')->insert([
+                    'name' => $u->name ?? 'Customer',
+                    'phone' => $u->phone,
+                    'status' => 'Active',
+                    'total_orders' => 0,
+                    'total_spent' => 0.00,
+                    'wallet_balance' => 0.00,
+                    'created_at' => $u->created_at ?? now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+
         $customers = DB::table('customers')->orderBy('id', 'desc')->paginate(15);
         return view('admin.customers.index', compact('customers'));
     }

@@ -760,6 +760,18 @@ class ApiController extends Controller
             ]
         );
 
+        // Auto-create Customer profile so user displays in Admin Panel immediately
+        DB::table('customers')->updateOrInsert(
+            ['phone' => $phone],
+            [
+                'name' => $name,
+                'email' => $email,
+                'status' => 'Active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
+
         $token = 'sb_token_' . md5($userId . time() . rand(1000, 9999));
 
 
