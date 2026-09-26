@@ -36,6 +36,12 @@
             </a>
           </li>
           <li class="nav-item">
+            <a href="/admin/sliders" class="nav-link {{ request()->is('admin/sliders*') ? 'active bg-success' : '' }}">
+              <i class="nav-icon fas fa-images text-light"></i>
+              <p>Promotional Sliders <span class="right badge badge-success">New</span></p>
+            </a>
+          </li>
+          <li class="nav-item">
             <a href="/admin/homepage-customizer" class="nav-link {{ request()->is('admin/homepage-customizer*') ? 'active bg-success' : '' }}">
               <i class="nav-icon fas fa-desktop text-light"></i>
               <p>App Home Customizer <span class="right badge badge-success">Live</span></p>

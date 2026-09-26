@@ -1316,4 +1316,121 @@ class AdminController extends Controller
         DB::table('coupons')->where('id', $id)->delete();
         return redirect()->back()->with('success', 'Coupon deleted successfully!');
     }
+
+    // 12. Promotional Sliders Management
+    private function ensureSlidersTableExists()
+    {
+        if (!Schema::hasTable('sliders')) {
+            try {
+                Schema::create('sliders', function ($table) {
+                    $table->id();
+                    $table->string('title')->nullable();
+                    $table->string('subtitle')->nullable();
+                    $table->string('offer_text')->nullable();
+                    $table->string('cta_text')->default('Shop Now →');
+                    $table->string('image')->nullable();
+                    $table->string('bg_color')->default('#E8F5E9');
+                    $table->string('redirect_url')->nullable();
+                    $table->integer('display_order')->default(1);
+                    $table->boolean('is_active')->default(true);
+                    $table->timestamps();
+                });
+
+                // Seed initial sample sliders matching reference design
+                DB::table('sliders')->insert([
+                    [
+                        'title' => 'Big Savings Every Day',
+                        'subtitle' => 'Fresh products, great quality at lowest prices.',
+                        'offer_text' => 'UP TO 50% OFF',
+                        'cta_text' => 'Shop Now →',
+                        'image' => 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80',
+                        'bg_color' => '#E8F5E9',
+                        'display_order' => 1,
+                        'is_active' => true,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ],
+                    [
+                        'title' => 'Fresh Farm Vegetables',
+                        'subtitle' => 'Organically grown, handpicked fresh daily.',
+                        'offer_text' => 'MIN 30% OFF',
+                        'cta_text' => 'Order Fresh →',
+                        'image' => 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?auto=format&fit=crop&w=800&q=80',
+                        'bg_color' => '#FFF8E1',
+                        'display_order' => 2,
+                        'is_active' => true,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ],
+                    [
+                        'title' => 'Daily Dairy & Bakery',
+                        'subtitle' => 'Pure milk, butter, bread & fresh eggs in 15 mins.',
+                        'offer_text' => 'SPECIAL DEALS',
+                        'cta_text' => 'Explore Deals →',
+                        'image' => 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=800&q=80',
+                        'bg_color' => '#E3F2FD',
+                        'display_order' => 3,
+                        'is_active' => true,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ],
+                ]);
+            } catch (\Exception $e) {}
+        }
+    }
+
+    public function sliders()
+    {
+        $this->ensureSlidersTableExists();
+        $sliders = DB::table('sliders')->orderBy('display_order', 'asc')->get();
+        return view('admin.sliders.index', compact('sliders'));
+    }
+
+    public function storeSlider(Request $request)
+    {
+        $this->ensureSlidersTableExists();
+
+        $imageUrl = $request->input('image_url');
+        if ($request->hasFile('image_file')) {
+            $file = $request->file('image_file');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('uploads/sliders'), $filename);
+            $imageUrl = asset('uploads/sliders/' . $filename);
+        }
+
+        DB::table('sliders')->insert([
+            'title' => $request->input('title', 'Promotional Banner'),
+            'subtitle' => $request->input('subtitle'),
+            'offer_text' => $request->input('offer_text'),
+            'cta_text' => $request->input('cta_text', 'Shop Now →'),
+            'image' => $imageUrl ?? 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80',
+            'redirect_url' => $request->input('redirect_url'),
+            'display_order' => (int)$request->input('display_order', 1),
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return redirect('/admin/sliders')->with('success', 'Promotional home slider created successfully!');
+    }
+
+    public function toggleSlider($id)
+    {
+        $this->ensureSlidersTableExists();
+        $slider = DB::table('sliders')->where('id', $id)->first();
+        if ($slider) {
+            DB::table('sliders')->where('id', $id)->update([
+                'is_active' => !$slider->is_active,
+                'updated_at' => now(),
+            ]);
+        }
+        return redirect()->back()->with('success', 'Slider status toggled successfully!');
+    }
+
+    public function deleteSlider($id)
+    {
+        $this->ensureSlidersTableExists();
+        DB::table('sliders')->where('id', $id)->delete();
+        return redirect()->back()->with('success', 'Slider deleted successfully!');
+    }
 }

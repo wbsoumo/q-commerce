@@ -98,6 +98,12 @@ Route::middleware(['admin.only'])->group(function () {
     Route::post('/admin/coupons/{id}/toggle', [AdminController::class, 'toggleCoupon']);
     Route::delete('/admin/coupons/{id}', [AdminController::class, 'deleteCoupon']);
 
+    // Promotional Sliders Management
+    Route::get('/admin/sliders', [AdminController::class, 'sliders']);
+    Route::post('/admin/sliders/store', [AdminController::class, 'storeSlider']);
+    Route::post('/admin/sliders/{id}/toggle', [AdminController::class, 'toggleSlider']);
+    Route::post('/admin/sliders/{id}/delete', [AdminController::class, 'deleteSlider']);
+
     // Firebase Push Notification Center
     Route::get('/admin/notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
     Route::post('/admin/notifications/settings', [\App\Http\Controllers\NotificationController::class, 'saveSettings']);
@@ -113,6 +119,7 @@ Route::prefix('api/v1')->group(function () {
 
 
     Route::get('/sync-check', [ApiController::class, 'checkSyncStatus']);
+    Route::get('/sliders', [ApiController::class, 'getSliders']);
     Route::get('/categories', [ApiController::class, 'getCategories']);
     Route::get('/products', [ApiController::class, 'getProducts']);
     Route::post('/orders', [ApiController::class, 'createOrder']);
