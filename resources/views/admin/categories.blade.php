@@ -62,11 +62,18 @@
                     @if(!empty($cat->image))
                       @php
                         $catImg = $cat->image;
-                        if (\Illuminate\Support\Str::startsWith($catImg, 'http://')) {
-                            $catImg = preg_replace('/^http:/i', 'https:', $catImg);
+                        if (\Illuminate\Support\Str::startsWith($catImg, ['http://', 'https://'])) {
+                            $parsed = parse_url($catImg);
+                            if (isset($parsed['path']) && \Illuminate\Support\Str::startsWith($parsed['path'], '/uploads/')) {
+                                $catImg = $parsed['path'];
+                            } else {
+                                $catImg = preg_replace('/^http:/i', 'https:', $catImg);
+                            }
+                        } else {
+                            $catImg = '/' . ltrim($catImg, '/');
                         }
                       @endphp
-                      <img src="{{ $catImg }}" width="45" height="45" style="object-fit:cover; border-radius:8px;" class="border" onerror="this.onerror=null;this.src='https://via.placeholder.com/45?text=Img';">
+                      <img src="{{ $catImg }}" width="45" height="45" style="object-fit:cover; border-radius:8px;" class="border" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=100&q=80';">
                     @else
                       <span class="badge badge-secondary">No Image</span>
                     @endif
@@ -299,7 +306,18 @@
   function editCategory(cat) {
     $('#edit_cat_id').val(cat.id);
     $('#edit_cat_name').val(cat.name);
-    $('#edit_cat_image_url').val(cat.image || '');
+    let imgVal = cat.image || '';
+    if (imgVal.startsWith('http://') || imgVal.startsWith('https://')) {
+      try {
+        let u = new URL(imgVal);
+        if (u.pathname.startsWith('/uploads/')) {
+          imgVal = u.pathname;
+        }
+      } catch(e){}
+    } else if (imgVal && !imgVal.startsWith('/')) {
+      imgVal = '/' + imgVal;
+    }
+    $('#edit_cat_image_url').val(imgVal);
     $('#edit_cat_order').val(cat.display_order || 0);
     $('#editShowHp').prop('checked', !!cat.show_on_homepage);
 

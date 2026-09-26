@@ -1059,7 +1059,7 @@ class AdminController extends Controller
             $file = $request->file('image_file');
             $filename = time() . '_' . $file->getClientOriginalName();
             $file->move(public_path('uploads/categories'), $filename);
-            $imageUrl = secure_url('uploads/categories/' . $filename);
+            $imageUrl = '/uploads/categories/' . $filename;
         }
 
         $slug = \Illuminate\Support\Str::slug($validated['name']) . '-' . rand(100, 999);
@@ -1102,7 +1102,7 @@ class AdminController extends Controller
             $file = $request->file('image_file');
             $filename = time() . '_' . $file->getClientOriginalName();
             $file->move(public_path('uploads/categories'), $filename);
-            $updateData['image'] = secure_url('uploads/categories/' . $filename);
+            $updateData['image'] = '/uploads/categories/' . $filename;
         } elseif (!empty($validated['image_url'])) {
             $img = $validated['image_url'];
             if (str_starts_with($img, 'http://')) {
