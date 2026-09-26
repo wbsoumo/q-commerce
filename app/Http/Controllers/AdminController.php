@@ -1420,13 +1420,9 @@ class AdminController extends Controller
         $imageUrl = null;
         if ($request->hasFile('image_file') && $request->file('image_file')->isValid()) {
             $file = $request->file('image_file');
-            $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $file->getClientOriginalName());
-            $destinationPath = public_path('uploads/sliders');
-            if (!file_exists($destinationPath)) {
-                mkdir($destinationPath, 0755, true);
-            }
-            $file->move($destinationPath, $filename);
-            $imageUrl = 'uploads/sliders/' . $filename;
+            $mime = $file->getMimeType() ?: 'image/png';
+            $base64 = base64_encode(file_get_contents($file->getRealPath()));
+            $imageUrl = 'data:' . $mime . ';base64,' . $base64;
         } elseif ($request->filled('image_url')) {
             $imageUrl = trim($request->input('image_url'));
         }

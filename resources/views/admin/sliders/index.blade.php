@@ -77,13 +77,11 @@
                     <td class="align-middle">
                       @php
                         $imgSrc = $slider->image ?? '';
-                        if ($imgSrc) {
+                        if ($imgSrc && !str_starts_with($imgSrc, 'data:') && !str_contains($imgSrc, 'http')) {
                           if (str_contains($imgSrc, 'localhost')) {
                             $imgSrc = preg_replace('/^https?:\/\/[^\/]+\//', '', $imgSrc);
                           }
-                          if (!str_contains($imgSrc, 'http')) {
-                            $imgSrc = asset(ltrim($imgSrc, '/'));
-                          }
+                          $imgSrc = asset(ltrim($imgSrc, '/'));
                         }
                       @endphp
                       @if($imgSrc)
