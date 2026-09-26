@@ -24,9 +24,14 @@
     <div class="content-header">
       <div class="container-fluid d-flex justify-content-between align-items-center">
         <h1 class="m-0 font-weight-bold"><i class="fas fa-folder text-warning mr-2"></i>Category Management</h1>
-        <button class="btn btn-success font-weight-bold" data-toggle="modal" data-target="#createCategoryModal">
-          <i class="fas fa-plus mr-1"></i> Create New Category
-        </button>
+        <div>
+          <a href="/admin/categories/sync-icons" class="btn btn-info font-weight-bold mr-2" onclick="return confirm('Assign clean grocery icons to all categories?');">
+            <i class="fas fa-sync-alt mr-1"></i> Sync Category Icons
+          </a>
+          <button class="btn btn-success font-weight-bold" data-toggle="modal" data-target="#createCategoryModal">
+            <i class="fas fa-plus mr-1"></i> Create New Category
+          </button>
+        </div>
       </div>
     </div>
 

@@ -1116,6 +1116,41 @@ class AdminController extends Controller
         return redirect('/admin/categories')->with('success', 'Category updated successfully!');
     }
 
+    public function syncCategoryIcons()
+    {
+        $files = [
+            1 => '01_vegetables_fruits.png',
+            2 => '02_dairy_bread_eggs.png',
+            3 => '03_snacks_beverages.png',
+            4 => '04_personal_care.png',
+            5 => '05_home_care_cleaning.png',
+            6 => '06_atta_dal_rice.png',
+            7 => '07_oil_ghee_masala.png',
+            8 => '08_instant_food.png',
+            9 => '09_beverages.png',
+            10 => '10_baby_care.png',
+            11 => '11_pet_care.png',
+            12 => '12_frozen_food.png',
+            13 => '13_bakery_sweets.png',
+            14 => '14_fresh_fruits.png',
+            15 => '15_kitchen_household.png',
+            16 => '16_organic_healthy_living.png',
+        ];
+
+        $categories = DB::table('categories')->orderBy('id', 'asc')->get();
+        $idx = 1;
+        foreach ($categories as $cat) {
+            $fileName = $files[$idx] ?? $files[(($idx - 1) % 16) + 1];
+            DB::table('categories')->where('id', $cat->id)->update([
+                'image' => '/uploads/categories/' . $fileName,
+                'updated_at' => now(),
+            ]);
+            $idx++;
+        }
+
+        return redirect('/admin/categories')->with('success', 'Synced category icons across all categories successfully!');
+    }
+
     /**
      * Helper to process, compress and convert uploaded image files to high-performance WebP format (~35KB typical)
      */
