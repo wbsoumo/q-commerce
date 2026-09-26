@@ -1388,14 +1388,18 @@ class AdminController extends Controller
             } catch (\Exception $e) {}
         } else {
             try {
-                if (!Schema::hasColumn('sliders', 'category_id')) {
-                    Schema::table('sliders', function ($table) {
+                Schema::table('sliders', function ($table) {
+                    if (!Schema::hasColumn('sliders', 'category_id')) {
                         $table->string('link_type')->default('category')->nullable();
                         $table->unsignedBigInteger('category_id')->nullable();
-                    });
-                }
+                    }
+                });
             } catch (\Exception $e) {}
         }
+
+        try {
+            DB::statement('ALTER TABLE sliders MODIFY image LONGTEXT NULL');
+        } catch (\Exception $e) {}
     }
 
     public function sliders()
