@@ -319,7 +319,16 @@ class AdminController extends Controller
             $galleryPaths = array_merge($galleryPaths, array_values($urls));
         }
         if (!empty($galleryPaths)) {
-            $updateData['gallery'] = json_encode(array_values(array_unique($galleryPaths)));
+            if (!\Illuminate\Support\Facades\Schema::hasColumn('products', 'gallery')) {
+                try {
+                    \Illuminate\Support\Facades\Schema::table('products', function ($table) {
+                        $table->text('gallery')->nullable();
+                    });
+                } catch (\Exception $e) {}
+            }
+            if (\Illuminate\Support\Facades\Schema::hasColumn('products', 'gallery')) {
+                $updateData['gallery'] = json_encode(array_values(array_unique($galleryPaths)));
+            }
         }
 
         DB::table('products')->where('id', $id)->update($updateData);
