@@ -66,16 +66,11 @@
                   <td>
                     @if(!empty($cat->image))
                       @php
-                        $catImg = $cat->image;
-                        if (\Illuminate\Support\Str::startsWith($catImg, ['http://', 'https://'])) {
-                            $parsed = parse_url($catImg);
-                            if (isset($parsed['path']) && \Illuminate\Support\Str::startsWith($parsed['path'], '/uploads/')) {
-                                $catImg = $parsed['path'];
-                            } else {
-                                $catImg = preg_replace('/^http:/i', 'https:', $catImg);
-                            }
+                        $rawImg = $cat->image;
+                        if (\Illuminate\Support\Str::startsWith($rawImg, ['http://', 'https://'])) {
+                            $catImg = preg_replace('/^http:/i', 'https:', $rawImg);
                         } else {
-                            $catImg = '/' . ltrim($catImg, '/');
+                            $catImg = asset(ltrim($rawImg, '/'));
                         }
                       @endphp
                       <img src="{{ $catImg }}" width="45" height="45" style="object-fit:cover; border-radius:8px;" class="border" onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name={{ urlencode($cat->name) }}&background=0c831f&color=fff&size=100';">

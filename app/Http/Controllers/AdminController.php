@@ -1076,17 +1076,22 @@ class AdminController extends Controller
             'icon' => 'nullable|string',
             'display_order' => 'nullable|integer',
             'image_url' => 'nullable|string',
-            'image_file' => 'nullable|image|max:4096',
+            'image_file' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,avif,svg|max:10240',
         ]);
+
+        $targetDir = public_path('uploads/categories');
+        if (!file_exists($targetDir)) {
+            @mkdir($targetDir, 0755, true);
+        }
 
         $imageUrl = $validated['image_url'] ?? null;
         if ($imageUrl && str_starts_with($imageUrl, 'http://')) {
             $imageUrl = preg_replace('/^http:/i', 'https:', $imageUrl);
         }
-        if ($request->hasFile('image_file')) {
+        if ($request->hasFile('image_file') && $request->file('image_file')->isValid()) {
             $file = $request->file('image_file');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('uploads/categories'), $filename);
+            $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
+            $file->move($targetDir, $filename);
             $imageUrl = '/uploads/categories/' . $filename;
         }
 
@@ -1115,8 +1120,13 @@ class AdminController extends Controller
             'icon' => 'nullable|string',
             'display_order' => 'nullable|integer',
             'image_url' => 'nullable|string',
-            'image_file' => 'nullable|image|max:4096',
+            'image_file' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,avif,svg|max:10240',
         ]);
+
+        $targetDir = public_path('uploads/categories');
+        if (!file_exists($targetDir)) {
+            @mkdir($targetDir, 0755, true);
+        }
 
         $updateData = [
             'name' => $validated['name'],
@@ -1126,10 +1136,10 @@ class AdminController extends Controller
             'updated_at' => now(),
         ];
 
-        if ($request->hasFile('image_file')) {
+        if ($request->hasFile('image_file') && $request->file('image_file')->isValid()) {
             $file = $request->file('image_file');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('uploads/categories'), $filename);
+            $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
+            $file->move($targetDir, $filename);
             $updateData['image'] = '/uploads/categories/' . $filename;
         } elseif (!empty($validated['image_url'])) {
             $img = $validated['image_url'];
