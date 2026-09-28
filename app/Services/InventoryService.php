@@ -121,11 +121,12 @@ class InventoryService
                     if ($available < $quantity) return false;
 
                     DB::table('store_product_inventories')->where('id', $inv->id)->update([
+                        'custom_stock' => max(0, $inv->custom_stock - $quantity),
                         'custom_reserved_stock' => $inv->custom_reserved_stock + $quantity,
                         'updated_at' => now(),
                     ]);
 
-                    self::recordTransaction($productId, $variantId, $storeId, -$quantity, $inv->custom_stock, $inv->custom_stock, 'ORDER_RESERVED', 'Stock reserved for order', 'Order', $orderNumber);
+                    self::recordTransaction($productId, $variantId, $storeId, -$quantity, $inv->custom_stock, max(0, $inv->custom_stock - $quantity), 'ORDER_RESERVED', 'Stock reserved and deducted for order', 'Order', $orderNumber);
                     return true;
                 }
             }
@@ -137,11 +138,12 @@ class InventoryService
             if ($available < $quantity) return false;
 
             DB::table('products')->where('id', $productId)->update([
+                'stock' => max(0, $prod->stock - $quantity),
                 'reserved_stock' => $prod->reserved_stock + $quantity,
                 'updated_at' => now(),
             ]);
 
-            self::recordTransaction($productId, $variantId, $storeId, -$quantity, $prod->stock, $prod->stock, 'ORDER_RESERVED', 'Stock reserved for order', 'Order', $orderNumber);
+            self::recordTransaction($productId, $variantId, $storeId, -$quantity, $prod->stock, max(0, $prod->stock - $quantity), 'ORDER_RESERVED', 'Stock reserved and deducted for order', 'Order', $orderNumber);
             return true;
         });
     }
@@ -161,11 +163,13 @@ class InventoryService
 
                 if ($inv) {
                     $newRes = max(0, $inv->custom_reserved_stock - $quantity);
+                    $newStock = $inv->custom_stock + $quantity;
                     DB::table('store_product_inventories')->where('id', $inv->id)->update([
+                        'custom_stock' => $newStock,
                         'custom_reserved_stock' => $newRes,
                         'updated_at' => now(),
                     ]);
-                    self::recordTransaction($productId, $variantId, $storeId, $quantity, $inv->custom_stock, $inv->custom_stock, 'ORDER_CANCELLED', 'Reservation released on order cancellation', 'Order', $orderNumber);
+                    self::recordTransaction($productId, $variantId, $storeId, $quantity, $inv->custom_stock, $newStock, 'ORDER_CANCELLED', 'Reservation released & stock restored on order cancellation', 'Order', $orderNumber);
                     return;
                 }
             }
@@ -173,11 +177,13 @@ class InventoryService
             $prod = DB::table('products')->where('id', $productId)->lockForUpdate()->first();
             if ($prod) {
                 $newRes = max(0, $prod->reserved_stock - $quantity);
+                $newStock = $prod->stock + $quantity;
                 DB::table('products')->where('id', $prod->id)->update([
+                    'stock' => $newStock,
                     'reserved_stock' => $newRes,
                     'updated_at' => now(),
                 ]);
-                self::recordTransaction($productId, $variantId, $storeId, $quantity, $prod->stock, $prod->stock, 'ORDER_CANCELLED', 'Reservation released on order cancellation', 'Order', $orderNumber);
+                self::recordTransaction($productId, $variantId, $storeId, $quantity, $prod->stock, $newStock, 'ORDER_CANCELLED', 'Reservation released & stock restored on order cancellation', 'Order', $orderNumber);
             }
         });
     }
@@ -196,32 +202,26 @@ class InventoryService
                     ->first();
 
                 if ($inv) {
-                    $prevStock = $inv->custom_stock;
-                    $newStock = max(0, $prevStock - $quantity);
                     $newRes = max(0, $inv->custom_reserved_stock - $quantity);
 
                     DB::table('store_product_inventories')->where('id', $inv->id)->update([
-                        'custom_stock' => $newStock,
                         'custom_reserved_stock' => $newRes,
                         'updated_at' => now(),
                     ]);
-                    self::recordTransaction($productId, $variantId, $storeId, -$quantity, $prevStock, $newStock, 'ORDER_CONFIRMED', 'Stock consumed on order completion', 'Order', $orderNumber);
+                    self::recordTransaction($productId, $variantId, $storeId, -$quantity, $inv->custom_stock, $inv->custom_stock, 'ORDER_CONFIRMED', 'Stock reservation consumed on order completion', 'Order', $orderNumber);
                     return;
                 }
             }
 
             $prod = DB::table('products')->where('id', $productId)->lockForUpdate()->first();
             if ($prod) {
-                $prevStock = $prod->stock;
-                $newStock = max(0, $prevStock - $quantity);
                 $newRes = max(0, $prod->reserved_stock - $quantity);
 
                 DB::table('products')->where('id', $prod->id)->update([
-                    'stock' => $newStock,
                     'reserved_stock' => $newRes,
                     'updated_at' => now(),
                 ]);
-                self::recordTransaction($productId, $variantId, $storeId, -$quantity, $prevStock, $newStock, 'ORDER_CONFIRMED', 'Stock consumed on order completion', 'Order', $orderNumber);
+                self::recordTransaction($productId, $variantId, $storeId, -$quantity, $prod->stock, $prod->stock, 'ORDER_CONFIRMED', 'Stock reservation consumed on order completion', 'Order', $orderNumber);
             }
         });
     }
