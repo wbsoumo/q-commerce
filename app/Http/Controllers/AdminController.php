@@ -147,28 +147,41 @@ class AdminController extends Controller
             'scope' => 'required|in:global,store_specific',
             'store_ids' => 'nullable|array',
             'store_ids.*' => 'exists:stores,id',
-            'image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
-            'gallery_files.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+            'image_file' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,avif,svg|max:10240',
+            'gallery_files' => 'nullable|array',
+            'gallery_files.*' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,avif,svg|max:10240',
         ]);
 
+        $uploadDir = public_path('uploads/products');
+        if (!file_exists($uploadDir)) {
+            @mkdir($uploadDir, 0755, true);
+        }
+
         $imagePath = $request->input('image', 'image 41.png');
-        if ($request->hasFile('image_file')) {
+        if ($request->hasFile('image_file') && $request->file('image_file')->isValid()) {
             $file = $request->file('image_file');
-            $fileName = time() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('uploads/products'), $fileName);
+            $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
+            $file->move($uploadDir, $fileName);
             $imagePath = 'uploads/products/' . $fileName;
         }
 
         $galleryPaths = [];
         if ($request->hasFile('gallery_files')) {
-            foreach ($request->file('gallery_files') as $idx => $gFile) {
-                $gName = time() . '_gal_' . $idx . '_' . $gFile->getClientOriginalName();
-                $gFile->move(public_path('uploads/products'), $gName);
-                $galleryPaths[] = 'uploads/products/' . $gName;
+            $gFiles = $request->file('gallery_files');
+            if (!is_array($gFiles)) {
+                $gFiles = [$gFiles];
             }
-        } elseif ($request->filled('gallery_urls')) {
+            foreach ($gFiles as $idx => $gFile) {
+                if ($gFile && $gFile->isValid()) {
+                    $gName = time() . '_gal_' . $idx . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $gFile->getClientOriginalName());
+                    $gFile->move($uploadDir, $gName);
+                    $galleryPaths[] = 'uploads/products/' . $gName;
+                }
+            }
+        }
+        if ($request->filled('gallery_urls')) {
             $urls = array_filter(array_map('trim', explode("\n", $request->input('gallery_urls'))));
-            $galleryPaths = array_values($urls);
+            $galleryPaths = array_merge($galleryPaths, array_values($urls));
         }
 
         $selectedStores = $request->input('store_ids', []);
@@ -237,9 +250,15 @@ class AdminController extends Controller
             'scope' => 'required|in:global,store_specific',
             'store_ids' => 'nullable|array',
             'store_ids.*' => 'exists:stores,id',
-            'image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
-            'gallery_files.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+            'image_file' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,avif,svg|max:10240',
+            'gallery_files' => 'nullable|array',
+            'gallery_files.*' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,avif,svg|max:10240',
         ]);
+
+        $uploadDir = public_path('uploads/products');
+        if (!file_exists($uploadDir)) {
+            @mkdir($uploadDir, 0755, true);
+        }
 
         $selectedStores = $request->input('store_ids', []);
         $primaryStoreId = !empty($selectedStores) ? (int)$selectedStores[0] : null;
@@ -272,10 +291,10 @@ class AdminController extends Controller
             // Ignore column detection if schema check fails
         }
 
-        if ($request->hasFile('image_file')) {
+        if ($request->hasFile('image_file') && $request->file('image_file')->isValid()) {
             $file = $request->file('image_file');
-            $fileName = time() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('uploads/products'), $fileName);
+            $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
+            $file->move($uploadDir, $fileName);
             $updateData['image'] = 'uploads/products/' . $fileName;
         } elseif ($request->filled('image_url')) {
             $updateData['image'] = $request->input('image_url');
@@ -283,15 +302,24 @@ class AdminController extends Controller
 
         $galleryPaths = [];
         if ($request->hasFile('gallery_files')) {
-            foreach ($request->file('gallery_files') as $idx => $gFile) {
-                $gName = time() . '_gal_' . $idx . '_' . $gFile->getClientOriginalName();
-                $gFile->move(public_path('uploads/products'), $gName);
-                $galleryPaths[] = 'uploads/products/' . $gName;
+            $gFiles = $request->file('gallery_files');
+            if (!is_array($gFiles)) {
+                $gFiles = [$gFiles];
             }
-            $updateData['gallery'] = json_encode($galleryPaths);
-        } elseif ($request->filled('gallery_urls')) {
+            foreach ($gFiles as $idx => $gFile) {
+                if ($gFile && $gFile->isValid()) {
+                    $gName = time() . '_gal_' . $idx . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $gFile->getClientOriginalName());
+                    $gFile->move($uploadDir, $gName);
+                    $galleryPaths[] = 'uploads/products/' . $gName;
+                }
+            }
+        }
+        if ($request->filled('gallery_urls')) {
             $urls = array_filter(array_map('trim', explode("\n", $request->input('gallery_urls'))));
-            $updateData['gallery'] = json_encode(array_values($urls));
+            $galleryPaths = array_merge($galleryPaths, array_values($urls));
+        }
+        if (!empty($galleryPaths)) {
+            $updateData['gallery'] = json_encode(array_values(array_unique($galleryPaths)));
         }
 
         DB::table('products')->where('id', $id)->update($updateData);
