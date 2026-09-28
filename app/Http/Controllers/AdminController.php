@@ -1069,6 +1069,35 @@ class AdminController extends Controller
         return view('admin.categories', compact('categories'));
     }
 
+    private function saveUploadedFile($file, $subDir)
+    {
+        $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
+        $paths = [
+            public_path("uploads/{$subDir}"),
+            base_path("uploads/{$subDir}"),
+            base_path("public/uploads/{$subDir}"),
+        ];
+
+        foreach ($paths as $dir) {
+            if (!file_exists($dir)) {
+                @mkdir($dir, 0755, true);
+            }
+        }
+
+        $primaryDir = $paths[0];
+        $file->move($primaryDir, $filename);
+        $primaryFile = $primaryDir . '/' . $filename;
+
+        foreach ($paths as $dir) {
+            $dest = $dir . '/' . $filename;
+            if ($dest !== $primaryFile && file_exists($primaryFile)) {
+                @copy($primaryFile, $dest);
+            }
+        }
+
+        return '/uploads/' . $subDir . '/' . $filename;
+    }
+
     public function storeCategory(Request $request)
     {
         $validated = $request->validate([
@@ -1079,20 +1108,12 @@ class AdminController extends Controller
             'image_file' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,avif,svg|max:10240',
         ]);
 
-        $targetDir = public_path('uploads/categories');
-        if (!file_exists($targetDir)) {
-            @mkdir($targetDir, 0755, true);
-        }
-
         $imageUrl = $validated['image_url'] ?? null;
         if ($imageUrl && str_starts_with($imageUrl, 'http://')) {
             $imageUrl = preg_replace('/^http:/i', 'https:', $imageUrl);
         }
         if ($request->hasFile('image_file') && $request->file('image_file')->isValid()) {
-            $file = $request->file('image_file');
-            $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
-            $file->move($targetDir, $filename);
-            $imageUrl = '/uploads/categories/' . $filename;
+            $imageUrl = $this->saveUploadedFile($request->file('image_file'), 'categories');
         }
 
         $slug = \Illuminate\Support\Str::slug($validated['name']) . '-' . rand(100, 999);
@@ -1123,11 +1144,6 @@ class AdminController extends Controller
             'image_file' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,avif,svg|max:10240',
         ]);
 
-        $targetDir = public_path('uploads/categories');
-        if (!file_exists($targetDir)) {
-            @mkdir($targetDir, 0755, true);
-        }
-
         $updateData = [
             'name' => $validated['name'],
             'icon' => $validated['icon'] ?? 'shopping_bag_outlined',
@@ -1137,10 +1153,7 @@ class AdminController extends Controller
         ];
 
         if ($request->hasFile('image_file') && $request->file('image_file')->isValid()) {
-            $file = $request->file('image_file');
-            $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
-            $file->move($targetDir, $filename);
-            $updateData['image'] = '/uploads/categories/' . $filename;
+            $updateData['image'] = $this->saveUploadedFile($request->file('image_file'), 'categories');
         } elseif (!empty($validated['image_url'])) {
             $img = $validated['image_url'];
             if (str_starts_with($img, 'http://')) {
