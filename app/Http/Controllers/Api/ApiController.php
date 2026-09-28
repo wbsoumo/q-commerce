@@ -409,8 +409,24 @@ class ApiController extends Controller
                     'status' => 'success',
                     'message' => 'Order placed successfully and stock reserved.',
                     'order_number' => $orderNumber,
+                    'order_id' => $orderId,
                     'grand_total' => $grandTotal,
                     'order_type' => $orderType,
+                    'order' => [
+                        'id' => $orderId,
+                        'order_number' => $orderNumber,
+                        'user_name' => $validatedData['user_name'],
+                        'user_phone' => $validatedData['user_phone'],
+                        'delivery_address' => $orderType === 'pickup' ? 'Self Pickup at Store' : $validatedData['delivery_address'],
+                        'subtotal' => $checkoutResult['subtotal'],
+                        'delivery_fee' => $deliveryFee,
+                        'grand_total' => $grandTotal,
+                        'payment_method' => $request->input('payment_method', 'Cash on Delivery'),
+                        'order_type' => $orderType,
+                        'status' => 'Pending',
+                        'items' => $checkoutResult['items'],
+                        'created_at' => now()->toDateTimeString(),
+                    ],
                 ], 201);
             });
 

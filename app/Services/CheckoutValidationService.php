@@ -120,23 +120,15 @@ class CheckoutValidationService
                     ->first();
 
                 if ($storeInv) {
-                    if (!$storeInv->is_available) {
-                        DB::table('store_product_inventories')
-                            ->where('store_id', $storeId)
-                            ->where('product_id', $productId)
-                            ->update(['is_available' => true, 'custom_stock' => 999]);
-                        $storeInv->is_available = true;
-                        $storeInv->custom_stock = 999;
-                    }
                     $price = (float)($item['price'] ?? $storeInv->custom_price ?? $product->price);
-                    $availableStock = max(999, (int)($storeInv->custom_stock - ($storeInv->custom_reserved_stock ?? 0)));
+                    $availableStock = (int)($storeInv->custom_stock - ($storeInv->custom_reserved_stock ?? 0));
                 } else {
                     $price = (float)($item['price'] ?? $product->price);
-                    $availableStock = max(999, (int)($product->stock - ($product->reserved_stock ?? 0)));
+                    $availableStock = (int)($product->stock - ($product->reserved_stock ?? 0));
                 }
 
                 if ($availableStock < $reqQty) {
-                    DB::table('products')->where('id', $productId)->update(['stock' => $reqQty + 100]);
+                    throw new Exception("Insufficient stock for '{$productName}'. Requested: {$reqQty}, Available: {$availableStock}");
                 }
             }
 
