@@ -207,6 +207,21 @@ class AdminController extends Controller
         ];
 
         try {
+            if (!\Illuminate\Support\Facades\Schema::hasColumn('products', 'gallery')) {
+                try {
+                    \Illuminate\Support\Facades\Schema::table('products', function ($table) {
+                        $table->text('gallery')->nullable();
+                    });
+                } catch (\Throwable $e) {}
+            }
+            if (!\Illuminate\Support\Facades\Schema::hasColumn('products', 'store_ids')) {
+                try {
+                    \Illuminate\Support\Facades\Schema::table('products', function ($table) {
+                        $table->text('store_ids')->nullable();
+                    });
+                } catch (\Throwable $e) {}
+            }
+
             $existingColumns = \Illuminate\Support\Facades\Schema::getColumnListing('products');
             if (in_array('store_id', $existingColumns)) {
                 $insertData['store_id'] = $validated['scope'] === 'store_specific' ? $primaryStoreId : null;
@@ -214,7 +229,10 @@ class AdminController extends Controller
             if (in_array('store_ids', $existingColumns)) {
                 $insertData['store_ids'] = $validated['scope'] === 'store_specific' && !empty($selectedStores) ? json_encode(array_map('intval', $selectedStores)) : null;
             }
-        } catch (\Exception $e) {
+
+            // Filter insertData to ONLY include columns that actually exist in the products table
+            $insertData = array_intersect_key($insertData, array_flip($existingColumns));
+        } catch (\Throwable $e) {
             // Ignore column detection if schema check fails
         }
 
