@@ -533,6 +533,10 @@ class AdminController extends Controller
         }
 
         $store = DB::table('stores')->where('id', $storeId)->first();
+        if (!$store) {
+            $store = DB::table('stores')->first();
+            $storeId = $store->id ?? 1;
+        }
 
         $hasStoreIdsCol = \Illuminate\Support\Facades\Schema::hasColumn('products', 'store_ids');
         $query = DB::table('products')
@@ -540,6 +544,7 @@ class AdminController extends Controller
                 'products.id',
                 'products.name',
                 'products.sku',
+                'products.image',
                 'products.price',
                 'products.mrp',
                 'products.stock',
@@ -571,13 +576,50 @@ class AdminController extends Controller
         }
 
         $products = $query->get();
+
+        // 1. Fetch Store Specific Recent Orders
+        $storeOrders = DB::table('orders')
+            ->where('store_id', $storeId)
+            ->orderBy('id', 'desc')
+            ->take(15)
+            ->get();
+
+        // 2. Fetch Delivery Riders Assigned to this Store
+        $riderCols = \Illuminate\Support\Facades\Schema::getColumnListing('delivery_partners');
+        $storeColName = in_array('assigned_store_id', $riderCols) ? 'assigned_store_id' : (in_array('store_id', $riderCols) ? 'store_id' : null);
+        
+        $deliveryRiders = collect([]);
+        if ($storeColName) {
+            $deliveryRiders = DB::table('delivery_partners')
+                ->where(function($q) use ($storeColName, $storeId) {
+                    $q->where($storeColName, $storeId)->orWhereNull($storeColName);
+                })
+                ->get();
+        } else {
+            $deliveryRiders = DB::table('delivery_partners')->get();
+        }
+
+        // 3. Store Operational Metrics
+        $totalOrdersCount = DB::table('orders')->where('store_id', $storeId)->count();
+        $totalRevenue = DB::table('orders')->where('store_id', $storeId)->where('status', 'Delivered')->sum('grand_total');
+        $pendingOrdersCount = DB::table('orders')->where('store_id', $storeId)->whereIn('status', ['Pending', 'Confirmed', 'Packing'])->count();
+
         if ($user && $user->role === 'store_manager') {
             $stores = DB::table('stores')->where('id', $storeId)->get();
         } else {
             $stores = DB::table('stores')->get();
         }
 
-        return view('admin.manager.index', compact('store', 'products', 'stores'));
+        return view('admin.manager.index', compact(
+            'store',
+            'products',
+            'stores',
+            'storeOrders',
+            'deliveryRiders',
+            'totalOrdersCount',
+            'totalRevenue',
+            'pendingOrdersCount'
+        ));
     }
 
     // Update Store Manager Inventory
