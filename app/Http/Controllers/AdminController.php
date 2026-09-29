@@ -1074,6 +1074,7 @@ class AdminController extends Controller
                 });
             } catch (\Exception $e) {}
         }
+
         $customer = DB::table('customers')->where('id', $id)->first();
         if (!$customer) {
             return redirect('/admin/customers')->with('error', 'Customer profile not found.');
@@ -1081,56 +1082,124 @@ class AdminController extends Controller
 
         $phone = $customer->phone ?? '';
 
-        // Fetch Order History
+        // Fetch Real Orders with Store Details & Order Items
         $orders = DB::table('orders')
-            ->where('user_phone', $phone)
-            ->orWhere('user_name', $customer->name)
-            ->orderBy('id', 'desc')
+            ->leftJoin('stores', 'orders.store_id', '=', 'stores.id')
+            ->select('orders.*', 'stores.name as store_name')
+            ->where(function($q) use ($phone, $customer) {
+                if ($phone) {
+                    $q->where('orders.user_phone', $phone);
+                }
+                if ($customer->name) {
+                    $q->orWhere('orders.user_name', $customer->name);
+                }
+            })
+            ->orderBy('orders.id', 'desc')
             ->get();
 
-        // Calculate Lifetime Customer Metrics
+        // Attach order items to each order
+        $orderIds = $orders->pluck('id')->toArray();
+        $orderItemsGrouped = [];
+        if (!empty($orderIds)) {
+            $items = DB::table('order_items')
+                ->whereIn('order_id', $orderIds)
+                ->get();
+            foreach ($items as $it) {
+                $orderItemsGrouped[$it->order_id][] = $it;
+            }
+        }
+        foreach ($orders as $ord) {
+            $ord->items = $orderItemsGrouped[$ord->id] ?? [];
+        }
+
+        // Calculate Real Metrics
         $totalOrdersCount = $orders->count();
-        $totalSpentAmount = $orders->sum('grand_total');
+        $totalSpentAmount = (float)$orders->sum('grand_total');
         $deliveredOrdersCount = $orders->where('status', 'Delivered')->count();
         $cancelledOrdersCount = $orders->where('status', 'Cancelled')->count();
+        $avgOrderValue = $totalOrdersCount > 0 ? ($totalSpentAmount / $totalOrdersCount) : 0.00;
 
-        // Fetch Saved Addresses
-        $savedAddresses = [
-            [
-                'type' => 'Home (Primary)',
-                'address' => 'RATANR FLAT, 11E Krishnanagar Main Hub, Krishnanagar, West Bengal - 741101',
-                'latitude' => 23.4126,
-                'longitude' => 88.4292,
-                'is_default' => true,
-            ],
-            [
-                'type' => 'College / Hostel',
-                'address' => 'Netaji Hall, Kalyani Government Engineering College, Block C, Kalyani, West Bengal',
-                'latitude' => 22.9868,
-                'longitude' => 88.4346,
-                'is_default' => false,
-            ],
-        ];
+        // Preferred Payment Method
+        $paymentCounts = $orders->pluck('payment_method')->filter()->countBy();
+        $preferredPayment = $paymentCounts->isNotEmpty() ? $paymentCounts->sortDesc()->keys()->first() : 'PhonePe / UPI';
 
-        // Fetch Live Cart Items (Simulated / Active Session State)
-        $liveCartItems = [
-            [
-                'name' => 'Amul Taaza T-Special Milk 500ml',
-                'unit' => '500 ml',
-                'price' => 27.0,
-                'quantity' => 2,
-                'total' => 54.0,
-                'img' => 'image 44 (1).png',
-            ],
-            [
-                'name' => 'Head & Shoulders Special Offer',
-                'unit' => '1 unit',
-                'price' => 45.0,
-                'quantity' => 1,
-                'total' => 45.0,
-                'img' => 'image 35.png',
-            ],
-        ];
+        // Favorite Store
+        $storeCounts = $orders->pluck('store_name')->filter()->countBy();
+        $favoriteStore = $storeCounts->isNotEmpty() ? $storeCounts->sortDesc()->keys()->first() : 'Main Krishnanagar Hub';
+
+        // Fetch Real Saved Addresses from DB
+        $savedAddresses = [];
+        try {
+            if (Schema::hasTable('customer_addresses')) {
+                $addr1 = DB::table('customer_addresses')
+                    ->where('customer_id', $customer->id)
+                    ->get();
+                foreach ($addr1 as $a) {
+                    $savedAddresses[] = [
+                        'type' => $a->address_type ?? 'Home',
+                        'receiver_name' => $customer->name,
+                        'receiver_phone' => $customer->phone,
+                        'address' => $a->full_address ?? ($a->address_details ?? ''),
+                        'city' => $a->city ?? 'Krishnanagar',
+                        'pincode' => $a->pincode ?? '741101',
+                        'latitude' => $a->latitude ?? 23.4126,
+                        'longitude' => $a->longitude ?? 88.4292,
+                        'is_default' => (bool)($a->is_default ?? false),
+                    ];
+                }
+            }
+            if (Schema::hasTable('user_addresses') && $phone) {
+                $addr2 = DB::table('user_addresses')
+                    ->where('user_phone', $phone)
+                    ->get();
+                foreach ($addr2 as $a) {
+                    $savedAddresses[] = [
+                        'type' => $a->address_type ?? 'Saved Location',
+                        'receiver_name' => $a->receiver_name ?? $customer->name,
+                        'receiver_phone' => $a->receiver_phone ?? $customer->phone,
+                        'address' => $a->address_details ?? '',
+                        'city' => 'Krishnanagar',
+                        'pincode' => '741101',
+                        'latitude' => $a->latitude ?? 23.4126,
+                        'longitude' => $a->longitude ?? 88.4292,
+                        'is_default' => (bool)($a->is_default ?? false),
+                    ];
+                }
+            }
+        } catch (\Exception $e) {}
+
+        // Fallback to order delivery addresses if no address table records exist yet
+        if (empty($savedAddresses)) {
+            $uniqueAddrs = $orders->pluck('delivery_address')->unique()->filter()->take(3);
+            foreach ($uniqueAddrs as $idx => $uAddr) {
+                $savedAddresses[] = [
+                    'type' => $idx === 0 ? 'Home (Default)' : ($idx === 1 ? 'Work' : 'Other'),
+                    'receiver_name' => $customer->name,
+                    'receiver_phone' => $customer->phone,
+                    'address' => $uAddr,
+                    'city' => 'Krishnanagar',
+                    'pincode' => '741101',
+                    'latitude' => 23.4126,
+                    'longitude' => 88.4292,
+                    'is_default' => $idx === 0,
+                ];
+            }
+        }
+
+        // Fetch Real Live Cart / Active Pending Order Items
+        $liveCartItems = [];
+        $latestPendingOrder = $orders->whereIn('status', ['Pending', 'Confirmed', 'Packing'])->first();
+        if ($latestPendingOrder && !empty($latestPendingOrder->items)) {
+            foreach ($latestPendingOrder->items as $it) {
+                $liveCartItems[] = [
+                    'name' => $it->product_name,
+                    'unit' => '1 unit',
+                    'price' => (float)$it->price,
+                    'quantity' => (int)$it->quantity,
+                    'total' => (float)$it->total,
+                ];
+            }
+        }
 
         return view('admin.customers.show', compact(
             'customer',
@@ -1140,7 +1209,10 @@ class AdminController extends Controller
             'totalOrdersCount',
             'totalSpentAmount',
             'deliveredOrdersCount',
-            'cancelledOrdersCount'
+            'cancelledOrdersCount',
+            'avgOrderValue',
+            'preferredPayment',
+            'favoriteStore'
         ));
     }
 
