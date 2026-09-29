@@ -1082,12 +1082,16 @@ class ApiController extends Controller
                 if (empty($itemsData)) {
                     $orderItems = DB::table('order_items')->where('order_id', $o->id)->get();
                     foreach ($orderItems as $it) {
+                        $price = property_exists($it, 'price') ? $it->price : (property_exists($it, 'unit_price') ? $it->unit_price : 0);
+                        $total = property_exists($it, 'subtotal') ? $it->subtotal : (property_exists($it, 'total_price') ? $it->total_price : 0);
+                        $name = property_exists($it, 'product_name') ? $it->product_name : (property_exists($it, 'name') ? $it->name : ('Product #' . $it->product_id));
+
                         $itemsData[] = [
                             'product_id' => $it->product_id,
-                            'name' => $it->product_name ?? 'Product #' . $it->product_id,
-                            'price' => (float)$it->unit_price,
-                            'quantity' => (int)$it->quantity,
-                            'total' => (float)$it->subtotal,
+                            'name' => $name,
+                            'price' => (float)$price,
+                            'quantity' => (int)($it->quantity ?? 1),
+                            'total' => (float)$total,
                         ];
                     }
                 }
