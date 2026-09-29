@@ -563,9 +563,10 @@ function deleteSelectedMediaItem() {
     return;
   }
 
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
   const formData = new FormData();
   formData.append('relative_path', item.relative_path);
-  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+  formData.append('_token', csrfToken);
 
   fetch('/admin/media/delete', {
     method: 'POST',
@@ -667,11 +668,14 @@ function handleMediaFilesSelect(files) {
 
     const formData = new FormData();
     formData.append('file', file);
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+    formData.append('_token', csrfToken);
 
     const xhr = new XMLHttpRequest();
     xhr.open('POST', '/admin/media/upload', true);
-    xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
+    if (csrfToken) {
+      xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
+    }
 
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) {
@@ -688,10 +692,22 @@ function handleMediaFilesSelect(files) {
           const res = JSON.parse(xhr.responseText);
           if (res.status === 'success' && res.media) {
             newlyUploadedItems.push(res.media);
+          } else {
+            alert(`Error uploading ${file.name}: ${res.message || 'Unknown error'}`);
           }
-        } catch(err) { console.error(err); }
+        } catch(err) {
+          console.error(err);
+          alert(`Error uploading ${file.name}`);
+        }
       } else {
-        alert(`Error uploading file ${file.name}`);
+        let errDesc = `Error uploading ${file.name}`;
+        try {
+          const errRes = JSON.parse(xhr.responseText);
+          if (errRes.message) {
+            errDesc += `: ${errRes.message}`;
+          }
+        } catch(e) {}
+        alert(errDesc);
       }
       uploadedCount++;
       uploadFileIndex(index + 1);

@@ -1753,53 +1753,72 @@ class AdminController extends Controller
 
     public function uploadMedia(Request $request)
     {
-        $request->validate([
-            'file' => 'required|file|mimes:jpeg,png,jpg,gif,webp,avif,svg|max:20480',
-        ]);
-
-        $uploadDir = public_path('uploads/products');
-        if (!file_exists($uploadDir)) {
-            @mkdir($uploadDir, 0755, true);
-        }
-
-        $file = $request->file('file');
-        $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
-        $file->move($uploadDir, $fileName);
-
-        $relativePath = 'uploads/products/' . $fileName;
-        $fullPath = $uploadDir . '/' . $fileName;
-
-        $dimensions = '';
-        $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-        if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
-            $sizeInfo = @getimagesize($fullPath);
-            if ($sizeInfo) {
-                $dimensions = $sizeInfo[0] . ' × ' . $sizeInfo[1] . ' pixels';
+        try {
+            if (!$request->hasFile('file') || !$request->file('file')->isValid()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No valid file uploaded or file exceeds server upload limits.'
+                ], 400);
             }
+
+            $file = $request->file('file');
+            
+            $ext = strtolower($file->getClientOriginalExtension());
+            $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'svg'];
+            if (!in_array($ext, $allowed)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Invalid file format. Allowed formats: JPG, PNG, WEBP, GIF, SVG, AVIF.'
+                ], 422);
+            }
+
+            $uploadDir = public_path('uploads/products');
+            if (!file_exists($uploadDir)) {
+                @mkdir($uploadDir, 0755, true);
+            }
+
+            $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
+            $file->move($uploadDir, $fileName);
+
+            $relativePath = 'uploads/products/' . $fileName;
+            $fullPath = $uploadDir . '/' . $fileName;
+
+            $dimensions = '';
+            if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
+                $sizeInfo = @getimagesize($fullPath);
+                if ($sizeInfo) {
+                    $dimensions = $sizeInfo[0] . ' × ' . $sizeInfo[1] . ' pixels';
+                }
+            }
+
+            $bytes = file_exists($fullPath) ? filesize($fullPath) : 0;
+            $sizeFormatted = $bytes >= 1048576 
+                ? number_format($bytes / 1048576, 2) . ' MB' 
+                : number_format($bytes / 1024, 1) . ' KB';
+
+            $mediaItem = [
+                'id' => md5($relativePath),
+                'filename' => $fileName,
+                'relative_path' => $relativePath,
+                'url' => asset($relativePath),
+                'size' => $sizeFormatted,
+                'bytes' => $bytes,
+                'dimensions' => $dimensions ?: 'N/A',
+                'date' => date('F j, Y'),
+                'mtime' => time(),
+            ];
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'File uploaded successfully!',
+                'media' => $mediaItem
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
         }
-
-        $bytes = filesize($fullPath);
-        $sizeFormatted = $bytes >= 1048576 
-            ? number_format($bytes / 1048576, 2) . ' MB' 
-            : number_format($bytes / 1024, 1) . ' KB';
-
-        $mediaItem = [
-            'id' => md5($relativePath),
-            'filename' => $fileName,
-            'relative_path' => $relativePath,
-            'url' => asset($relativePath),
-            'size' => $sizeFormatted,
-            'bytes' => $bytes,
-            'dimensions' => $dimensions ?: 'N/A',
-            'date' => date('F j, Y'),
-            'mtime' => time(),
-        ];
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'File uploaded successfully!',
-            'media' => $mediaItem
-        ]);
     }
 
     public function deleteMedia(Request $request)
