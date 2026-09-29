@@ -427,7 +427,11 @@ class AdminController extends Controller
             abort(403, 'Unauthorized store access');
         }
         $store = DB::table('stores')->where('id', $id)->first();
-        return view('admin.stores.settings', compact('store'));
+        $managers = DB::table('users')
+            ->where('store_id', $id)
+            ->whereIn('role', ['store_manager', 'admin'])
+            ->get();
+        return view('admin.stores.settings', compact('store', 'managers'));
     }
 
     public function updateStoreSettings(Request $request, $id)
@@ -480,6 +484,74 @@ class AdminController extends Controller
         }
 
         return redirect('/admin/stores')->with('success', 'Store settings updated successfully!');
+    }
+
+    // Add New Store Manager to a Store
+    public function addStoreManager(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6',
+        ]);
+
+        DB::table('users')->insert([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => $request->input('phone'),
+            'password' => Hash::make($validated['password']),
+            'role' => 'store_manager',
+            'store_id' => $id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return redirect()->back()->with('success', 'New Store Manager account created and assigned successfully!');
+    }
+
+    // Update Store Manager Credentials (ID/Email & Password)
+    public function updateStoreManager(Request $request, $managerId)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string',
+            'email' => 'required|email|unique:users,email,' . $managerId,
+        ]);
+
+        $update = [
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => $request->input('phone'),
+            'updated_at' => now(),
+        ];
+
+        if ($request->filled('password')) {
+            $update['password'] = Hash::make($request->input('password'));
+        }
+
+        DB::table('users')->where('id', $managerId)->update($update);
+
+        return redirect()->back()->with('success', 'Store Manager credentials updated successfully!');
+    }
+
+    // 1-Click Admin to Manager Account Switch / Login
+    public function oneClickManagerLogin($managerId)
+    {
+        $manager = DB::table('users')->where('id', $managerId)->first();
+        if (!$manager) {
+            return redirect()->back()->with('error', 'Manager account not found.');
+        }
+
+        // Set session for store manager view
+        session([
+            'user_id' => $manager->id,
+            'user_name' => $manager->name,
+            'user_email' => $manager->email,
+            'user_role' => $manager->role,
+            'user_type' => 'store_manager',
+            'store_id' => $manager->store_id,
+        ]);
+
+        return redirect('/admin/store-manager?store_id=' . $manager->store_id)->with('success', "Logged in as Store Manager {$manager->name}");
     }
 
     // 8. Global Home Page Customizer Action

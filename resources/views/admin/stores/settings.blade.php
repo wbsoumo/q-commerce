@@ -146,6 +146,129 @@
             </div>
           </form>
         </div>
+
+        <!-- Store Manager Account Management (Multiple Managers Supported) -->
+        <div class="card card-primary card-outline shadow-sm mb-4">
+          <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h3 class="card-title font-weight-bold"><i class="fas fa-user-shield mr-2"></i>Assigned Store Managers (Multiple Accounts Supported)</h3>
+            <button class="btn btn-success btn-sm font-weight-bold ml-auto" data-toggle="modal" data-target="#addManagerModal">
+              <i class="fas fa-plus mr-1"></i> Add Manager ID
+            </button>
+          </div>
+          <div class="card-body p-0">
+            <table class="table table-striped table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>#ID</th>
+                  <th>Manager Name</th>
+                  <th>Login Email / ID</th>
+                  <th>Phone Number</th>
+                  <th>Role</th>
+                  <th>Actions & 1-Click Login</th>
+                </tr>
+              </thead>
+              <tbody>
+                @forelse($managers as $m)
+                <tr>
+                  <td>{{ $m->id }}</td>
+                  <td class="font-weight-bold">{{ $m->name }}</td>
+                  <td><code>{{ $m->email }}</code></td>
+                  <td>{{ $m->phone ?? 'N/A' }}</td>
+                  <td><span class="badge badge-info">{{ strtoupper($m->role) }}</span></td>
+                  <td>
+                    <!-- 1-Click Login Button -->
+                    <a href="/admin/stores/managers/{{ $m->id }}/login" class="btn btn-success btn-xs font-weight-bold mr-1">
+                      <i class="fas fa-sign-in-alt mr-1"></i> 1-Click Login
+                    </a>
+                    <!-- Edit Credentials Button -->
+                    <button class="btn btn-warning btn-xs font-weight-bold" data-toggle="modal" data-target="#editManagerModal{{ $m->id }}">
+                      <i class="fas fa-key mr-1"></i> Change ID / Password
+                    </button>
+
+                    <!-- Edit Manager Modal -->
+                    <div class="modal fade" id="editManagerModal{{ $m->id }}" tabindex="-1">
+                      <div class="modal-dialog">
+                        <div class="modal-content text-dark">
+                          <form action="/admin/stores/managers/{{ $m->id }}/update" method="POST">
+                            @csrf
+                            <div class="modal-header bg-warning">
+                              <h5 class="modal-title font-weight-bold"><i class="fas fa-user-edit mr-1"></i> Edit Manager Credentials</h5>
+                              <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                            </div>
+                            <div class="modal-body">
+                              <div class="form-group">
+                                <label>Manager Full Name</label>
+                                <input type="text" name="name" class="form-control" value="{{ $m->name }}" required>
+                              </div>
+                              <div class="form-group">
+                                <label>Login Email / User ID</label>
+                                <input type="email" name="email" class="form-control" value="{{ $m->email }}" required>
+                              </div>
+                              <div class="form-group">
+                                <label>Phone Number</label>
+                                <input type="text" name="phone" class="form-control" value="{{ $m->phone ?? '' }}">
+                              </div>
+                              <div class="form-group">
+                                <label class="text-danger font-weight-bold">New Password (Leave blank to keep existing)</label>
+                                <input type="password" name="password" class="form-control" placeholder="Enter new password">
+                              </div>
+                            </div>
+                            <div class="modal-footer">
+                              <button type="submit" class="btn btn-warning font-weight-bold">Update Credentials</button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+                @empty
+                <tr>
+                  <td colspan="6" class="text-center py-4 text-muted">
+                    No store manager IDs registered for this store branch. <button class="btn btn-link font-weight-bold" data-toggle="modal" data-target="#addManagerModal">Click here to add one.</button>
+                  </td>
+                </tr>
+                @endforelse
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Add Manager Modal -->
+        <div class="modal fade" id="addManagerModal" tabindex="-1">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <form action="/admin/stores/{{ $store->id }}/managers/store" method="POST">
+                @csrf
+                <div class="modal-header bg-success text-white">
+                  <h5 class="modal-title font-weight-bold"><i class="fas fa-user-plus mr-1"></i> Add Store Manager Account</h5>
+                  <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                  <div class="form-group">
+                    <label>Manager Name</label>
+                    <input type="text" name="name" class="form-control" placeholder="e.g. Rahul Sharma" required>
+                  </div>
+                  <div class="form-group">
+                    <label>Login Email / ID</label>
+                    <input type="email" name="email" class="form-control" placeholder="manager2@blinkit.com" required>
+                  </div>
+                  <div class="form-group">
+                    <label>Phone Number</label>
+                    <input type="text" name="phone" class="form-control" placeholder="9876543210">
+                  </div>
+                  <div class="form-group">
+                    <label>Account Password</label>
+                    <input type="password" name="password" class="form-control" placeholder="Minimum 6 characters" required>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="submit" class="btn btn-success font-weight-bold">Save Store Manager</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -153,6 +276,7 @@
   <footer class="main-footer"><strong>Copyright &copy; 2026 Q-Commerce Admin.</strong></footer>
 </div>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
 <!-- Leaflet Map JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
