@@ -400,5 +400,22 @@ class QCommerceSeeder extends Seeder
                 ]
             ]);
         }
+
+        // 6. Seed FCM Service Account Settings for SB Mart Ops
+        if (Schema::hasTable('fcm_settings')) {
+            $jsonPath = base_path('../Blinkit-UI-Manager/data/sbmartops-firebase-adminsdk-fbsvc-6d45620d89.json');
+            if (file_exists($jsonPath)) {
+                $jsonContent = file_get_contents($jsonPath);
+                DB::table('fcm_settings')->updateOrInsert(
+                    ['project_id' => 'sbmartops'],
+                    [
+                        'service_account_json' => $jsonContent,
+                        'is_active' => true,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]
+                );
+            }
+        }
     }
 }
