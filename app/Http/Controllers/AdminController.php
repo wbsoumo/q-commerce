@@ -95,7 +95,7 @@ class AdminController extends Controller
 
 
 
-    // Products List View (Amazon Inventory Management Dashboard)
+    // Products List View (Inventory Management Dashboard)
     public function products(Request $request)
     {
         $query = DB::table('products')
@@ -133,9 +133,16 @@ class AdminController extends Controller
             }
         }
 
-        $products = $query->orderBy('products.id', 'desc')->get();
+        $query->orderBy('products.id', 'desc');
 
-        // Summary Metric Calculations for Amazon Inventory System
+        $perPage = $request->input('per_page', 'all');
+        if ($perPage !== 'all' && is_numeric($perPage)) {
+            $query->limit((int)$perPage);
+        }
+
+        $products = $query->get();
+
+        // Summary Metric Calculations
         $totalProductsCount = DB::table('products')->count();
         $activeProductsCount = DB::table('products')->where('is_active', true)->count();
         $lowStockCount = DB::table('products')->where('stock', '>', 0)->where('stock', '<=', 5)->count();
@@ -153,7 +160,8 @@ class AdminController extends Controller
             'activeProductsCount', 
             'lowStockCount', 
             'outOfStockCount',
-            'totalInventoryValue'
+            'totalInventoryValue',
+            'perPage'
         ));
     }
 
