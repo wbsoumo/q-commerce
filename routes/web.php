@@ -58,9 +58,20 @@ Route::middleware(['store.manager'])->group(function () {
     Route::post('/manager/settings/update', [ManagerController::class, 'updateSettings']);
 });
 
+// Root domain homepage route for SBMart App Download
+Route::get('/', function () {
+    $host = request()->getHost();
+    if (str_starts_with($host, 'admin.')) {
+        if (session('user_type') === 'admin') {
+            return app(AdminController::class)->dashboard();
+        }
+        return redirect()->route('admin.login');
+    }
+    return view('welcome');
+});
+
 // Separate Super Admin-Only Routes
 Route::middleware(['admin.only'])->group(function () {
-    Route::get('/', [AdminController::class, 'dashboard']);
     Route::get('/admin', [AdminController::class, 'dashboard']);
 
     // Stores Management

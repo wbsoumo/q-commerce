@@ -441,7 +441,16 @@ class ApiController extends Controller
     // Get User Saved Addresses
     public function getAddresses(Request $request)
     {
-        $userPhone = $request->query('phone', '8016222991');
+        $userPhone = $request->query('phone');
+        if (empty($userPhone)) {
+            return response()->json([
+                'status' => 'success',
+                'data' => [],
+            ])->header('Access-Control-Allow-Origin', '*')
+              ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
+              ->header('Access-Control-Allow-Headers', '*');
+        }
+
         $addresses = DB::table('user_addresses')
             ->where('user_phone', $userPhone)
             ->orderBy('is_default', 'desc')
@@ -472,8 +481,10 @@ class ApiController extends Controller
                 'user_phone' => 'nullable|string',
             ]);
 
+            $userPhone = !empty($validated['user_phone']) ? $validated['user_phone'] : $validated['receiver_phone'];
+
             $id = DB::table('user_addresses')->insertGetId([
-                'user_phone' => $validated['user_phone'] ?? '8016222991',
+                'user_phone' => $userPhone,
                 'address_type' => $validated['address_type'],
                 'custom_type_name' => $validated['custom_type_name'] ?? null,
                 'address_details' => $validated['address_details'],
