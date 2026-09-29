@@ -127,8 +127,10 @@ Route::middleware(['admin.only'])->group(function () {
     Route::get('/admin/orders/{id}', [AdminController::class, 'showOrder']);
     Route::post('/admin/orders/{id}/update-status', [AdminController::class, 'updateOrderStatus']);
     Route::get('/admin/customers', [AdminController::class, 'customers']);
+    Route::post('/admin/customers/store', [AdminController::class, 'storeCustomer']);
     Route::get('/admin/customers/{id}', [AdminController::class, 'showCustomer']);
     Route::post('/admin/customers/{id}/update-status', [AdminController::class, 'updateCustomerStatus']);
+    Route::post('/admin/customers/quick-credit', [AdminController::class, 'quickCreditWallet']);
 
     // Logistics & Dispatch
     Route::get('/admin/deliveries', [AdminController::class, 'deliveries']);

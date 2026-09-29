@@ -1032,8 +1032,8 @@ class AdminController extends Controller
         return redirect()->back()->with('success', "Order status successfully updated to {$newStatus}!");
     }
 
-    // 6. Customer Management
-    public function customers()
+    // 6. Customer Management & Insights Dashboard
+    public function customers(Request $request)
     {
         if (!Schema::hasColumn('customers', 'wallet_balance')) {
             try {
@@ -1044,25 +1044,166 @@ class AdminController extends Controller
         }
 
         // Auto-sync registered users into customers table if missing
-        $registeredUsers = DB::table('users')->where('role', 'customer')->get();
-        foreach ($registeredUsers as $u) {
-            $exists = DB::table('customers')->where('phone', $u->phone)->first();
-            if (!$exists) {
-                DB::table('customers')->insert([
-                    'name' => $u->name ?? 'Customer',
-                    'phone' => $u->phone,
-                    'status' => 'Active',
-                    'total_orders' => 0,
-                    'total_spent' => 0.00,
-                    'wallet_balance' => 0.00,
-                    'created_at' => $u->created_at ?? now(),
-                    'updated_at' => now(),
-                ]);
+        try {
+            $registeredUsers = DB::table('users')->where('role', 'customer')->get();
+            foreach ($registeredUsers as $u) {
+                if ($u->phone) {
+                    $exists = DB::table('customers')->where('phone', $u->phone)->first();
+                    if (!$exists) {
+                        DB::table('customers')->insert([
+                            'user_id' => $u->id,
+                            'name' => $u->name ?? 'Customer',
+                            'phone' => $u->phone,
+                            'email' => $u->email ?? null,
+                            'status' => 'Active',
+                            'total_orders' => 0,
+                            'total_spent' => 0.00,
+                            'wallet_balance' => 0.00,
+                            'created_at' => $u->created_at ?? now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
+                }
+            }
+        } catch (\Exception $e) {}
+
+        // Global Statistics
+        $totalCustomersCount = DB::table('customers')->count();
+        $activeCustomersCount = DB::table('customers')->where('status', 'Active')->count();
+        $vipCustomersCount = DB::table('customers')->where('is_vip', true)->count();
+        $totalWalletLiability = (float)DB::table('customers')->sum('wallet_balance');
+        $totalLifetimeSpent = (float)DB::table('customers')->sum('total_spent');
+
+        // Build Query with Filters & Search
+        $query = DB::table('customers');
+
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'LIKE', "%{$search}%")
+                  ->orWhere('phone', 'LIKE', "%{$search}%")
+                  ->orWhere('email', 'LIKE', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('vip_status')) {
+            if ($request->vip_status === 'vip') {
+                $query->where('is_vip', true);
+            } elseif ($request->vip_status === 'regular') {
+                $query->where(function($q) {
+                    $q->whereNull('is_vip')->orWhere('is_vip', false);
+                });
             }
         }
 
-        $customers = DB::table('customers')->orderBy('id', 'desc')->paginate(15);
-        return view('admin.customers.index', compact('customers'));
+        // Sorting Logic
+        $sortBy = $request->input('sort_by', 'id_desc');
+        switch ($sortBy) {
+            case 'most_spent':
+                $query->orderBy('total_spent', 'desc');
+                break;
+            case 'most_orders':
+                $query->orderBy('total_orders', 'desc');
+                break;
+            case 'highest_wallet':
+                $query->orderBy('wallet_balance', 'desc');
+                break;
+            case 'oldest':
+                $query->orderBy('id', 'asc');
+                break;
+            default:
+                $query->orderBy('id', 'desc');
+                break;
+        }
+
+        // Items per page
+        $perPage = $request->input('per_page', '15');
+        if ($perPage === 'all') {
+            $customers = $query->get();
+        } else {
+            $customers = $query->paginate(is_numeric($perPage) ? (int)$perPage : 15);
+        }
+
+        return view('admin.customers.index', compact(
+            'customers',
+            'totalCustomersCount',
+            'activeCustomersCount',
+            'vipCustomersCount',
+            'totalWalletLiability',
+            'totalLifetimeSpent',
+            'perPage',
+            'sortBy'
+        ));
+    }
+
+    // Manual Customer Onboarding
+    public function storeCustomer(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'required|string|max:20|unique:customers,phone|unique:users,phone',
+            'email' => 'nullable|email',
+            'status' => 'required|in:Active,Blocked,Suspended',
+            'wallet_balance' => 'nullable|numeric|min:0',
+            'is_vip' => 'nullable|boolean',
+            'notes' => 'nullable|string',
+        ]);
+
+        $userId = DB::table('users')->insertGetId([
+            'name' => $validated['name'],
+            'phone' => $validated['phone'],
+            'email' => $validated['email'] ?? null,
+            'password' => Hash::make('Customer123!'),
+            'role' => 'customer',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('customers')->insert([
+            'user_id' => $userId,
+            'name' => $validated['name'],
+            'phone' => $validated['phone'],
+            'email' => $validated['email'] ?? null,
+            'status' => $validated['status'],
+            'is_vip' => $request->has('is_vip'),
+            'wallet_balance' => $validated['wallet_balance'] ?? 0.00,
+            'notes' => $validated['notes'] ?? null,
+            'total_orders' => 0,
+            'total_spent' => 0.00,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return redirect('/admin/customers')->with('success', "Customer '{$validated['name']}' onboarded successfully!");
+    }
+
+    // Quick Wallet Credit / Adjustment
+    public function quickCreditWallet(Request $request)
+    {
+        $validated = $request->validate([
+            'customer_id' => 'required|integer|exists:customers,id',
+            'type' => 'required|in:credit,debit',
+            'amount' => 'required|numeric|min:0.01',
+            'reason' => 'nullable|string',
+        ]);
+
+        $customer = DB::table('customers')->where('id', $validated['customer_id'])->first();
+        $current = (float)($customer->wallet_balance ?? 0);
+        $change = (float)$validated['amount'];
+
+        $newBalance = $validated['type'] === 'credit' ? ($current + $change) : max(0, $current - $change);
+
+        DB::table('customers')->where('id', $validated['customer_id'])->update([
+            'wallet_balance' => $newBalance,
+            'updated_at' => now(),
+        ]);
+
+        $actionText = $validated['type'] === 'credit' ? 'credited with' : 'debited by';
+        return redirect()->back()->with('success', "Wallet for '{$customer->name}' {$actionText} ₹{$change}. New Balance: ₹" . number_format($newBalance, 2));
     }
 
     public function showCustomer($id)
