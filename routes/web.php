@@ -130,6 +130,8 @@ Route::middleware(['admin.only'])->group(function () {
     Route::post('/admin/customers/store', [AdminController::class, 'storeCustomer']);
     Route::get('/admin/customers/{id}', [AdminController::class, 'showCustomer']);
     Route::post('/admin/customers/{id}/update-status', [AdminController::class, 'updateCustomerStatus']);
+    Route::post('/admin/customers/{id}/change-password', [AdminController::class, 'changeCustomerPassword']);
+    Route::post('/admin/customers/{id}/delete', [AdminController::class, 'deleteCustomer']);
     Route::post('/admin/customers/quick-credit', [AdminController::class, 'quickCreditWallet']);
 
     // Logistics & Dispatch

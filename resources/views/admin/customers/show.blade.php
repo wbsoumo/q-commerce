@@ -152,6 +152,11 @@
                   <i class="fas fa-shopping-basket mr-2 text-primary"></i>Live Active Cart ({{ count($liveCartItems) }})
                 </a>
               </li>
+              <li class="nav-item">
+                <a class="nav-link py-3 px-4" id="security-tab" data-toggle="tab" href="#security" role="tab" aria-controls="security" aria-selected="false">
+                  <i class="fas fa-user-lock mr-2 text-danger"></i>Security & Account Access
+                </a>
+              </li>
             </ul>
           </div>
 
@@ -401,10 +406,86 @@
                 </div>
               </div>
 
+              <!-- TAB 5: Security & Account Access -->
+              <div class="tab-pane fade" id="security" role="tabpanel" aria-labelledby="security-tab">
+                <div class="row">
+                  <!-- Change Password Card -->
+                  <div class="col-md-6 mb-3">
+                    <div class="border rounded p-4 bg-white h-100 shadow-sm">
+                      <h5 class="font-weight-bold text-dark mb-3">
+                        <i class="fas fa-key text-warning mr-2"></i> Reset / Change Password
+                      </h5>
+                      <p class="text-muted small">Update the customer's account authentication password directly.</p>
+
+                      <form action="/admin/customers/{{ $customer->id }}/change-password" method="POST">
+                        @csrf
+                        <div class="form-group">
+                          <label class="font-weight-bold">New Password <span class="text-danger">*</span></label>
+                          <input type="password" name="new_password" class="form-control" placeholder="Enter at least 6 characters" required minlength="6">
+                        </div>
+                        <div class="form-group">
+                          <label class="font-weight-bold">Confirm New Password <span class="text-danger">*</span></label>
+                          <input type="password" name="new_password_confirmation" class="form-control" placeholder="Re-enter new password" required minlength="6">
+                        </div>
+                        <button type="submit" class="btn btn-warning font-weight-bold text-dark">
+                          <i class="fas fa-lock mr-1"></i> Update Password
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+
+                  <!-- Danger Zone: Delete Account Card -->
+                  <div class="col-md-6 mb-3">
+                    <div class="border border-danger rounded p-4 bg-white h-100 shadow-sm" style="border-width: 2px !important;">
+                      <h5 class="font-weight-bold text-danger mb-3">
+                        <i class="fas fa-exclamation-triangle text-danger mr-2"></i> Danger Zone: Account Deletion
+                      </h5>
+                      <p class="text-muted small">Permanently delete this customer account and wipe associated login credentials, addresses, and preferences.</p>
+
+                      <div class="alert alert-warning border small">
+                        <i class="fas fa-info-circle mr-1"></i> <strong>Warning:</strong> Deleting an account cannot be reversed. Linked orders will remain archived for tax/audit purposes.
+                      </div>
+
+                      <button type="button" class="btn btn-danger font-weight-bold mt-2" data-toggle="modal" data-target="#deleteAccountModal">
+                        <i class="fas fa-user-times mr-1"></i> Permanent Delete Account
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- Account Deletion Confirmation Modal -->
+  <div class="modal fade" id="deleteAccountModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title font-weight-bold"><i class="fas fa-exclamation-triangle mr-2"></i> Confirm Customer Account Deletion</h5>
+          <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+        </div>
+        <div class="modal-body">
+          <p class="font-weight-bold text-dark mb-2">Are you strictly sure you want to delete this customer account?</p>
+          <div class="alert alert-light border">
+            <div>Customer Name: <strong class="text-danger">{{ $customer->name }}</strong></div>
+            <div>Phone Number: <strong>{{ $customer->phone }}</strong></div>
+            <div>Wallet Balance: <strong class="text-success">₹{{ number_format($customer->wallet_balance ?? 0, 2) }}</strong></div>
+          </div>
+          <p class="text-muted small mb-0"><i class="fas fa-radiation text-danger mr-1"></i> This operation will permanently remove login credentials and account access.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+          <form action="/admin/customers/{{ $customer->id }}/delete" method="POST" class="d-inline">
+            @csrf
+            <button type="submit" class="btn btn-danger font-weight-bold"><i class="fas fa-trash-alt mr-1"></i> Yes, Permanently Delete</button>
+          </form>
+        </div>
       </div>
     </div>
   </div>

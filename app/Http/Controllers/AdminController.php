@@ -1374,6 +1374,75 @@ class AdminController extends Controller
         return redirect()->back()->with('success', 'Customer profile & wallet balance updated successfully!');
     }
 
+    // Change Customer Password
+    public function changeCustomerPassword(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'new_password' => 'required|string|min:6|confirmed',
+        ]);
+
+        $customer = DB::table('customers')->where('id', $id)->first();
+        if (!$customer) {
+            return redirect('/admin/customers')->with('error', 'Customer profile not found.');
+        }
+
+        // Update password in users table by phone or user_id
+        $updated = false;
+        if (!empty($customer->user_id)) {
+            DB::table('users')->where('id', $customer->user_id)->update([
+                'password' => Hash::make($validated['new_password']),
+                'updated_at' => now(),
+            ]);
+            $updated = true;
+        }
+
+        if (!empty($customer->phone)) {
+            DB::table('users')->where('phone', $customer->phone)->update([
+                'password' => Hash::make($validated['new_password']),
+                'updated_at' => now(),
+            ]);
+            $updated = true;
+        }
+
+        if (!$updated) {
+            return redirect()->back()->with('error', 'No linked user account found to update password.');
+        }
+
+        return redirect()->back()->with('success', "Password for customer '{$customer->name}' updated successfully!");
+    }
+
+    // Permanent Delete Customer Account
+    public function deleteCustomer($id)
+    {
+        $customer = DB::table('customers')->where('id', $id)->first();
+        if (!$customer) {
+            return redirect('/admin/customers')->with('error', 'Customer profile not found.');
+        }
+
+        $phone = $customer->phone;
+        $name = $customer->name;
+
+        // Delete from customers table
+        DB::table('customers')->where('id', $id)->delete();
+
+        // Delete from users table if user_id or phone exists
+        if (!empty($customer->user_id)) {
+            DB::table('users')->where('id', $customer->user_id)->delete();
+        } elseif (!empty($phone)) {
+            DB::table('users')->where('phone', $phone)->where('role', 'customer')->delete();
+        }
+
+        // Cleanup saved addresses if table exists
+        if (Schema::hasTable('customer_addresses')) {
+            DB::table('customer_addresses')->where('customer_id', $id)->delete();
+        }
+        if (Schema::hasTable('user_addresses') && !empty($phone)) {
+            DB::table('user_addresses')->where('user_phone', $phone)->delete();
+        }
+
+        return redirect('/admin/customers')->with('success', "Customer account '{$name}' (Phone: {$phone}) permanently deleted!");
+    }
+
     // 7. Delivery Management
     public function deliveries()
     {
