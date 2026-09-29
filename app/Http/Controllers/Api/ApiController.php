@@ -405,6 +405,18 @@ class ApiController extends Controller
                     ]);
                 }
 
+                // Trigger instant FCM Push Notification to Store Managers
+                try {
+                    \App\Services\FcmNotificationService::sendNotification(
+                        "🚨 NEW ORDER #{$orderNumber}",
+                        "New order received: ₹{$grandTotal} ({$validatedData['user_name']})",
+                        'all',
+                        null,
+                        null,
+                        $orderId
+                    );
+                } catch (\Throwable $th) {}
+
                 return response()->json([
                     'status' => 'success',
                     'message' => 'Order placed successfully and stock reserved.',
