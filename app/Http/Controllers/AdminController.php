@@ -714,6 +714,31 @@ class AdminController extends Controller
         return redirect('/admin/stores')->with('success', 'Store settings updated successfully!');
     }
 
+    // Delete Store Branch Permanently (Super Admin Only)
+    public function deleteStore(Request $request, $id)
+    {
+        $user = auth()->user();
+        if ($user && $user->role === 'store_manager') {
+            return redirect()->back()->with('error', 'Store managers cannot delete store branches.');
+        }
+
+        $store = DB::table('stores')->where('id', $id)->first();
+        if (!$store) {
+            return redirect('/admin/stores')->with('error', 'Store branch not found.');
+        }
+
+        $storeCount = DB::table('stores')->count();
+        if ($storeCount <= 1) {
+            return redirect()->back()->with('error', 'Cannot delete the primary store branch when only one store exists.');
+        }
+
+        $name = $store->name;
+        DB::table('stores')->where('id', $id)->delete();
+        DB::table('store_product_inventories')->where('store_id', $id)->delete();
+        
+        return redirect('/admin/store-manager')->with('success', "Store branch '{$name}' permanently deleted!");
+    }
+
     // Add New Store Manager to a Store
     public function addStoreManager(Request $request, $id)
     {

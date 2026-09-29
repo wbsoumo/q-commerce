@@ -81,6 +81,7 @@ Route::middleware(['admin.only'])->group(function () {
     Route::post('/admin/stores/store', [AdminController::class, 'storeStore']);
     Route::get('/admin/stores/{id}/settings', [AdminController::class, 'storeSettings']);
     Route::post('/admin/stores/{id}/settings', [AdminController::class, 'updateStoreSettings']);
+    Route::post('/admin/stores/{id}/delete', [AdminController::class, 'deleteStore']);
     Route::post('/admin/stores/{id}/managers/store', [AdminController::class, 'addStoreManager']);
     Route::post('/admin/stores/managers/{managerId}/update', [AdminController::class, 'updateStoreManager']);
     Route::get('/admin/stores/managers/{managerId}/login', [AdminController::class, 'oneClickManagerLogin']);
