@@ -107,22 +107,34 @@
                   <th>Order #</th>
                   <th>Store</th>
                   <th>Customer</th>
-                  <th>Phone</th>
                   <th>Total</th>
                   <th>Payment</th>
                   <th>Status</th>
+                  <th class="text-center">Action</th>
                 </tr>
               </thead>
               <tbody>
                 @forelse($recentOrders as $ord)
                 <tr>
-                  <td class="font-weight-bold">{{ $ord->order_number }}</td>
+                  <td class="font-weight-bold text-primary">
+                    <a href="/admin/orders/{{ $ord->id }}" class="text-primary font-weight-bold">
+                      {{ $ord->order_number }}
+                    </a>
+                  </td>
                   <td><span class="badge badge-info">{{ $ord->store_name ?? 'Krishnanagar Main' }}</span></td>
-                  <td>{{ $ord->user_name }}</td>
-                  <td>{{ $ord->user_phone }}</td>
-                  <td class="text-success font-weight-bold">₹{{ $ord->grand_total }}</td>
-                  <td>{{ $ord->payment_method }}</td>
-                  <td><span class="badge badge-warning">{{ $ord->status }}</span></td>
+                  <td class="font-weight-bold text-dark">{{ $ord->user_name }}</td>
+                  <td class="text-success font-weight-bold">₹{{ number_format($ord->grand_total, 2) }}</td>
+                  <td><span class="badge badge-light border"><i class="fas fa-credit-card mr-1"></i> {{ $ord->payment_method }}</span></td>
+                  <td>
+                    <span class="badge badge-{{ $ord->status === 'Delivered' ? 'success' : ($ord->status === 'Cancelled' ? 'danger' : 'warning') }}">
+                      {{ $ord->status }}
+                    </span>
+                  </td>
+                  <td class="text-center">
+                    <a href="/admin/orders/{{ $ord->id }}" class="btn btn-sm btn-outline-success font-weight-bold px-2 py-1">
+                      <i class="fas fa-eye mr-1"></i> View Order
+                    </a>
+                  </td>
                 </tr>
                 @empty
                 <tr><td colspan="7" class="text-center py-3">No orders yet.</td></tr>
