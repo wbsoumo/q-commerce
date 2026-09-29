@@ -100,6 +100,11 @@ Route::middleware(['admin.only'])->group(function () {
     Route::get('/admin/products/{id}/variants', [AdminController::class, 'productVariants']);
     Route::post('/admin/products/{id}/variants/store', [AdminController::class, 'storeProductVariant']);
 
+    // WordPress Media Library APIs
+    Route::get('/admin/media/library', [AdminController::class, 'getMediaLibrary']);
+    Route::post('/admin/media/upload', [AdminController::class, 'uploadMedia']);
+    Route::post('/admin/media/delete', [AdminController::class, 'deleteMedia']);
+
     // Global Homepage Customizer
     Route::get('/admin/homepage-customizer', [AdminController::class, 'homepageCustomizer']);
     Route::post('/admin/homepage-customizer/save', [AdminController::class, 'saveHomepageCustomizer']);

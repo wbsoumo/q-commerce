@@ -314,6 +314,8 @@ class AdminController extends Controller
             $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
             $file->move($uploadDir, $fileName);
             $updateData['image'] = 'uploads/products/' . $fileName;
+        } elseif ($request->filled('image')) {
+            $updateData['image'] = $request->input('image');
         } elseif ($request->filled('image_url')) {
             $updateData['image'] = $request->input('image_url');
         }
@@ -1670,5 +1672,146 @@ class AdminController extends Controller
         $this->ensureSlidersTableExists();
         DB::table('sliders')->where('id', $id)->delete();
         return redirect()->back()->with('success', 'Slider deleted successfully!');
+    }
+
+    // ==========================================
+    // WORDPRESS MEDIA LIBRARY APIS
+    // ==========================================
+    public function getMediaLibrary(Request $request)
+    {
+        $uploadDir = public_path('uploads');
+        $mediaList = [];
+
+        if (file_exists($uploadDir)) {
+            $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($uploadDir));
+            foreach ($iterator as $file) {
+                if ($file->isFile()) {
+                    $ext = strtolower($file->getExtension());
+                    if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif'])) {
+                        $relativePath = str_replace(public_path() . '/', '', $file->getPathname());
+                        $relativePath = str_replace('\\', '/', $relativePath);
+
+                        $dimensions = '';
+                        if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
+                            $sizeInfo = @getimagesize($file->getPathname());
+                            if ($sizeInfo) {
+                                $dimensions = $sizeInfo[0] . ' × ' . $sizeInfo[1] . ' pixels';
+                            }
+                        }
+
+                        $bytes = $file->getSize();
+                        $sizeFormatted = $bytes >= 1048576 
+                            ? number_format($bytes / 1048576, 2) . ' MB' 
+                            : number_format($bytes / 1024, 1) . ' KB';
+
+                        $mediaList[] = [
+                            'id' => md5($relativePath),
+                            'filename' => $file->getFilename(),
+                            'relative_path' => $relativePath,
+                            'url' => asset($relativePath),
+                            'size' => $sizeFormatted,
+                            'bytes' => $bytes,
+                            'dimensions' => $dimensions ?: 'N/A',
+                            'date' => date('F j, Y', $file->getMTime()),
+                            'mtime' => $file->getMTime(),
+                        ];
+                    }
+                }
+            }
+        }
+
+        // Include DB product images if they are external URLs
+        try {
+            $dbImages = DB::table('products')->whereNotNull('image')->pluck('image')->unique();
+            foreach ($dbImages as $imgUrl) {
+                if (!empty($imgUrl) && (str_starts_with($imgUrl, 'http://') || str_starts_with($imgUrl, 'https://'))) {
+                    $mediaList[] = [
+                        'id' => md5($imgUrl),
+                        'filename' => basename(parse_url($imgUrl, PHP_URL_PATH) ?: $imgUrl),
+                        'relative_path' => $imgUrl,
+                        'url' => $imgUrl,
+                        'size' => 'External URL',
+                        'bytes' => 0,
+                        'dimensions' => 'External',
+                        'date' => 'External Asset',
+                        'mtime' => time(),
+                    ];
+                }
+            }
+        } catch (\Throwable $e) {}
+
+        // Sort newest first
+        usort($mediaList, function ($a, $b) {
+            return $b['mtime'] <=> $a['mtime'];
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'media' => array_values($mediaList)
+        ]);
+    }
+
+    public function uploadMedia(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:jpeg,png,jpg,gif,webp,avif,svg|max:20480',
+        ]);
+
+        $uploadDir = public_path('uploads/products');
+        if (!file_exists($uploadDir)) {
+            @mkdir($uploadDir, 0755, true);
+        }
+
+        $file = $request->file('file');
+        $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
+        $file->move($uploadDir, $fileName);
+
+        $relativePath = 'uploads/products/' . $fileName;
+        $fullPath = $uploadDir . '/' . $fileName;
+
+        $dimensions = '';
+        $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+        if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
+            $sizeInfo = @getimagesize($fullPath);
+            if ($sizeInfo) {
+                $dimensions = $sizeInfo[0] . ' × ' . $sizeInfo[1] . ' pixels';
+            }
+        }
+
+        $bytes = filesize($fullPath);
+        $sizeFormatted = $bytes >= 1048576 
+            ? number_format($bytes / 1048576, 2) . ' MB' 
+            : number_format($bytes / 1024, 1) . ' KB';
+
+        $mediaItem = [
+            'id' => md5($relativePath),
+            'filename' => $fileName,
+            'relative_path' => $relativePath,
+            'url' => asset($relativePath),
+            'size' => $sizeFormatted,
+            'bytes' => $bytes,
+            'dimensions' => $dimensions ?: 'N/A',
+            'date' => date('F j, Y'),
+            'mtime' => time(),
+        ];
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'File uploaded successfully!',
+            'media' => $mediaItem
+        ]);
+    }
+
+    public function deleteMedia(Request $request)
+    {
+        $relativePath = $request->input('relative_path');
+        if (!empty($relativePath) && str_starts_with($relativePath, 'uploads/')) {
+            $fullPath = public_path($relativePath);
+            if (file_exists($fullPath) && is_file($fullPath)) {
+                @unlink($fullPath);
+                return response()->json(['status' => 'success', 'message' => 'Media file deleted permanently.']);
+            }
+        }
+        return response()->json(['status' => 'error', 'message' => 'File not found or cannot be deleted.'], 400);
     }
 }

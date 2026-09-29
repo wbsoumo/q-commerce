@@ -117,22 +117,51 @@
                 </div>
               </div>
 
-              <!-- PRODUCT MAIN IMAGE & GALLERY -->
-              <div class="card card-outline card-success p-3 mb-3 border">
-                <h5 class="font-weight-bold text-success mb-3"><i class="fas fa-images mr-1"></i> Product Main Image & Gallery Upload</h5>
+              <!-- PRODUCT MAIN IMAGE & GALLERY (WORDPRESS-STYLE MEDIA LIBRARY) -->
+              <div class="card card-outline card-success p-3 mb-3 border shadow-sm">
+                <h5 class="font-weight-bold text-success mb-3"><i class="fas fa-photo-video mr-1"></i> Product Main Image & Gallery</h5>
                 <div class="row">
-                  <div class="col-md-6 form-group">
-                    <label>Main Product Image File</label>
-                    <input type="file" name="image_file" class="form-control-file border p-1 rounded w-100">
-                    <label class="mt-2 text-muted small">Or Default Image Name:</label>
-                    <input type="text" name="image" class="form-control form-control-sm" value="image 41.png">
+                  
+                  <!-- Main Image Picker -->
+                  <div class="col-md-6 form-group border-right pr-md-4">
+                    <label class="font-weight-bold text-dark mb-2">Main Product Image</label>
+                    <div class="mb-2">
+                      <button type="button" class="btn btn-outline-success font-weight-bold shadow-sm" onclick="selectMainImageWithMediaModal()">
+                        <i class="fas fa-images mr-1"></i> Choose from Media Library
+                      </button>
+                    </div>
+                    
+                    <div id="mainImagePreviewBox" class="mt-2 p-2 border rounded bg-light" style="display: block; max-width: 200px;">
+                      <label class="small text-muted font-weight-bold mb-1 d-block">Current Image Preview:</label>
+                      <div class="position-relative d-inline-block">
+                        <img id="mainImagePreview" src="{{ asset('image 41.png') }}" class="img-thumbnail" style="max-height: 120px; object-fit: contain;">
+                        <button type="button" class="btn btn-danger btn-xs position-absolute" style="top: -6px; right: -6px; border-radius: 50%; width: 22px; height: 22px; padding: 0;" onclick="removeMainImage()" title="Remove image">&times;</button>
+                      </div>
+                    </div>
+
+                    <input type="text" id="mainImageInput" name="image" class="form-control form-control-sm mt-2" value="image 41.png" placeholder="Image URL or Path">
+                    <small class="text-muted">Or upload direct file:</small>
+                    <input type="file" name="image_file" class="form-control-file border p-1 rounded w-100 mt-1">
                   </div>
-                  <div class="col-md-6 form-group">
-                    <label>Gallery Image Files (Select Multiple)</label>
-                    <input type="file" name="gallery_files[]" class="form-control-file border p-1 rounded w-100" multiple>
-                    <label class="mt-2 text-muted small">Or Gallery Image URLs (One per line):</label>
-                    <textarea name="gallery_urls" class="form-control form-control-sm" rows="2" placeholder="https://example.com/img1.png&#10;https://example.com/img2.png"></textarea>
+
+                  <!-- Gallery Images Picker -->
+                  <div class="col-md-6 form-group pl-md-4">
+                    <label class="font-weight-bold text-dark mb-2">Gallery Images (Multiple)</label>
+                    <div class="mb-2">
+                      <button type="button" class="btn btn-outline-info font-weight-bold shadow-sm" onclick="selectGalleryImagesWithMediaModal()">
+                        <i class="fas fa-layer-group mr-1"></i> Choose Gallery Images
+                      </button>
+                    </div>
+
+                    <div id="galleryPreviewContainer" class="mt-2 p-2 border rounded bg-light min-vh-100-style" style="min-height: 85px;">
+                      <span class="text-muted small">No gallery images added yet. Click above to pick from Media Library.</span>
+                    </div>
+
+                    <textarea id="galleryUrlsTextarea" name="gallery_urls" class="form-control form-control-sm mt-2" rows="2" placeholder="Image URLs (One per line)" style="display: none;"></textarea>
+                    <small class="text-muted">Or upload gallery files:</small>
+                    <input type="file" name="gallery_files[]" class="form-control-file border p-1 rounded w-100 mt-1" multiple>
                   </div>
+
                 </div>
               </div>
 
@@ -154,7 +183,79 @@
 
   <footer class="main-footer"><strong>Copyright &copy; 2026 Q-Commerce Admin.</strong></footer>
 </div>
+
+@include('admin.partials.media-modal')
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+
+<script>
+// Main Image Picker logic
+function selectMainImageWithMediaModal() {
+  const currentVal = document.getElementById('mainImageInput').value;
+  openMediaModal({
+    mode: 'single',
+    preselected: currentVal ? [{ url: currentVal.startsWith('http') || currentVal.startsWith('/') ? currentVal : '/' + currentVal, relative_path: currentVal }] : [],
+    onSelect: function(items) {
+      if (items.length > 0) {
+        const item = items[0];
+        document.getElementById('mainImageInput').value = item.relative_path || item.url;
+        document.getElementById('mainImagePreview').src = item.url;
+        document.getElementById('mainImagePreviewBox').style.display = 'block';
+      }
+    }
+  });
+}
+
+function removeMainImage() {
+  document.getElementById('mainImageInput').value = '';
+  document.getElementById('mainImagePreviewBox').style.display = 'none';
+}
+
+// Gallery Images Picker logic
+let selectedGalleryUrls = [];
+
+function selectGalleryImagesWithMediaModal() {
+  const rawUrls = document.getElementById('galleryUrlsTextarea').value;
+  const existing = rawUrls.split('\n').map(u => u.trim()).filter(Boolean);
+  
+  openMediaModal({
+    mode: 'multiple',
+    preselected: existing.map(u => ({ url: u.startsWith('http') || u.startsWith('/') ? u : '/' + u, relative_path: u })),
+    onSelect: function(items) {
+      selectedGalleryUrls = items.map(i => i.relative_path || i.url);
+      renderGalleryPreviews();
+    }
+  });
+}
+
+function renderGalleryPreviews() {
+  const textarea = document.getElementById('galleryUrlsTextarea');
+  const container = document.getElementById('galleryPreviewContainer');
+  textarea.value = selectedGalleryUrls.join('\n');
+
+  if (selectedGalleryUrls.length === 0) {
+    container.innerHTML = `<span class="text-muted small">No gallery images added yet. Click above to pick from Media Library.</span>`;
+    return;
+  }
+
+  let html = '';
+  selectedGalleryUrls.forEach((url, index) => {
+    const src = url.startsWith('http') || url.startsWith('/') ? url : '/' + url;
+    html += `
+      <div class="position-relative d-inline-block mr-2 mb-2">
+        <img src="${src}" class="rounded border" style="width: 75px; height: 75px; object-fit: cover;">
+        <button type="button" class="btn btn-danger btn-xs position-absolute" style="top: -5px; right: -5px; border-radius: 50%; width: 22px; height: 22px; padding: 0;" onclick="removeGalleryImage(${index})" title="Remove image">&times;</button>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+}
+
+function removeGalleryImage(index) {
+  selectedGalleryUrls.splice(index, 1);
+  renderGalleryPreviews();
+}
+</script>
 </body>
 </html>
