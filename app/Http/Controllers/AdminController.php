@@ -1269,6 +1269,16 @@ class AdminController extends Controller
         return redirect('/admin/categories')->with('success', 'Category updated successfully!');
     }
 
+    public function deleteCategory(Request $request)
+    {
+        $id = $request->input('id');
+        if (!empty($id)) {
+            DB::table('categories')->where('id', $id)->delete();
+            return redirect('/admin/categories')->with('success', 'Category deleted successfully!');
+        }
+        return redirect()->back()->with('error', 'Category ID is missing.');
+    }
+
     public function syncCategoryIcons()
     {
         $categoryCdnMap = [

@@ -90,6 +90,7 @@ Route::middleware(['admin.only'])->group(function () {
     Route::get('/admin/categories/sync-icons', [AdminController::class, 'syncCategoryIcons']);
     Route::post('/admin/categories/store', [AdminController::class, 'storeCategory']);
     Route::post('/admin/categories/update', [AdminController::class, 'updateCategory']);
+    Route::post('/admin/categories/delete', [AdminController::class, 'deleteCategory']);
 
     // Master Product Catalog
     Route::get('/admin/products', [AdminController::class, 'products']);

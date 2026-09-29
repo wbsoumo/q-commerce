@@ -89,9 +89,16 @@
                     @endif
                   </td>
                   <td class="text-right">
-                    <button class="btn btn-warning btn-sm font-weight-bold" onclick='editCategory(@json($cat))'>
+                    <button class="btn btn-warning btn-sm font-weight-bold mr-1" onclick='editCategory(@json($cat))'>
                       <i class="fas fa-edit mr-1"></i> Edit
                     </button>
+                    <form action="/admin/categories/delete" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete category {{ $cat->name }}?');">
+                      @csrf
+                      <input type="hidden" name="id" value="{{ $cat->id }}">
+                      <button type="submit" class="btn btn-danger btn-sm font-weight-bold">
+                        <i class="fas fa-trash-alt mr-1"></i> Delete
+                      </button>
+                    </form>
                   </td>
                 </tr>
                 @empty
