@@ -135,7 +135,7 @@ class AdminController extends Controller
 
         $query->orderBy('products.id', 'desc');
 
-        $perPage = $request->input('per_page', 'all');
+        $perPage = $request->input('per_page', '50');
         if ($perPage !== 'all' && is_numeric($perPage)) {
             $query->limit((int)$perPage);
         }

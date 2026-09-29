@@ -178,12 +178,12 @@
               <!-- Products Count Per Page Dropdown -->
               <div class="col-6 col-md-1 mb-2">
                 <select name="per_page" class="form-control font-weight-bold" onchange="this.form.submit()" title="Items per page">
-                  <option value="10" {{ ($perPage ?? '') == '10' ? 'selected' : '' }}>10 / page</option>
-                  <option value="20" {{ ($perPage ?? '') == '20' ? 'selected' : '' }}>20 / page</option>
-                  <option value="50" {{ ($perPage ?? '') == '50' ? 'selected' : '' }}>50 / page</option>
-                  <option value="100" {{ ($perPage ?? '') == '100' ? 'selected' : '' }}>100 / page</option>
-                  <option value="500" {{ ($perPage ?? '') == '500' ? 'selected' : '' }}>500 / page</option>
-                  <option value="all" {{ ($perPage ?? 'all') == 'all' ? 'selected' : '' }}>All</option>
+                  <option value="10" {{ ($perPage ?? '50') == '10' ? 'selected' : '' }}>10 / page</option>
+                  <option value="20" {{ ($perPage ?? '50') == '20' ? 'selected' : '' }}>20 / page</option>
+                  <option value="50" {{ ($perPage ?? '50') == '50' ? 'selected' : '' }}>50 / page</option>
+                  <option value="100" {{ ($perPage ?? '50') == '100' ? 'selected' : '' }}>100 / page</option>
+                  <option value="500" {{ ($perPage ?? '50') == '50' ? 'selected' : '' }}>500 / page</option>
+                  <option value="all" {{ ($perPage ?? '50') == 'all' ? 'selected' : '' }}>All</option>
                 </select>
               </div>
 
@@ -282,7 +282,7 @@
                             $imgSrc = 'assets/images/' . $imgSrc;
                         }
                       @endphp
-                      <img src="{{ asset($imgSrc) }}" alt="{{ $prod->name }}" class="product-img-thumb" onerror="this.src='https://via.placeholder.com/44?text=Product';">
+                      <img src="{{ asset($imgSrc) }}" alt="{{ $prod->name }}" class="product-img-thumb" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'44\' height=\'44\' viewBox=\'0 0 44 44\'><rect width=\'44\' height=\'44\' fill=\'%23e2e8f0\'/><text x=\'50%\' y=\'55%\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%2364748b\' font-size=\'9\'>No Image</text></svg>';">
                     </td>
                     <td class="align-middle">
                       <a href="/admin/products/{{ $prod->id }}/edit" class="font-weight-bold text-dark" title="Click to Edit Listing">
