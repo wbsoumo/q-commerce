@@ -24,7 +24,12 @@
       background: var(--brand-green-light); color: var(--brand-green-dark);
       display: inline-flex; align-items: center; justify-content: center;
       font-weight: 700; font-size: 16px; border: 1px solid #a7f3d0;
+      flex-shrink: 0;
     }
+    .small-box .icon {
+      font-size: 55px; opacity: 0.25; top: 10px; right: 15px; transition: all .3s linear;
+    }
+    .small-box:hover .icon { font-size: 60px; opacity: 0.35; }
   </style>
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
@@ -88,7 +93,7 @@
                 <h3 class="text-success font-weight-bold mb-0">{{ number_format($totalCustomersCount ?? 0) }}</h3>
                 <p class="text-muted font-weight-bold mb-2">Registered Accounts</p>
               </div>
-              <div class="icon text-success opacity-50"><i class="fas fa-users"></i></div>
+              <div class="icon text-success"><i class="fas fa-users"></i></div>
               <a href="/admin/customers" class="small-box-footer bg-light text-success font-weight-bold">View Directory <i class="fas fa-arrow-circle-right ml-1"></i></a>
             </div>
           </div>
@@ -99,7 +104,7 @@
                 <h3 class="text-success font-weight-bold mb-0">{{ number_format($activeCustomersCount ?? 0) }}</h3>
                 <p class="text-muted font-weight-bold mb-2">Active Customers</p>
               </div>
-              <div class="icon text-success opacity-50"><i class="fas fa-user-check"></i></div>
+              <div class="icon text-success"><i class="fas fa-user-check"></i></div>
               <a href="/admin/customers?status=Active" class="small-box-footer bg-light text-success font-weight-bold">Filter Active <i class="fas fa-arrow-circle-right ml-1"></i></a>
             </div>
           </div>
@@ -110,7 +115,7 @@
                 <h3 class="text-warning font-weight-bold mb-0" style="color: #d97706 !important;">{{ number_format($vipCustomersCount ?? 0) }}</h3>
                 <p class="text-muted font-weight-bold mb-2">VIP Members</p>
               </div>
-              <div class="icon text-warning opacity-50"><i class="fas fa-crown"></i></div>
+              <div class="icon text-warning"><i class="fas fa-crown"></i></div>
               <a href="/admin/customers?vip_status=vip" class="small-box-footer bg-light text-warning font-weight-bold">Filter VIP <i class="fas fa-arrow-circle-right ml-1"></i></a>
             </div>
           </div>
@@ -118,10 +123,10 @@
           <div class="col-12 col-sm-6 col-lg-3 mb-3">
             <div class="small-box bg-white border shadow-sm customer-card h-100" style="border-left-color: #3b82f6;">
               <div class="inner pl-3 pt-3">
-                <h3 class="text-info font-weight-bold mb-0">₹{{ number_format($totalWalletLiability ?? 0, 2) }}</h3>
+                <h3 class="text-info font-weight-bold mb-0" style="font-size: 24px;">₹{{ number_format($totalWalletLiability ?? 0, 2) }}</h3>
                 <p class="text-muted font-weight-bold mb-2">Total Wallet Liabilities</p>
               </div>
-              <div class="icon text-info opacity-50"><i class="fas fa-wallet"></i></div>
+              <div class="icon text-info"><i class="fas fa-wallet"></i></div>
               <a href="/admin/customers?sort_by=highest_wallet" class="small-box-footer bg-light text-info font-weight-bold">Sort Wallet Cash <i class="fas fa-arrow-circle-right ml-1"></i></a>
             </div>
           </div>
@@ -134,14 +139,14 @@
           </div>
           <div class="card-body py-3">
             <form action="/admin/customers" method="GET" class="form-row align-items-center">
-              <div class="col-12 col-md-3 mb-2">
+              <div class="col-12 col-sm-6 col-lg-3 mb-2">
                 <div class="input-group">
                   <div class="input-group-prepend"><span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span></div>
                   <input type="text" name="search" class="form-control" placeholder="Search Name, Phone, Email..." value="{{ request('search') }}">
                 </div>
               </div>
 
-              <div class="col-6 col-md-2 mb-2">
+              <div class="col-6 col-sm-3 col-lg-2 mb-2">
                 <select name="status" class="form-control" onchange="this.form.submit()">
                   <option value="">All Account Statuses</option>
                   <option value="Active" {{ request('status') == 'Active' ? 'selected' : '' }}>Active</option>
@@ -150,15 +155,15 @@
                 </select>
               </div>
 
-              <div class="col-6 col-md-2 mb-2">
+              <div class="col-6 col-sm-3 col-lg-2 mb-2">
                 <select name="vip_status" class="form-control" onchange="this.form.submit()">
                   <option value="">All Tiers</option>
-                  <option value="vip" {{ request('vip_status') == 'vip' ? 'selected' : '' }}>VIP Members Only</option>
-                  <option value="regular" {{ request('vip_status') == 'regular' ? 'selected' : '' }}>Regular Members Only</option>
+                  <option value="vip" {{ request('vip_status') == 'vip' ? 'selected' : '' }}>VIP Members</option>
+                  <option value="regular" {{ request('vip_status') == 'regular' ? 'selected' : '' }}>Regular Members</option>
                 </select>
               </div>
 
-              <div class="col-6 col-md-2 mb-2">
+              <div class="col-6 col-sm-4 col-lg-2 mb-2">
                 <select name="sort_by" class="form-control" onchange="this.form.submit()">
                   <option value="id_desc" {{ ($sortBy ?? '') == 'id_desc' ? 'selected' : '' }}>Newest Joined</option>
                   <option value="most_spent" {{ ($sortBy ?? '') == 'most_spent' ? 'selected' : '' }}>Highest Lifetime Spent</option>
@@ -168,7 +173,7 @@
                 </select>
               </div>
 
-              <div class="col-6 col-md-1 mb-2">
+              <div class="col-6 col-sm-2 col-lg-1 mb-2">
                 <select name="per_page" class="form-control font-weight-bold" onchange="this.form.submit()" title="Items per page">
                   <option value="15" {{ ($perPage ?? '15') == '15' ? 'selected' : '' }}>15 / page</option>
                   <option value="30" {{ ($perPage ?? '15') == '30' ? 'selected' : '' }}>30 / page</option>
@@ -178,7 +183,7 @@
                 </select>
               </div>
 
-              <div class="col-6 col-md-2 mb-2 d-flex">
+              <div class="col-12 col-sm-6 col-lg-2 mb-2 d-flex">
                 <button type="submit" class="btn btn-brand-green btn-block font-weight-bold" title="Search"><i class="fas fa-search mr-1"></i> Filter</button>
                 @if(request('search') || request('status') || request('vip_status') || request('sort_by') || request('per_page'))
                   <a href="/admin/customers" class="btn btn-secondary ml-1" title="Reset Filters"><i class="fas fa-undo"></i></a>
@@ -197,23 +202,23 @@
             <table class="table table-hover table-striped table-modern mb-0">
               <thead>
                 <tr>
-                  <th style="width: 50px;">#ID</th>
-                  <th>Customer Profile</th>
-                  <th>Contact Info</th>
-                  <th>Account Status</th>
-                  <th>Tier Flag</th>
-                  <th>Wallet Cash</th>
-                  <th>Orders</th>
-                  <th>Lifetime Spend</th>
-                  <th style="width: 140px;" class="text-center">360° Actions</th>
+                  <th style="width: 50px;" class="text-nowrap">#ID</th>
+                  <th class="text-nowrap">Customer Profile</th>
+                  <th class="text-nowrap">Contact Info</th>
+                  <th class="text-nowrap">Account Status</th>
+                  <th class="text-nowrap">Tier Flag</th>
+                  <th class="text-nowrap">Wallet Cash</th>
+                  <th class="text-nowrap">Orders</th>
+                  <th class="text-nowrap">Lifetime Spend</th>
+                  <th style="width: 140px;" class="text-center text-nowrap">360° Actions</th>
                 </tr>
               </thead>
               <tbody>
                 @forelse($customers as $c)
                 <tr>
-                  <td class="align-middle font-weight-bold text-muted">#{{ $c->id }}</td>
+                  <td class="align-middle font-weight-bold text-muted text-nowrap">#{{ $c->id }}</td>
                   <td class="align-middle">
-                    <div class="d-flex align-items-center">
+                    <div class="d-flex align-items-center text-nowrap">
                       <div class="avatar-sm mr-2">
                         {{ strtoupper(substr($c->name ?? 'C', 0, 1)) }}
                       </div>
@@ -225,25 +230,25 @@
                       </div>
                     </div>
                   </td>
-                  <td class="align-middle">
+                  <td class="align-middle text-nowrap">
                     <div class="font-weight-bold text-dark"><i class="fas fa-phone text-success mr-1"></i> {{ $c->phone }}</div>
                     @if(!empty($c->email))
                       <div class="small text-muted"><i class="fas fa-envelope text-info mr-1"></i> {{ $c->email }}</div>
                     @endif
                   </td>
-                  <td class="align-middle">
+                  <td class="align-middle text-nowrap">
                     <span class="badge badge-{{ ($c->status ?? '') === 'Active' ? 'success' : 'danger' }} px-2 py-1">
                       {{ $c->status ?? 'Active' }}
                     </span>
                   </td>
-                  <td class="align-middle">
+                  <td class="align-middle text-nowrap">
                     @if(!empty($c->is_vip))
                       <span class="badge badge-warning text-dark font-weight-bold px-2 py-1"><i class="fas fa-crown mr-1"></i> VIP Member</span>
                     @else
                       <span class="badge badge-light border text-muted">Regular</span>
                     @endif
                   </td>
-                  <td class="align-middle">
+                  <td class="align-middle text-nowrap">
                     <span class="badge badge-success font-weight-bold px-2 py-1" style="font-size: 13px;">
                       <i class="fas fa-wallet mr-1"></i> ₹{{ number_format($c->wallet_balance ?? 0, 2) }}
                     </span>
@@ -251,13 +256,13 @@
                       <i class="fas fa-plus-circle"></i>
                     </button>
                   </td>
-                  <td class="align-middle">
+                  <td class="align-middle text-nowrap">
                     <span class="badge badge-info font-weight-bold px-2 py-1">{{ $c->total_orders ?? 0 }} orders</span>
                   </td>
-                  <td class="align-middle text-success font-weight-bold">
+                  <td class="align-middle text-success font-weight-bold text-nowrap">
                     ₹{{ number_format($c->total_spent ?? 0, 2) }}
                   </td>
-                  <td class="align-middle text-center">
+                  <td class="align-middle text-center text-nowrap">
                     <div class="dropdown">
                       <button class="btn btn-sm btn-outline-success dropdown-toggle font-weight-bold px-2 py-1" type="button" data-toggle="dropdown" aria-expanded="false">
                         Actions
@@ -288,9 +293,9 @@
             </table>
           </div>
           @if(method_exists($customers, 'links'))
-            <div class="card-footer bg-light d-flex justify-content-between align-items-center">
-              <div>Showing {{ $customers->firstItem() ?? 0 }} to {{ $customers->lastItem() ?? 0 }} of {{ $customers->total() }} customers</div>
-              <div>{{ $customers->links('pagination::bootstrap-4') }}</div>
+            <div class="card-footer bg-light d-flex justify-content-between align-items-center flex-wrap">
+              <div class="my-1">Showing {{ $customers->firstItem() ?? 0 }} to {{ $customers->lastItem() ?? 0 }} of {{ $customers->total() }} customers</div>
+              <div class="my-1">{{ $customers->links('pagination::bootstrap-4') }}</div>
             </div>
           @endif
         </div>
