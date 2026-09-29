@@ -995,6 +995,218 @@ class ApiController extends Controller
             ])->header('Access-Control-Allow-Origin', '*');
         }
     }
+
+    // --- STORE MANAGER APP API ENDPOINTS ---
+
+    // 1. Store Manager Mobile Login
+    public function managerLogin(Request $request)
+    {
+        $loginInput = trim($request->input('login', $request->input('phone', $request->input('email', ''))));
+        $password = $request->input('password', '');
+
+        if (empty($loginInput) || empty($password)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Please enter login phone/email and password.'
+            ], 400)->header('Access-Control-Allow-Origin', '*');
+        }
+
+        // Find user by phone or email with role store_manager or admin
+        $user = DB::table('users')
+            ->where(function ($query) use ($loginInput) {
+                $query->where('email', $loginInput)
+                      ->orWhere('phone', $loginInput)
+                      ->orWhere('phone', '+91' . preg_replace('/[^0-9]/', '', $loginInput));
+            })
+            ->whereIn('role', ['store_manager', 'admin'])
+            ->first();
+
+        if (!$user || !\Illuminate\Support\Facades\Hash::check($password, $user->password)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid Store Manager credentials.'
+            ], 401)->header('Access-Control-Allow-Origin', '*');
+        }
+
+        $storeId = (int)($user->store_id ?? 1);
+        $store = DB::table('stores')->where('id', $storeId)->first();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Store Manager login successful!',
+            'manager' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone ?? $loginInput,
+                'role' => $user->role,
+                'store_id' => $storeId,
+                'store_name' => $store ? $store->name : 'Store #' . $storeId,
+                'store_address' => $store ? ($store->address . ', ' . $store->city) : '',
+            ]
+        ])->header('Access-Control-Allow-Origin', '*');
+    }
+
+    // 2. Fetch Store Orders for Store Manager App (Latest First)
+    public function getManagerOrders(Request $request)
+    {
+        $storeId = (int)$request->input('store_id', $request->query('store_id', 1));
+        $status = $request->query('status');
+
+        $query = DB::table('orders')
+            ->where('store_id', $storeId);
+
+        if (!empty($status) && strtolower($status) !== 'all') {
+            $query->where('status', $status);
+        }
+
+        $orders = $query->orderBy('id', 'desc')->get();
+
+        $formattedOrders = [];
+        foreach ($orders as $o) {
+            $itemsData = [];
+            if (!empty($o->items)) {
+                $decoded = json_decode($o->items, true);
+                if (is_array($decoded)) {
+                    $itemsData = $decoded;
+                }
+            }
+
+            if (empty($itemsData)) {
+                $orderItems = DB::table('order_items')->where('order_id', $o->id)->get();
+                foreach ($orderItems as $it) {
+                    $itemsData[] = [
+                        'product_id' => $it->product_id,
+                        'name' => $it->product_name ?? 'Product #' . $it->product_id,
+                        'price' => (float)$it->unit_price,
+                        'quantity' => (int)$it->quantity,
+                        'total' => (float)$it->subtotal,
+                    ];
+                }
+            }
+
+            // Fetch delivery partner info if assigned
+            $delivery = DB::table('deliveries')
+                ->leftJoin('delivery_partners', 'deliveries.delivery_partner_id', '=', 'delivery_partners.id')
+                ->select('deliveries.*', 'delivery_partners.name as partner_name', 'delivery_partners.phone as partner_phone')
+                ->where('deliveries.order_id', $o->id)
+                ->first();
+
+            $formattedOrders[] = [
+                'id' => $o->id,
+                'order_number' => $o->order_number ?? ('ORD-' . $o->id),
+                'store_id' => $o->store_id,
+                'user_name' => $o->receiver_name ?? $o->user_name ?? 'Customer',
+                'user_phone' => $o->receiver_phone ?? $o->user_phone ?? '',
+                'customer_name' => $o->user_name ?? 'Customer',
+                'customer_phone' => $o->user_phone ?? '',
+                'delivery_address' => $o->delivery_address ?? 'Pickup / Home Delivery',
+                'latitude' => (float)($o->latitude ?? 23.4013),
+                'longitude' => (float)($o->longitude ?? 88.5010),
+                'status' => $o->status ?? 'Pending',
+                'payment_method' => $o->payment_method ?? 'Cash on Delivery',
+                'order_type' => $o->order_type ?? 'delivery',
+                'pickup_date' => $o->pickup_date,
+                'pickup_time' => $o->pickup_time,
+                'subtotal' => (float)($o->subtotal ?? $o->grand_total),
+                'grand_total' => (float)($o->grand_total ?? 0),
+                'created_at' => $o->created_at,
+                'items' => $itemsData,
+                'delivery_partner' => $delivery ? [
+                    'id' => $delivery->delivery_partner_id,
+                    'name' => $delivery->partner_name ?? 'Delivery Rider',
+                    'phone' => $delivery->partner_phone ?? '',
+                    'status' => $delivery->status ?? 'Assigned',
+                ] : null,
+            ];
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'count' => count($formattedOrders),
+            'orders' => $formattedOrders,
+        ])->header('Access-Control-Allow-Origin', '*');
+    }
+
+    // 3. Fetch Delivery Partners List for Manager App
+    public function getManagerRiders(Request $request)
+    {
+        $storeId = (int)$request->input('store_id', $request->query('store_id', 1));
+
+        $riders = DB::table('delivery_partners')
+            ->where(function ($q) use ($storeId) {
+                $q->where('store_id', $storeId)
+                  ->orWhereNull('store_id');
+            })
+            ->where('is_active', true)
+            ->get();
+
+        if ($riders->isEmpty()) {
+            $riders = DB::table('delivery_partners')->get();
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $riders,
+        ])->header('Access-Control-Allow-Origin', '*');
+    }
+
+    // 4. Manager Update Order Status & Assign Delivery Partner
+    public function updateManagerOrderStatus(Request $request)
+    {
+        $orderId = (int)$request->input('order_id');
+        $newStatus = $request->input('status'); // Pending, Packing, Out for Delivery, Delivered, Cancelled
+        $riderId = $request->input('delivery_partner_id');
+
+        if (!$orderId || empty($newStatus)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'order_id and status are required.'
+            ], 400)->header('Access-Control-Allow-Origin', '*');
+        }
+
+        $order = DB::table('orders')->where('id', $orderId)->first();
+        if (!$order) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Order not found.'
+            ], 440)->header('Access-Control-Allow-Origin', '*');
+        }
+
+        DB::table('orders')->where('id', $orderId)->update([
+            'status' => $newStatus,
+            'updated_at' => now(),
+        ]);
+
+        if (!empty($riderId)) {
+            $existingDelivery = DB::table('deliveries')->where('order_id', $orderId)->first();
+            if ($existingDelivery) {
+                DB::table('deliveries')->where('id', $existingDelivery->id)->update([
+                    'delivery_partner_id' => $riderId,
+                    'status' => $newStatus === 'Delivered' ? 'Delivered' : 'Assigned',
+                    'updated_at' => now(),
+                ]);
+            } else {
+                DB::table('deliveries')->insert([
+                    'order_id' => $orderId,
+                    'store_id' => $order->store_id ?? 1,
+                    'delivery_partner_id' => $riderId,
+                    'status' => $newStatus === 'Delivered' ? 'Delivered' : 'Assigned',
+                    'assigned_at' => now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+
+        $updatedOrder = DB::table('orders')->where('id', $orderId)->first();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => "Order #{$orderId} status updated to '{$newStatus}' successfully!",
+            'order' => $updatedOrder,
+        ])->header('Access-Control-Allow-Origin', '*');
+    }
 }
 
 
