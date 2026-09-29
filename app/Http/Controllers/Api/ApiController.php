@@ -1050,82 +1050,96 @@ class ApiController extends Controller
     // 2. Fetch Store Orders for Store Manager App (Latest First)
     public function getManagerOrders(Request $request)
     {
-        $storeId = (int)$request->input('store_id', $request->query('store_id', 1));
-        $status = $request->query('status');
+        try {
+            $storeId = (int)$request->input('store_id', $request->query('store_id', 1));
+            $status = $request->query('status');
 
-        $query = DB::table('orders')
-            ->where('store_id', $storeId);
+            $query = DB::table('orders');
 
-        if (!empty($status) && strtolower($status) !== 'all') {
-            $query->where('status', $status);
-        }
-
-        $orders = $query->orderBy('id', 'desc')->get();
-
-        $formattedOrders = [];
-        foreach ($orders as $o) {
-            $itemsData = [];
-            if (!empty($o->items)) {
-                $decoded = json_decode($o->items, true);
-                if (is_array($decoded)) {
-                    $itemsData = $decoded;
-                }
+            if ($storeId > 0) {
+                $query->where(function ($q) use ($storeId) {
+                    $q->where('store_id', $storeId)
+                      ->orWhereNull('store_id');
+                });
             }
 
-            if (empty($itemsData)) {
-                $orderItems = DB::table('order_items')->where('order_id', $o->id)->get();
-                foreach ($orderItems as $it) {
-                    $itemsData[] = [
-                        'product_id' => $it->product_id,
-                        'name' => $it->product_name ?? 'Product #' . $it->product_id,
-                        'price' => (float)$it->unit_price,
-                        'quantity' => (int)$it->quantity,
-                        'total' => (float)$it->subtotal,
-                    ];
-                }
+            if (!empty($status) && strtolower($status) !== 'all') {
+                $query->where('status', $status);
             }
 
-            // Fetch delivery partner info if assigned
-            $delivery = DB::table('deliveries')
-                ->leftJoin('delivery_partners', 'deliveries.delivery_partner_id', '=', 'delivery_partners.id')
-                ->select('deliveries.*', 'delivery_partners.name as partner_name', 'delivery_partners.phone as partner_phone')
-                ->where('deliveries.order_id', $o->id)
-                ->first();
+            $orders = $query->orderBy('id', 'desc')->get();
 
-            $formattedOrders[] = [
-                'id' => $o->id,
-                'order_number' => $o->order_number ?? ('ORD-' . $o->id),
-                'store_id' => $o->store_id,
-                'user_name' => $o->receiver_name ?? $o->user_name ?? 'Customer',
-                'user_phone' => $o->receiver_phone ?? $o->user_phone ?? '',
-                'customer_name' => $o->user_name ?? 'Customer',
-                'customer_phone' => $o->user_phone ?? '',
-                'delivery_address' => $o->delivery_address ?? 'Pickup / Home Delivery',
-                'latitude' => (float)($o->latitude ?? 23.4013),
-                'longitude' => (float)($o->longitude ?? 88.5010),
-                'status' => $o->status ?? 'Pending',
-                'payment_method' => $o->payment_method ?? 'Cash on Delivery',
-                'order_type' => $o->order_type ?? 'delivery',
-                'pickup_date' => $o->pickup_date,
-                'pickup_time' => $o->pickup_time,
-                'subtotal' => (float)($o->subtotal ?? $o->grand_total),
-                'grand_total' => (float)($o->grand_total ?? 0),
-                'created_at' => $o->created_at,
-                'items' => $itemsData,
-                'delivery_partner' => $delivery ? [
-                    'id' => $delivery->delivery_partner_id,
-                    'name' => $delivery->partner_name ?? 'Delivery Rider',
-                    'phone' => $delivery->partner_phone ?? '',
-                    'status' => $delivery->status ?? 'Assigned',
-                ] : null,
-            ];
+            $formattedOrders = [];
+            foreach ($orders as $o) {
+                $itemsData = [];
+                if (!empty($o->items)) {
+                    $decoded = json_decode($o->items, true);
+                    if (is_array($decoded)) {
+                        $itemsData = $decoded;
+                    }
+                }
+
+                if (empty($itemsData)) {
+                    $orderItems = DB::table('order_items')->where('order_id', $o->id)->get();
+                    foreach ($orderItems as $it) {
+                        $itemsData[] = [
+                            'product_id' => $it->product_id,
+                            'name' => $it->product_name ?? 'Product #' . $it->product_id,
+                            'price' => (float)$it->unit_price,
+                            'quantity' => (int)$it->quantity,
+                            'total' => (float)$it->subtotal,
+                        ];
+                    }
+                }
+
+                // Fetch delivery partner info if assigned
+                $delivery = DB::table('deliveries')
+                    ->leftJoin('delivery_partners', 'deliveries.delivery_partner_id', '=', 'delivery_partners.id')
+                    ->select('deliveries.*', 'delivery_partners.name as partner_name', 'delivery_partners.phone as partner_phone')
+                    ->where('deliveries.order_id', $o->id)
+                    ->first();
+
+                $formattedOrders[] = [
+                    'id' => $o->id,
+                    'order_number' => $o->order_number ?? ('ORD-' . $o->id),
+                    'store_id' => $o->store_id ?? 1,
+                    'user_name' => $o->receiver_name ?? $o->user_name ?? 'Customer',
+                    'user_phone' => $o->receiver_phone ?? $o->user_phone ?? '',
+                    'customer_name' => $o->user_name ?? 'Customer',
+                    'customer_phone' => $o->user_phone ?? '',
+                    'delivery_address' => $o->delivery_address ?? 'Pickup / Home Delivery',
+                    'latitude' => (float)($o->latitude ?? 23.4013),
+                    'longitude' => (float)($o->longitude ?? 88.5010),
+                    'status' => $o->status ?? 'Pending',
+                    'payment_method' => $o->payment_method ?? 'Cash on Delivery',
+                    'order_type' => $o->order_type ?? 'delivery',
+                    'pickup_date' => $o->pickup_date ?? null,
+                    'pickup_time' => $o->pickup_time ?? null,
+                    'subtotal' => (float)($o->subtotal ?? $o->grand_total ?? 0),
+                    'grand_total' => (float)($o->grand_total ?? 0),
+                    'created_at' => $o->created_at,
+                    'items' => $itemsData,
+                    'delivery_partner' => $delivery ? [
+                        'id' => $delivery->delivery_partner_id,
+                        'name' => $delivery->partner_name ?? 'Delivery Rider',
+                        'phone' => $delivery->partner_phone ?? '',
+                        'status' => $delivery->status ?? 'Assigned',
+                    ] : null,
+                ];
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'count' => count($formattedOrders),
+                'orders' => $formattedOrders,
+            ])->header('Access-Control-Allow-Origin', '*');
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+                'trace' => $e->getFile() . ':' . $e->getLine(),
+            ], 500)->header('Access-Control-Allow-Origin', '*');
         }
-
-        return response()->json([
-            'status' => 'success',
-            'count' => count($formattedOrders),
-            'orders' => $formattedOrders,
-        ])->header('Access-Control-Allow-Origin', '*');
     }
 
     // 3. Fetch Delivery Partners List for Manager App
