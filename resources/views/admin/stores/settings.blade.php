@@ -176,8 +176,8 @@
                   <td>{{ $m->phone ?? 'N/A' }}</td>
                   <td><span class="badge badge-info">{{ strtoupper($m->role) }}</span></td>
                   <td>
-                    <!-- 1-Click Login Button -->
-                    <a href="/admin/stores/managers/{{ $m->id }}/login" class="btn btn-success btn-xs font-weight-bold mr-1">
+                    <!-- 1-Click Login Button (Opens Manager Profile in New Tab) -->
+                    <a href="/admin/stores/managers/{{ $m->id }}/login" target="_blank" class="btn btn-success btn-xs font-weight-bold mr-1">
                       <i class="fas fa-sign-in-alt mr-1"></i> 1-Click Login
                     </a>
                     <!-- Edit Credentials Button -->

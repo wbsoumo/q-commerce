@@ -536,22 +536,23 @@ class AdminController extends Controller
     // 1-Click Admin to Manager Account Switch / Login
     public function oneClickManagerLogin($managerId)
     {
-        $manager = DB::table('users')->where('id', $managerId)->first();
-        if (!$manager) {
+        $user = \App\Models\User::find($managerId);
+        if (!$user) {
             return redirect()->back()->with('error', 'Manager account not found.');
         }
 
-        // Set session for store manager view
+        // Authenticate as Manager and set session
+        \Illuminate\Support\Facades\Auth::login($user);
         session([
-            'user_id' => $manager->id,
-            'user_name' => $manager->name,
-            'user_email' => $manager->email,
-            'user_role' => $manager->role,
+            'user_id' => $user->id,
+            'user_name' => $user->name,
+            'user_email' => $user->email,
+            'user_role' => $user->role,
             'user_type' => 'store_manager',
-            'store_id' => $manager->store_id,
+            'store_id' => $user->store_id ?? 1,
         ]);
 
-        return redirect('/admin/store-manager?store_id=' . $manager->store_id)->with('success', "Logged in as Store Manager {$manager->name}");
+        return redirect('/manager/dashboard')->with('success', "Logged in directly as Store Manager {$user->name}");
     }
 
     // 8. Global Home Page Customizer Action
