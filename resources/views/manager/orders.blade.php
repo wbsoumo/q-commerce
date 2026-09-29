@@ -75,15 +75,9 @@
                   <td class="align-middle"><span class="badge badge-light border">{{ $ord->payment_method ?? 'COD' }}</span></td>
                   <td class="align-middle"><span class="badge badge-info">{{ $ord->status }}</span></td>
                   <td class="align-middle">
-                    <form action="/manager/orders/{{ $ord->id }}/status" method="POST" class="form-inline">
-                      @csrf
-                      <select name="status" class="form-control form-control-sm font-weight-bold mr-2">
-                        @foreach(['Pending', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Out for Delivery', 'Delivered', 'Cancelled'] as $st)
-                          <option value="{{ $st }}" {{ $ord->status === $st ? 'selected' : '' }}>{{ $st }}</option>
-                        @endforeach
-                      </select>
-                      <button type="submit" class="btn btn-warning btn-sm font-weight-bold">Update</button>
-                    </form>
+                    <a href="/manager/orders/{{ $ord->id }}" class="btn btn-primary btn-sm font-weight-bold mr-1">
+                      <i class="fas fa-eye mr-1"></i> View Details & Next Step
+                    </a>
                   </td>
                 </tr>
                 @empty

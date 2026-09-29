@@ -255,6 +255,60 @@ class ManagerController extends Controller
         return view('manager.orders', compact('store', 'orders'));
     }
 
+    // Show Order Details & Interactive One-Next Stage Lifecycle for Store Manager
+    public function showOrder($id)
+    {
+        $store = $this->getStoreData();
+        if (!$store) return redirect('/manager/login');
+        $storeId = $store->id;
+
+        $order = DB::table('orders')->where('id', $id)->where('store_id', $storeId)->first();
+        if (!$order) {
+            return redirect('/manager/orders')->with('error', 'Order not found for your store branch.');
+        }
+
+        $items = DB::table('order_items')->where('order_id', $id)->get();
+        if ($items->isEmpty() && !empty($order->items)) {
+            $decoded = json_decode($order->items, true);
+            if (is_array($decoded)) {
+                $items = collect(array_map(function ($item) {
+                    return (object)[
+                        'product_name' => $item['name'] ?? 'Product',
+                        'price' => $item['price'] ?? 0,
+                        'quantity' => $item['quantity'] ?? 1,
+                        'total' => $item['total'] ?? (($item['price'] ?? 0) * ($item['quantity'] ?? 1)),
+                    ];
+                }, $decoded));
+            }
+        }
+
+        $delivery = DB::table('deliveries')
+            ->leftJoin('delivery_partners', 'deliveries.delivery_partner_id', '=', 'delivery_partners.id')
+            ->select('deliveries.*', 'delivery_partners.name as rider_name', 'delivery_partners.phone as rider_phone')
+            ->where('deliveries.order_id', $id)
+            ->first();
+
+        // Strictly fetch riders assigned to this specific store branch or unassigned
+        $riders = DB::table('delivery_partners')
+            ->where(function ($q) use ($storeId) {
+                $q->where('store_id', $storeId)
+                  ->orWhereNull('store_id');
+            })
+            ->where('is_active', true)
+            ->get();
+
+        if ($riders->isEmpty()) {
+            $riders = DB::table('delivery_partners')->where('is_active', true)->get();
+        }
+
+        $history = DB::table('order_status_histories')
+            ->where('order_id', $id)
+            ->orderBy('id', 'desc')
+            ->get();
+
+        return view('manager.orders_show', compact('store', 'order', 'items', 'delivery', 'riders', 'history'));
+    }
+
     // 3. Delivery Dispatch Page
     public function deliveries(Request $request)
     {
@@ -316,7 +370,29 @@ class ManagerController extends Controller
         }
 
         $newStatus = $request->input('status');
+        $riderId = $request->input('delivery_partner_id');
+
         DB::table('orders')->where('id', $id)->update(['status' => $newStatus, 'updated_at' => now()]);
+
+        if (!empty($riderId)) {
+            $existingDelivery = DB::table('deliveries')->where('order_id', $id)->first();
+            if ($existingDelivery) {
+                DB::table('deliveries')->where('id', $existingDelivery->id)->update([
+                    'delivery_partner_id' => $riderId,
+                    'status' => $newStatus === 'Delivered' ? 'Delivered' : 'Assigned',
+                    'updated_at' => now(),
+                ]);
+            } else {
+                DB::table('deliveries')->insert([
+                    'order_id' => $id,
+                    'store_id' => $storeId,
+                    'delivery_partner_id' => $riderId,
+                    'status' => $newStatus === 'Delivered' ? 'Delivered' : 'Assigned',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
 
         DB::table('order_status_histories')->insert([
             'order_id' => $id,

@@ -49,6 +49,7 @@ Route::middleware(['store.manager'])->group(function () {
     Route::post('/manager/products/update', [ManagerController::class, 'updateProduct']);
 
     Route::get('/manager/orders', [ManagerController::class, 'orders'])->name('manager.orders');
+    Route::get('/manager/orders/{id}', [ManagerController::class, 'showOrder'])->name('manager.orders.show');
     Route::post('/manager/orders/{id}/status', [ManagerController::class, 'updateOrderStatus']);
 
     Route::get('/manager/deliveries', [ManagerController::class, 'deliveries'])->name('manager.deliveries');
