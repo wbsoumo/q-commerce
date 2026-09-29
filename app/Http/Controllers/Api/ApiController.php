@@ -246,8 +246,12 @@ class ApiController extends Controller
             )
             ->get();
 
-        // Attach Variants if product has variants
+        // Attach Variants & Format Image URLs
         foreach ($products as $prod) {
+            if (!empty($prod->image) && !str_starts_with($prod->image, 'http://') && !str_starts_with($prod->image, 'https://')) {
+                $prod->image = asset(ltrim($prod->image, '/'));
+            }
+
             if ($prod->has_variants) {
                 $prod->variants = DB::table('product_variants')
                     ->where('product_id', $prod->id)
