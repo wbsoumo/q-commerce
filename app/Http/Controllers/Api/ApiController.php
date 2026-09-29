@@ -112,6 +112,7 @@ class ApiController extends Controller
             $selectedStore->closure_reason = !$isWithinCoverage
                 ? "We are currently not available at your location. Distance to nearest store (" . ($selectedStore->name ?? 'Store') . ") is " . round($minDistanceKm, 1) . " km (Coverage limit: " . ($selectedStore->delivery_radius_km ?? 15) . " km)."
                 : ($opStatus['reason'] ?? 'Store is open and operational.');
+            $selectedStore->address = str_replace('RATANR FLAT, ', '', $selectedStore->address ?? '');
             $selectedStore->delivery_time_mins = $selectedStore->estimated_delivery_time_mins ?? 15;
             $selectedStore->banner_color = $globalBannerColor;
             $selectedStore->banner_title = $globalBannerTitle;

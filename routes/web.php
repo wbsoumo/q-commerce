@@ -98,6 +98,9 @@ Route::middleware(['admin.only'])->group(function () {
     Route::post('/admin/products/store', [AdminController::class, 'storeProduct']);
     Route::get('/admin/products/{id}/edit', [AdminController::class, 'editProduct']);
     Route::post('/admin/products/update', [AdminController::class, 'updateProduct']);
+    Route::post('/admin/products/delete/{id}', [AdminController::class, 'deleteProduct']);
+    Route::post('/admin/products/bulk-action', [AdminController::class, 'bulkActionProducts']);
+    Route::post('/admin/products/quick-update', [AdminController::class, 'quickUpdateProduct']);
     Route::get('/admin/products/{id}/variants', [AdminController::class, 'productVariants']);
     Route::post('/admin/products/{id}/variants/store', [AdminController::class, 'storeProductVariant']);
 

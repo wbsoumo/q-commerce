@@ -95,20 +95,24 @@ class AdminController extends Controller
 
 
 
-    // Products List View (Global & Store Specific Filter + Search)
+    // Products List View (Amazon Inventory Management Dashboard)
     public function products(Request $request)
     {
         $query = DB::table('products')
-            ->join('categories', 'products.category_id', '=', 'categories.id')
+            ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
             ->leftJoin('stores', 'products.store_id', '=', 'stores.id')
             ->select('products.*', 'categories.name as category_name', 'stores.name as store_name');
 
         if ($request->filled('search')) {
-            $search = $request->search;
+            $search = trim($request->search);
             $query->where(function($q) use ($search) {
                 $q->where('products.name', 'LIKE', "%{$search}%")
                   ->orWhere('products.sku', 'LIKE', "%{$search}%");
             });
+        }
+
+        if ($request->filled('category_id')) {
+            $query->where('products.category_id', $request->category_id);
         }
 
         if ($request->has('scope') && in_array($request->scope, ['global', 'store_specific'])) {
@@ -119,10 +123,164 @@ class AdminController extends Controller
             $query->where('products.store_id', $request->store_id);
         }
 
-        $products = $query->orderBy('products.id', 'desc')->get();
-        $stores = DB::table('stores')->get();
+        if ($request->filled('stock_status')) {
+            if ($request->stock_status === 'out_of_stock') {
+                $query->where('products.stock', '<=', 0);
+            } elseif ($request->stock_status === 'low_stock') {
+                $query->where('products.stock', '>', 0)->where('products.stock', '<=', 5);
+            } elseif ($request->stock_status === 'in_stock') {
+                $query->where('products.stock', '>', 5);
+            }
+        }
 
-        return view('admin.products.index', compact('products', 'stores'));
+        $products = $query->orderBy('products.id', 'desc')->get();
+
+        // Summary Metric Calculations for Amazon Inventory System
+        $totalProductsCount = DB::table('products')->count();
+        $activeProductsCount = DB::table('products')->where('is_active', true)->count();
+        $lowStockCount = DB::table('products')->where('stock', '>', 0)->where('stock', '<=', 5)->count();
+        $outOfStockCount = DB::table('products')->where('stock', '<=', 0)->count();
+        $totalInventoryValue = DB::table('products')->sum(DB::raw('stock * price'));
+
+        $categories = DB::table('categories')->where('is_active', true)->get();
+        $stores = DB::table('stores')->where('is_active', true)->get();
+
+        return view('admin.products.index', compact(
+            'products', 
+            'stores', 
+            'categories', 
+            'totalProductsCount', 
+            'activeProductsCount', 
+            'lowStockCount', 
+            'outOfStockCount',
+            'totalInventoryValue'
+        ));
+    }
+
+    // Single Product Delete Endpoint
+    public function deleteProduct($id)
+    {
+        $product = DB::table('products')->where('id', $id)->first();
+        if (!$product) {
+            return redirect('/admin/products')->with('error', 'Product not found.');
+        }
+
+        // Clean up image file if locally stored under uploads/products
+        if ($product->image && str_contains($product->image, 'uploads/products/')) {
+            $filePath = public_path($product->image);
+            if (file_exists($filePath)) {
+                @unlink($filePath);
+            }
+        }
+
+        DB::table('products')->where('id', $id)->delete();
+
+        return redirect('/admin/products')->with('success', "Product '{$product->name}' (SKU: {$product->sku}) deleted successfully!");
+    }
+
+    // Multi-Select / Bulk Actions Endpoint (Amazon Style Inventory Bulk Management)
+    public function bulkActionProducts(Request $request)
+    {
+        $validated = $request->validate([
+            'action' => 'required|string',
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:products,id',
+            'target_category_id' => 'nullable|integer|exists:categories,id',
+            'target_stock' => 'nullable|integer|min:0',
+        ]);
+
+        $ids = $validated['ids'];
+        $action = $validated['action'];
+        $count = count($ids);
+
+        switch ($action) {
+            case 'delete':
+                // Optional file cleanup
+                $prods = DB::table('products')->whereIn('id', $ids)->get();
+                foreach ($prods as $p) {
+                    if ($p->image && str_contains($p->image, 'uploads/products/')) {
+                        $filePath = public_path($p->image);
+                        if (file_exists($filePath)) {
+                            @unlink($filePath);
+                        }
+                    }
+                }
+                DB::table('products')->whereIn('id', $ids)->delete();
+                $message = "{$count} product(s) deleted successfully.";
+                break;
+
+            case 'activate':
+                DB::table('products')->whereIn('id', $ids)->update([
+                    'is_active' => true,
+                    'updated_at' => now(),
+                ]);
+                $message = "{$count} product(s) activated successfully.";
+                break;
+
+            case 'deactivate':
+                DB::table('products')->whereIn('id', $ids)->update([
+                    'is_active' => false,
+                    'updated_at' => now(),
+                ]);
+                $message = "{$count} product(s) deactivated successfully.";
+                break;
+
+            case 'make_global':
+                DB::table('products')->whereIn('id', $ids)->update([
+                    'scope' => 'global',
+                    'store_id' => null,
+                    'updated_at' => now(),
+                ]);
+                $message = "{$count} product(s) updated to Global scope.";
+                break;
+
+            case 'update_category':
+                if (!$request->filled('target_category_id')) {
+                    return redirect()->back()->with('error', 'Please select a target category for bulk update.');
+                }
+                DB::table('products')->whereIn('id', $ids)->update([
+                    'category_id' => $request->target_category_id,
+                    'updated_at' => now(),
+                ]);
+                $message = "Category updated for {$count} product(s).";
+                break;
+
+            case 'update_stock':
+                $stockVal = (int)$request->input('target_stock', 0);
+                DB::table('products')->whereIn('id', $ids)->update([
+                    'stock' => $stockVal,
+                    'updated_at' => now(),
+                ]);
+                $message = "Stock inventory set to {$stockVal} for {$count} product(s).";
+                break;
+
+            default:
+                return redirect()->back()->with('error', 'Invalid multi-select action requested.');
+        }
+
+        return redirect('/admin/products')->with('success', $message);
+    }
+
+    // Fast Inline / Modal Quick Update (Price & Stock)
+    public function quickUpdateProduct(Request $request)
+    {
+        $validated = $request->validate([
+            'id' => 'required|integer|exists:products,id',
+            'stock' => 'required|integer|min:0',
+            'price' => 'required|numeric|min:0',
+        ]);
+
+        DB::table('products')->where('id', $validated['id'])->update([
+            'stock' => $validated['stock'],
+            'price' => $validated['price'],
+            'updated_at' => now(),
+        ]);
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Product updated successfully']);
+        }
+
+        return redirect()->back()->with('success', 'Product inventory updated successfully!');
     }
 
     // Create Product Form
