@@ -443,7 +443,24 @@ class ApiController extends Controller
                         'payment_method' => $request->input('payment_method', 'Cash on Delivery'),
                         'order_type' => $orderType,
                         'status' => 'Pending',
-                        'items' => $checkoutResult['items'],
+                        'store_name' => $store->name ?? 'Sonarbangla Mart (Krishnanagar Store)',
+                        'store_address' => $store->address ?? 'Holding 42, Main Road, Krishnanagar, Nadia - 741101',
+                        'store_phone' => $store->phone ?? '8016222991',
+                        'store_lat' => (float)($store->latitude ?? 23.4013),
+                        'store_lng' => (float)($store->longitude ?? 88.5010),
+                        'pickup_details' => [
+                            'store_name' => $store->name ?? 'Sonarbangla Mart (Krishnanagar Store)',
+                            'store_address' => $store->address ?? 'Holding 42, Main Road, Krishnanagar, Nadia - 741101',
+                            'store_phone' => $store->phone ?? '8016222991',
+                            'store_lat' => (float)($store->latitude ?? 23.4013),
+                            'store_lng' => (float)($store->longitude ?? 88.5010),
+                        ],
+                        'items' => array_map(function($it) {
+                            $p = isset($it['product_id']) ? DB::table('products')->where('id', $it['product_id'])->first() : null;
+                            $it['product_name'] = $it['name'] ?? $p->name ?? 'Item';
+                            $it['product_image'] = $it['product_image'] ?? $it['image'] ?? $p->image ?? '';
+                            return $it;
+                        }, $checkoutResult['items']),
                         'created_at' => now()->toDateTimeString(),
                     ],
                 ], 201);
@@ -562,23 +579,51 @@ class ApiController extends Controller
         foreach ($orders as $ord) {
             $ord->items = DB::table('order_items')
                 ->leftJoin('products', 'order_items.product_id', '=', 'products.id')
-                ->select('order_items.*', 'products.image as product_image', 'products.unit')
+                ->select(
+                    'order_items.*',
+                    DB::raw('COALESCE(order_items.product_name, products.name, "Item") as product_name'),
+                    DB::raw('COALESCE(products.image, order_items.product_image, "") as product_image'),
+                    'products.unit'
+                )
                 ->where('order_items.order_id', $ord->id)
                 ->get();
+
+            // Populate store details & lat/lng
+            $store = DB::table('stores')->where('id', $ord->store_id)->first();
+            if (!$store) {
+                $store = DB::table('stores')->first();
+            }
+
+            $ord->store_name = $store->name ?? 'Sonarbangla Mart (Krishnanagar Store)';
+            $ord->store_address = $store->address ?? 'Holding 42, Main Road, Krishnanagar, Nadia - 741101';
+            $ord->store_phone = $store->phone ?? '8016222991';
+            $ord->store_lat = (float)($store->latitude ?? 23.4013);
+            $ord->store_lng = (float)($store->longitude ?? 88.5010);
+
             $ord->status_history = DB::table('order_status_histories')
                 ->where('order_id', $ord->id)
                 ->orderBy('created_at', 'asc')
                 ->get();
-            $ord->pickup_details = $ord->order_type === 'pickup'
-                ? DB::table('store_pickup_orders')->where('order_id', $ord->id)->first()
-                : null;
-            $ord->delivery_details = $ord->order_type === 'delivery'
-                ? DB::table('deliveries')
+
+            $pickupRow = DB::table('store_pickup_orders')->where('order_id', $ord->id)->first();
+            $ord->pickup_details = [
+                'store_name' => $ord->store_name,
+                'store_address' => $ord->store_address,
+                'store_phone' => $ord->store_phone,
+                'store_lat' => $ord->store_lat,
+                'store_lng' => $ord->store_lng,
+                'pickup_date' => $pickupRow->pickup_date ?? $ord->pickup_date ?? date('Y-m-d'),
+                'pickup_slot_time' => $pickupRow->pickup_slot_time ?? $ord->pickup_time ?? '10:00 AM - 11:00 AM',
+                'pickup_status' => $pickupRow->pickup_status ?? 'Scheduled',
+            ];
+
+            $ord->delivery_details = $ord->order_type === 'pickup'
+                ? null
+                : DB::table('deliveries')
                     ->leftJoin('delivery_partners', 'deliveries.delivery_partner_id', '=', 'delivery_partners.id')
                     ->select('deliveries.*', 'delivery_partners.name as rider_name', 'delivery_partners.phone as rider_phone')
                     ->where('deliveries.order_id', $ord->id)
-                    ->first()
-                : null;
+                    ->first();
         }
 
         return response()->json([
