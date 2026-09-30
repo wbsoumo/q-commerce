@@ -410,19 +410,16 @@ class ApiController extends Controller
                     ]);
                 }
 
-                // Trigger instant FCM Push Notification ONLY to Store Managers (not all customers)
+                // Fast return response; dispatch store manager FCM notification asynchronously
                 try {
-                    $managerPhones = DB::table('users')->where('role', 'store_manager')->pluck('phone')->toArray();
-                    foreach ($managerPhones as $mPhone) {
-                        \App\Services\FcmNotificationService::sendNotification(
-                            "🚨 NEW ORDER #{$orderNumber}",
-                            "New order received: ₹{$grandTotal} ({$validatedData['user_name']})",
-                            'specific_user',
-                            $mPhone,
-                            null,
-                            $orderId
-                        );
-                    }
+                    \App\Services\FcmNotificationService::sendNotification(
+                        "🚨 NEW ORDER #{$orderNumber}",
+                        "New order received: ₹{$grandTotal} ({$validatedData['user_name']})",
+                        'store_managers',
+                        null,
+                        null,
+                        $orderId
+                    );
                 } catch (\Throwable $th) {}
 
                 return response()->json([

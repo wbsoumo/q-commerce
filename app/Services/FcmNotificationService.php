@@ -23,56 +23,35 @@ class FcmNotificationService
             $serviceAccount = json_decode($serviceAccountRaw, true);
         }
 
-        // Fetch target FCM tokens
+        // Fetch target FCM tokens cleanly without duplicates or dummy tokens
         $tokens = [];
         if ($targetType === 'specific_user' && !empty($targetPhone)) {
-            // Clean phone format
             $phoneDigits = preg_replace('/[^0-9]/', '', $targetPhone);
             $cleanPhone = (strlen($phoneDigits) === 10) ? '+91' . $phoneDigits : '+' . $phoneDigits;
 
             $tokens = DB::table('fcm_tokens')
                 ->where('user_phone', $cleanPhone)
                 ->orWhere('user_phone', $targetPhone)
+                ->where('fcm_token', 'NOT LIKE', 'fcm_%')
                 ->pluck('fcm_token')
                 ->toArray();
-
-            if (empty($tokens)) {
-                // Auto seed token for this specific user
-                $newToken = 'fcm_' . md5($cleanPhone . 'device');
-                DB::table('fcm_tokens')->insert([
-                    'user_phone' => $cleanPhone,
-                    'fcm_token' => $newToken,
-                    'device_type' => 'android',
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-                $tokens[] = $newToken;
+        } elseif ($targetType === 'store_managers') {
+            $managerPhones = DB::table('users')->where('role', 'store_manager')->pluck('phone')->toArray();
+            if (!empty($managerPhones)) {
+                $tokens = DB::table('fcm_tokens')
+                    ->whereIn('user_phone', $managerPhones)
+                    ->where('fcm_token', 'NOT LIKE', 'fcm_%')
+                    ->pluck('fcm_token')
+                    ->toArray();
             }
         } else {
             $tokens = DB::table('fcm_tokens')
+                ->where('fcm_token', 'NOT LIKE', 'fcm_%')
                 ->pluck('fcm_token')
                 ->toArray();
-
-            if (empty($tokens)) {
-                // Auto-populate for all registered users & addresses
-                $userPhones = DB::table('users')->whereNotNull('phone')->pluck('phone')->toArray();
-                $addressPhones = DB::table('user_addresses')->pluck('user_phone')->toArray();
-                $allPhones = array_unique(array_filter(array_merge($userPhones, $addressPhones)));
-
-                foreach ($allPhones as $phone) {
-                    $newToken = 'fcm_' . md5($phone . 'device');
-                    DB::table('fcm_tokens')->updateOrInsert(
-                        ['user_phone' => $phone],
-                        [
-                            'fcm_token' => $newToken,
-                            'device_type' => 'android',
-                            'updated_at' => now(),
-                        ]
-                    );
-                    $tokens[] = $newToken;
-                }
-            }
         }
+
+        $tokens = array_values(array_unique(array_filter($tokens)));
 
 
         $sentCount = 0;
