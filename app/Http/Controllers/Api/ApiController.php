@@ -337,22 +337,24 @@ class ApiController extends Controller
                     'updated_at' => now(),
                 ]);
 
-                // 1b. Insert Store Pickup Record if Pickup Order
-                if ($orderType === 'pickup') {
-                    $store = DB::table('stores')->where('id', $checkoutResult['store_id'])->first();
-                    DB::table('store_pickup_orders')->insert([
-                        'order_id' => $orderId,
-                        'store_id' => $checkoutResult['store_id'],
-                        'customer_name' => $request->input('receiver_name') ?: $validatedData['user_name'],
-                        'customer_phone' => $request->input('receiver_phone') ?: $validatedData['user_phone'],
-                        'pickup_date' => $request->input('pickup_date') ?: now()->toDateString(),
-                        'pickup_slot_time' => $request->input('pickup_time') ?: '10:00 AM - 11:00 AM',
-                        'store_opening_time' => $store->opening_time ?? '06:00 AM',
-                        'store_closing_time' => $store->closing_time ?? '11:00 PM',
-                        'pickup_status' => 'Scheduled',
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
+                // 1b. Insert Store Pickup Record if Pickup Order and table exists
+                if ($orderType === 'pickup' && \Illuminate\Support\Facades\Schema::hasTable('store_pickup_orders')) {
+                    try {
+                        $store = DB::table('stores')->where('id', $checkoutResult['store_id'])->first();
+                        DB::table('store_pickup_orders')->insert([
+                            'order_id' => $orderId,
+                            'store_id' => $checkoutResult['store_id'],
+                            'customer_name' => $request->input('receiver_name') ?: $validatedData['user_name'],
+                            'customer_phone' => $request->input('receiver_phone') ?: $validatedData['user_phone'],
+                            'pickup_date' => $request->input('pickup_date') ?: now()->toDateString(),
+                            'pickup_slot_time' => $request->input('pickup_time') ?: '10:00 AM - 11:00 AM',
+                            'store_opening_time' => $store->opening_time ?? '06:00 AM',
+                            'store_closing_time' => $store->closing_time ?? '11:00 PM',
+                            'pickup_status' => 'Scheduled',
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    } catch (\Throwable $pickupEx) {}
                 }
 
                 // 2. Insert Order Items & Reserve Stock
