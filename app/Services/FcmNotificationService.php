@@ -35,21 +35,25 @@ class FcmNotificationService
                       ->orWhere('user_phone', $cleanPhone)
                       ->orWhere('user_phone', $phoneDigits);
                 })
-                ->where('fcm_token', 'NOT LIKE', 'fcm_%')
                 ->pluck('fcm_token')
                 ->toArray();
         } elseif ($targetType === 'store_managers') {
             $managerPhones = DB::table('users')->where('role', 'store_manager')->pluck('phone')->toArray();
             if (!empty($managerPhones)) {
+                $phoneVariations = [];
+                foreach ($managerPhones as $mPhone) {
+                    $digits = preg_replace('/[^0-9]/', '', $mPhone);
+                    $phoneVariations[] = $mPhone;
+                    $phoneVariations[] = $digits;
+                    $phoneVariations[] = (strlen($digits) === 10) ? '+91' . $digits : '+' . $digits;
+                }
                 $tokens = DB::table('fcm_tokens')
-                    ->whereIn('user_phone', $managerPhones)
-                    ->where('fcm_token', 'NOT LIKE', 'fcm_%')
+                    ->whereIn('user_phone', array_unique($phoneVariations))
                     ->pluck('fcm_token')
                     ->toArray();
             }
         } else {
             $tokens = DB::table('fcm_tokens')
-                ->where('fcm_token', 'NOT LIKE', 'fcm_%')
                 ->pluck('fcm_token')
                 ->toArray();
         }
