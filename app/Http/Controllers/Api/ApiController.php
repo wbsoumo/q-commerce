@@ -1262,6 +1262,30 @@ class ApiController extends Controller
 
             $updatedOrder = DB::table('orders')->where('id', $orderId)->first();
 
+            // Trigger FCM Push Notification to Customer App
+            try {
+                $custPhone = $order->user_phone ?? $order->receiver_phone ?? null;
+                $statusTitles = [
+                    'Packing' => '📦 Order Being Packed!',
+                    'Out for Delivery' => '🛵 Order Out for Delivery!',
+                    'Delivered' => '🎉 Order Delivered Successfully!',
+                    'Cancelled' => '❌ Order Status Update',
+                ];
+                $title = $statusTitles[$newStatus] ?? "Order #{$order->order_number} Status Updated";
+                $body = "Your order #{$order->order_number} has been updated to {$newStatus}. Tap to view details.";
+
+                \App\Services\FcmNotificationService::sendNotification(
+                    $title,
+                    $body,
+                    $custPhone ? 'specific_user' : 'all',
+                    $custPhone,
+                    null,
+                    $orderId
+                );
+            } catch (\Throwable $fcmEx) {
+                // Prevent FCM dispatch issues from blocking API response
+            }
+
             return response()->json([
                 'status' => 'success',
                 'message' => "Order #{$orderId} status updated to '{$newStatus}' successfully!",
