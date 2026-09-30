@@ -30,8 +30,11 @@ class FcmNotificationService
             $cleanPhone = (strlen($phoneDigits) === 10) ? '+91' . $phoneDigits : '+' . $phoneDigits;
 
             $tokens = DB::table('fcm_tokens')
-                ->where('user_phone', $cleanPhone)
-                ->orWhere('user_phone', $targetPhone)
+                ->where(function($q) use ($targetPhone, $cleanPhone, $phoneDigits) {
+                    $q->where('user_phone', $targetPhone)
+                      ->orWhere('user_phone', $cleanPhone)
+                      ->orWhere('user_phone', $phoneDigits);
+                })
                 ->where('fcm_token', 'NOT LIKE', 'fcm_%')
                 ->pluck('fcm_token')
                 ->toArray();

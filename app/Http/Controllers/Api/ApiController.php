@@ -968,23 +968,20 @@ class ApiController extends Controller
         $phoneDigits = preg_replace('/[^0-9]/', '', $rawPhone);
         $phone = (strlen($phoneDigits) === 10) ? '+91' . $phoneDigits : '+' . $phoneDigits;
 
-        $existing = DB::table('fcm_tokens')->where('fcm_token', $fcmToken)->first();
+        // Clean previous tokens for this user so ONLY ONE latest device receives notifications
+        DB::table('fcm_tokens')->where('user_phone', $phone)->orWhere('user_phone', $rawPhone)->orWhere('user_phone', $phoneDigits)->delete();
 
-        if ($existing) {
-            DB::table('fcm_tokens')->where('id', $existing->id)->update([
-                'user_phone' => $phone,
-                'device_type' => $deviceType,
-                'updated_at' => now(),
-            ]);
-        } else {
-            DB::table('fcm_tokens')->insert([
-                'user_phone' => $phone,
-                'fcm_token' => $fcmToken,
-                'device_type' => $deviceType,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
+        // Also delete if this specific token was registered under a different user
+        DB::table('fcm_tokens')->where('fcm_token', $fcmToken)->delete();
+
+        // Insert fresh single active token for this user
+        DB::table('fcm_tokens')->insert([
+            'user_phone' => $phone,
+            'fcm_token' => $fcmToken,
+            'device_type' => $deviceType,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
         return response()->json([
             'status' => 'success',
