@@ -582,7 +582,7 @@ class ApiController extends Controller
                 ->select(
                     'order_items.*',
                     DB::raw('COALESCE(order_items.product_name, products.name, "Item") as product_name'),
-                    DB::raw('COALESCE(products.image, order_items.product_image, "") as product_image'),
+                    DB::raw('COALESCE(products.image, "") as product_image'),
                     'products.unit'
                 )
                 ->where('order_items.order_id', $ord->id)
@@ -605,7 +605,10 @@ class ApiController extends Controller
                 ->orderBy('created_at', 'asc')
                 ->get();
 
-            $pickupRow = DB::table('store_pickup_orders')->where('order_id', $ord->id)->first();
+            $pickupRow = \Illuminate\Support\Facades\Schema::hasTable('store_pickup_orders')
+                ? DB::table('store_pickup_orders')->where('order_id', $ord->id)->first()
+                : null;
+
             $ord->pickup_details = [
                 'store_name' => $ord->store_name,
                 'store_address' => $ord->store_address,
