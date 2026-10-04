@@ -183,6 +183,8 @@ Route::prefix('api/v1')->group(function () {
     Route::get('/coupons', [ApiController::class, 'getCoupons']);
     Route::post('/coupons/validate', [ApiController::class, 'validateCoupon']);
     Route::get('/user/wallet', [ApiController::class, 'getUserWallet']);
+    Route::get('/user/wishlist', [ApiController::class, 'getUserWishlist']);
+    Route::post('/user/wishlist/toggle', [ApiController::class, 'toggleWishlist']);
 
     // Dedicated Store Manager App API Routes
     Route::post('/manager/login', [ApiController::class, 'managerLogin']);

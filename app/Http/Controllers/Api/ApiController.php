@@ -1373,6 +1373,124 @@ class ApiController extends Controller
             ], 500)->header('Access-Control-Allow-Origin', '*');
         }
     }
+
+    // Ensure wishlists table exists in DB
+    private function ensureWishlistsTableExists()
+    {
+        if (!Schema::hasTable('wishlists')) {
+            try {
+                Schema::create('wishlists', function ($table) {
+                    $table->id();
+                    $table->string('user_phone');
+                    $table->unsignedBigInteger('product_id');
+                    $table->timestamps();
+                    $table->unique(['user_phone', 'product_id']);
+                });
+            } catch (\Throwable $e) {}
+        }
+    }
+
+    // Toggle Product in User Wishlist
+    public function toggleWishlist(Request $request)
+    {
+        $this->ensureWishlistsTableExists();
+        $userPhone = trim($request->input('user_phone', $request->input('phone', '8016222991')));
+        $productId = $request->input('product_id');
+
+        if (empty($productId)) {
+            return response()->json(['status' => 'error', 'message' => 'Product ID is required.'], 400)->header('Access-Control-Allow-Origin', '*');
+        }
+
+        $existing = DB::table('wishlists')
+            ->where('user_phone', $userPhone)
+            ->where('product_id', $productId)
+            ->first();
+
+        if ($existing) {
+            DB::table('wishlists')
+                ->where('user_phone', $userPhone)
+                ->where('product_id', $productId)
+                ->delete();
+
+            return response()->json([
+                'status' => 'success',
+                'action' => 'removed',
+                'is_wishlisted' => false,
+                'message' => 'Product removed from wishlist.',
+            ])->header('Access-Control-Allow-Origin', '*');
+        } else {
+            DB::table('wishlists')->insert([
+                'user_phone' => $userPhone,
+                'product_id' => $productId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'action' => 'added',
+                'is_wishlisted' => true,
+                'message' => 'Product added to wishlist!',
+            ])->header('Access-Control-Allow-Origin', '*');
+        }
+    }
+
+    // Get User Wishlisted Products with Product Details
+    public function getUserWishlist(Request $request)
+    {
+        $this->ensureWishlistsTableExists();
+        $userPhone = trim($request->query('user_phone', $request->query('phone', '8016222991')));
+        $storeId = (int)$request->query('store_id', 1);
+
+        $wishlistRecords = DB::table('wishlists')
+            ->where('user_phone', $userPhone)
+            ->orderBy('id', 'desc')
+            ->get();
+
+        $productIds = $wishlistRecords->pluck('product_id')->toArray();
+
+        if (empty($productIds)) {
+            return response()->json([
+                'status' => 'success',
+                'data' => [],
+                'product_ids' => [],
+            ])->header('Access-Control-Allow-Origin', '*');
+        }
+
+        $products = DB::table('products')
+            ->whereIn('products.id', $productIds)
+            ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
+            ->leftJoin('store_product_inventories', function($join) use ($storeId) {
+                $join->on('products.id', '=', 'store_product_inventories.product_id')
+                     ->where('store_product_inventories.store_id', '=', $storeId);
+            })
+            ->select(
+                'products.*',
+                'categories.name as category_name',
+                'store_product_inventories.custom_price',
+                'store_product_inventories.custom_mrp',
+                'store_product_inventories.custom_stock',
+                'store_product_inventories.is_available'
+            )
+            ->get();
+
+        foreach ($products as $prod) {
+            if (!empty($prod->image) && !str_starts_with($prod->image, 'http://') && !str_starts_with($prod->image, 'https://')) {
+                $prod->image = asset(ltrim($prod->image, '/'));
+            }
+
+            $prod->effective_price = $prod->custom_price ?? $prod->price;
+            $prod->effective_mrp = $prod->custom_mrp ?? $prod->mrp;
+            $totalStock = $prod->custom_stock ?? $prod->stock;
+            $prod->available_stock = max(0, $totalStock);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $products,
+            'product_ids' => array_map('strval', $productIds),
+        ])->header('Access-Control-Allow-Origin', '*');
+    }
 }
 
 
