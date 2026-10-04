@@ -165,8 +165,8 @@ class ApiController extends Controller
         $productCount = DB::table('products')->where('is_active', true)->count();
         $productsVersion = md5("{$lastProductUpdate}_{$productCount}");
 
-        $lastSliderUpdate = DB::table('promotional_sliders')->max('updated_at') ?? '1970-01-01 00:00:00';
-        $sliderCount = DB::table('promotional_sliders')->where('is_active', true)->count();
+        $lastSliderUpdate = Schema::hasTable('sliders') ? (DB::table('sliders')->max('updated_at') ?? '1970-01-01 00:00:00') : '1970-01-01 00:00:00';
+        $sliderCount = Schema::hasTable('sliders') ? DB::table('sliders')->where('is_active', true)->count() : 0;
         $slidersVersion = md5("{$lastSliderUpdate}_{$sliderCount}");
 
         $sinceTime = $request->query('updated_since');
