@@ -165,16 +165,44 @@ class ApiController extends Controller
         $productCount = DB::table('products')->where('is_active', true)->count();
         $productsVersion = md5("{$lastProductUpdate}_{$productCount}");
 
+        $lastSliderUpdate = DB::table('promotional_sliders')->max('updated_at') ?? '1970-01-01 00:00:00';
+        $sliderCount = DB::table('promotional_sliders')->where('is_active', true)->count();
+        $slidersVersion = md5("{$lastSliderUpdate}_{$sliderCount}");
+
+        $sinceTime = $request->query('updated_since');
+        $changedProductIds = [];
+        $deletedProductIds = [];
+
+        if ($sinceTime) {
+            $changedProductIds = DB::table('products')
+                ->where('updated_at', '>', $sinceTime)
+                ->where('is_active', true)
+                ->pluck('id')
+                ->toArray();
+            
+            $deletedProductIds = DB::table('products')
+                ->where('is_active', false)
+                ->where('updated_at', '>', $sinceTime)
+                ->pluck('id')
+                ->toArray();
+        }
+
         return response()->json([
             'status' => 'success',
             'versions' => [
                 'store' => $storeVersion,
                 'categories' => $categoriesVersion,
                 'products' => $productsVersion,
+                'sliders' => $slidersVersion,
             ],
             'last_updated' => [
                 'categories' => $lastCategoryUpdate,
                 'products' => $lastProductUpdate,
+                'sliders' => $lastSliderUpdate,
+            ],
+            'delta' => [
+                'changed_product_ids' => $changedProductIds,
+                'deleted_product_ids' => $deletedProductIds,
             ],
             'server_time' => now()->toIso8601String(),
         ])->header('Access-Control-Allow-Origin', '*')
