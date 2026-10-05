@@ -1177,12 +1177,33 @@ class AdminController extends Controller
 
         // Global Statistics
         $totalCustomersCount = DB::table('customers')->count();
-        $activeCustomersCount = DB::table('customers')->where(function($q) {
-            $q->where('status', 'Active')->orWhereNull('status');
-        })->count();
-        $deletedCustomersCount = DB::table('customers')->where('status', 'Deleted')->orWhereIn('user_id', function($sub) {
-            $sub->select('id')->from('users')->where('account_status', 'deleted')->orWhereNotNull('deleted_at');
-        })->count();
+        $deletedCustomersCount = DB::table('customers')
+            ->leftJoin('users', function($join) {
+                $join->on('customers.user_id', '=', 'users.id')
+                     ->orOn('customers.phone', '=', 'users.phone');
+            })
+            ->where(function($q) {
+                $q->where('customers.status', 'Deleted')
+                  ->orWhere('users.account_status', 'deleted')
+                  ->orWhereNotNull('users.deleted_at');
+            })
+            ->count();
+
+        $activeCustomersCount = DB::table('customers')
+            ->leftJoin('users', function($join) {
+                $join->on('customers.user_id', '=', 'users.id')
+                     ->orOn('customers.phone', '=', 'users.phone');
+            })
+            ->where(function($q) {
+                $q->where(function($sub) {
+                    $sub->where('customers.status', 'Active')->orWhereNull('customers.status');
+                })->where(function($sub2) {
+                    $sub2->whereNull('users.account_status')
+                         ->orWhere('users.account_status', '!=', 'deleted');
+                })->whereNull('users.deleted_at');
+            })
+            ->count();
+
         $vipCustomersCount = DB::table('customers')->where('is_vip', true)->count();
         $totalWalletLiability = (float)DB::table('customers')->sum('wallet_balance');
         $totalLifetimeSpent = (float)DB::table('customers')->sum('total_spent');
