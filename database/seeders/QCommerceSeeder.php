@@ -401,20 +401,32 @@ class QCommerceSeeder extends Seeder
             ]);
         }
 
-        // 6. Seed FCM Service Account Settings for SB Mart Ops
+        // 6. Seed FCM Service Account Settings for SB Mart (sbmart-26423)
         if (Schema::hasTable('fcm_settings')) {
-            $jsonPath = base_path('../Blinkit-UI-Manager/data/sbmartops-firebase-adminsdk-fbsvc-6d45620d89.json');
+            $jsonPath = storage_path('app/firebase-service-account.json');
+            $b64Path = storage_path('app/firebase-service-account.b64');
+            $jsonContent = null;
+
             if (file_exists($jsonPath)) {
                 $jsonContent = file_get_contents($jsonPath);
-                DB::table('fcm_settings')->updateOrInsert(
-                    ['project_id' => 'sbmartops'],
-                    [
-                        'service_account_json' => $jsonContent,
-                        'is_active' => true,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]
-                );
+            } elseif (file_exists($b64Path)) {
+                $jsonContent = base64_decode(file_get_contents($b64Path));
+            } elseif (file_exists(base_path('../Blinkit-UI-Manager/data/sbmartops-firebase-adminsdk-fbsvc-6d45620d89.json'))) {
+                $jsonContent = file_get_contents(base_path('../Blinkit-UI-Manager/data/sbmartops-firebase-adminsdk-fbsvc-6d45620d89.json'));
+            }
+
+            if (!empty($jsonContent)) {
+                $parsed = json_decode($jsonContent, true);
+                $projectId = $parsed['project_id'] ?? 'sbmart-26423';
+                
+                DB::table('fcm_settings')->truncate();
+                DB::table('fcm_settings')->insert([
+                    'project_id' => $projectId,
+                    'service_account_json' => $jsonContent,
+                    'is_active' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
             }
         }
     }

@@ -211,6 +211,35 @@ Route::prefix('api/v1')->group(function () {
 
     Route::get('/git-pull-deploy', function () {
         $output = shell_exec('cd ' . base_path() . ' && git reset --hard origin/main && git pull origin main 2>&1');
+        
+        try {
+            $jsonPath = storage_path('app/firebase-service-account.json');
+            $b64Path = storage_path('app/firebase-service-account.b64');
+            $jsonContent = null;
+
+            if (file_exists($jsonPath)) {
+                $jsonContent = file_get_contents($jsonPath);
+            } elseif (file_exists($b64Path)) {
+                $jsonContent = base64_decode(file_get_contents($b64Path));
+            }
+
+            if (!empty($jsonContent)) {
+                $parsed = json_decode($jsonContent, true);
+                $projectId = $parsed['project_id'] ?? 'sbmart-26423';
+                
+                DB::table('fcm_settings')->truncate();
+                DB::table('fcm_settings')->insert([
+                    'project_id' => $projectId,
+                    'service_account_json' => $jsonContent,
+                    'is_active' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        } catch (\Exception $e) {
+            $output .= "\nFCM Sync Warning: " . $e->getMessage();
+        }
+
         return response()->json(['status' => 'success', 'output' => $output]);
     });
 });
