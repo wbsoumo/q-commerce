@@ -2427,11 +2427,44 @@ class AdminController extends Controller
             return back()->with('error', 'Invalid status specified.');
         }
 
+        $order = DB::table('custom_order_requests')->where('id', $id)->first();
+        if (!$order) {
+            return back()->with('error', 'Custom order request not found.');
+        }
+
         DB::table('custom_order_requests')->where('id', $id)->update([
             'status' => $status,
             'updated_at' => now(),
         ]);
 
-        return back()->with('success', "Custom order request #$id status updated to " . ucfirst($status));
+        // Trigger Push Notification to user's device
+        if (!empty($order->user_phone)) {
+            try {
+                $title = "Custom Order Update";
+                $body = "Your custom order request #REQ-{$id} status is now " . ucfirst($status) . ".";
+
+                if ($status === 'approved') {
+                    $title = "Custom Order Request Approved! 🎉";
+                    $body = "Your custom order request #REQ-{$id} has been approved! Our team is arranging your items.";
+                } elseif ($status === 'rejected') {
+                    $title = "Custom Order Request Update";
+                    $body = "Your custom order request #REQ-{$id} could not be fulfilled at this time.";
+                } elseif ($status === 'completed') {
+                    $title = "Custom Order Completed! 🛒";
+                    $body = "Your custom order request #REQ-{$id} has been fulfilled and completed. Thank you for choosing SB Mart!";
+                }
+
+                \App\Services\FcmNotificationService::sendNotification(
+                    $title,
+                    $body,
+                    'specific_user',
+                    $order->user_phone
+                );
+            } catch (\Throwable $e) {
+                // Ignore push error silently to avoid breaking web workflow
+            }
+        }
+
+        return back()->with('success', "Custom order request #REQ-$id status updated to " . ucfirst($status) . " and user notification sent.");
     }
 }

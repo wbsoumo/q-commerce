@@ -1646,15 +1646,35 @@ class ApiController extends Controller
             $longitude = $request->input('longitude');
 
             $imagePath = null;
-            if ($request->hasFile('image')) {
-                $file = $request->file('image');
-                $filename = 'custom_order_' . time() . '_' . rand(1000, 9999) . '.' . $file->getClientOriginalExtension();
+            if ($request->hasFile('image') || $request->hasFile('file') || $request->hasFile('photo')) {
+                $file = $request->file('image') ?? $request->file('file') ?? $request->file('photo');
+                $ext = $file->getClientOriginalExtension() ?: 'jpg';
+                $filename = 'custom_order_' . time() . '_' . rand(1000, 9999) . '.' . $ext;
+                
                 $uploadDir = public_path('uploads/custom_orders');
                 if (!file_exists($uploadDir)) {
-                    mkdir($uploadDir, 0777, true);
+                    @mkdir($uploadDir, 0777, true);
                 }
                 $file->move($uploadDir, $filename);
                 $imagePath = 'uploads/custom_orders/' . $filename;
+            } elseif ($request->input('image') && is_string($request->input('image')) && strlen($request->input('image')) > 20) {
+                $rawImage = $request->input('image');
+                $ext = 'jpg';
+                if (preg_match('/^data:image\/(\w+);base64,/', $rawImage, $type)) {
+                    $rawImage = substr($rawImage, strpos($rawImage, ',') + 1);
+                    $ext = strtolower($type[1]);
+                }
+                $rawImage = str_replace(' ', '+', $rawImage);
+                $decodedData = base64_decode($rawImage);
+                if ($decodedData !== false) {
+                    $filename = 'custom_order_' . time() . '_' . rand(1000, 9999) . '.' . $ext;
+                    $uploadDir = public_path('uploads/custom_orders');
+                    if (!file_exists($uploadDir)) {
+                        @mkdir($uploadDir, 0777, true);
+                    }
+                    file_put_contents($uploadDir . '/' . $filename, $decodedData);
+                    $imagePath = 'uploads/custom_orders/' . $filename;
+                }
             }
 
             $id = DB::table('custom_order_requests')->insertGetId([
