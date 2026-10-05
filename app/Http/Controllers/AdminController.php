@@ -2377,4 +2377,61 @@ class AdminController extends Controller
         }
         return response()->json(['status' => 'error', 'message' => 'File not found or cannot be deleted.'], 400);
     }
+
+    // Custom & Bulk Order Requests List View
+    public function customOrders(Request $request)
+    {
+        if (!Schema::hasTable('custom_order_requests')) {
+            Schema::create('custom_order_requests', function ($table) {
+                $table->id();
+                $table->unsignedBigInteger('user_id')->nullable()->index();
+                $table->string('user_name')->nullable();
+                $table->string('user_phone')->nullable()->index();
+                $table->string('order_type')->default('Normal Custom Order');
+                $table->string('image_path')->nullable();
+                $table->decimal('latitude', 10, 7)->nullable();
+                $table->decimal('longitude', 10, 7)->nullable();
+                $table->text('address')->nullable();
+                $table->text('remarks')->nullable();
+                $table->enum('status', ['pending', 'approved', 'rejected', 'completed'])->default('pending');
+                $table->timestamps();
+            });
+        }
+
+        $query = DB::table('custom_order_requests');
+
+        if ($request->has('status') && !empty($request->status) && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('search') && !empty($request->search)) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('user_name', 'LIKE', "%$search%")
+                  ->orWhere('user_phone', 'LIKE', "%$search%")
+                  ->orWhere('order_type', 'LIKE', "%$search%")
+                  ->orWhere('address', 'LIKE', "%$search%");
+            });
+        }
+
+        $customOrders = $query->orderBy('id', 'desc')->paginate(15);
+
+        return view('admin.custom_orders.index', compact('customOrders'));
+    }
+
+    // Update Status for Custom Order Request
+    public function updateCustomOrderStatus(Request $request, $id)
+    {
+        $status = $request->input('status');
+        if (!in_array($status, ['pending', 'approved', 'rejected', 'completed'])) {
+            return back()->with('error', 'Invalid status specified.');
+        }
+
+        DB::table('custom_order_requests')->where('id', $id)->update([
+            'status' => $status,
+            'updated_at' => now(),
+        ]);
+
+        return back()->with('success', "Custom order request #$id status updated to " . ucfirst($status));
+    }
 }

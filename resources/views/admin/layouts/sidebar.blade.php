@@ -39,6 +39,12 @@
             </a>
           </li>
           <li class="nav-item">
+            <a href="/admin/custom-orders" class="nav-link {{ request()->is('admin/custom-orders*') ? 'active bg-success' : '' }}">
+              <i class="nav-icon fas fa-file-invoice text-info"></i>
+              <p>Custom / Bulk Orders</p>
+            </a>
+          </li>
+          <li class="nav-item">
             <a href="/admin/customers" class="nav-link {{ request()->is('admin/customers*') ? 'active bg-success' : '' }}">
               <i class="nav-icon fas fa-users text-light"></i><p>Customers</p>
             </a>
