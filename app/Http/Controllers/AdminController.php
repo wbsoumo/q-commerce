@@ -1129,23 +1129,31 @@ class AdminController extends Controller
             } catch (\Exception $e) {}
         }
 
-        // Auto-sync registered users into customers table if missing
+        // Auto-sync registered users into customers table if missing or soft deleted
         try {
             $registeredUsers = DB::table('users')->where('role', 'customer')->get();
             foreach ($registeredUsers as $u) {
                 if ($u->phone) {
-                    $exists = DB::table('customers')->where('phone', $u->phone)->first();
+                    $exists = DB::table('customers')->where('phone', $u->phone)->orWhere('user_id', $u->id)->first();
+                    $isDeleted = (isset($u->account_status) && strtolower($u->account_status) === 'deleted') || !empty($u->deleted_at);
+                    $targetStatus = $isDeleted ? 'Deleted' : 'Active';
+
                     if (!$exists) {
                         DB::table('customers')->insert([
                             'user_id' => $u->id,
                             'name' => $u->name ?? 'Customer',
                             'phone' => $u->phone,
                             'email' => $u->email ?? null,
-                            'status' => 'Active',
+                            'status' => $targetStatus,
                             'total_orders' => 0,
                             'total_spent' => 0.00,
                             'wallet_balance' => 0.00,
                             'created_at' => $u->created_at ?? now(),
+                            'updated_at' => now(),
+                        ]);
+                    } elseif ($isDeleted && $exists->status !== 'Deleted') {
+                        DB::table('customers')->where('id', $exists->id)->update([
+                            'status' => 'Deleted',
                             'updated_at' => now(),
                         ]);
                     }
@@ -1245,10 +1253,14 @@ class AdminController extends Controller
 
         if (!empty($customer->user_id)) {
             DB::table('users')->where('id', $customer->user_id)->update([
+                'account_status' => 'active',
+                'deleted_at' => null,
                 'updated_at' => now(),
             ]);
         } elseif (!empty($customer->phone)) {
             DB::table('users')->where('phone', $customer->phone)->where('role', 'customer')->update([
+                'account_status' => 'active',
+                'deleted_at' => null,
                 'updated_at' => now(),
             ]);
         }

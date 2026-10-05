@@ -1580,6 +1580,19 @@ class ApiController extends Controller
                 'updated_at' => now(),
             ]);
 
+            // Update customers table status to 'Deleted'
+            if ($user->phone) {
+                DB::table('customers')->where('phone', $user->phone)->orWhere('user_id', $user->id)->update([
+                    'status' => 'Deleted',
+                    'updated_at' => now(),
+                ]);
+            } else {
+                DB::table('customers')->where('user_id', $user->id)->update([
+                    'status' => 'Deleted',
+                    'updated_at' => now(),
+                ]);
+            }
+
             // Clear registered FCM token to stop push notifications for deleted user
             if ($user->phone) {
                 DB::table('fcm_tokens')->where('user_phone', $user->phone)->orWhere('user_phone', $rawPhone)->delete();
