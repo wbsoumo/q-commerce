@@ -111,9 +111,13 @@
                     <input type="checkbox" name="is_bestseller" value="1" class="custom-control-input" id="isBestsellerCreateSwitch">
                     <label class="custom-control-label font-weight-bold text-warning" for="isBestsellerCreateSwitch"><i class="fas fa-fire text-danger mr-1"></i> 🔥 Best Seller Product</label>
                   </div>
-                  <div class="custom-control custom-switch custom-switch-off-danger custom-switch-on-success">
+                  <div class="custom-control custom-switch custom-switch-off-danger custom-switch-on-success mb-2">
                     <input type="checkbox" name="is_featured" value="1" class="custom-control-input" id="isFeaturedCreateSwitch">
                     <label class="custom-control-label font-weight-bold text-success" for="isFeaturedCreateSwitch"><i class="fas fa-bolt text-warning mr-1"></i> ⚡ Super Savings Product</label>
+                  </div>
+                  <div class="custom-control custom-switch custom-switch-off-danger custom-switch-on-primary">
+                    <input type="checkbox" name="is_special_deal" value="1" class="custom-control-input" id="isSpecialDealCreateSwitch">
+                    <label class="custom-control-label font-weight-bold text-purple" for="isSpecialDealCreateSwitch" style="color: #6f42c1;"><i class="fas fa-tags text-purple mr-1" style="color: #6f42c1;"></i> 🎁 Special Deal Product</label>
                   </div>
                 </div>
               </div>

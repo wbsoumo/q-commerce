@@ -364,6 +364,7 @@ class AdminController extends Controller
             'scope' => $validated['scope'],
             'is_bestseller' => $request->has('is_bestseller') ? true : false,
             'is_featured' => $request->has('is_featured') ? true : false,
+            'is_special_deal' => $request->has('is_special_deal') ? true : false,
             'image' => $imagePath,
             'gallery' => !empty($galleryPaths) ? json_encode($galleryPaths) : null,
             'description' => $request->input('description', ''),
@@ -373,6 +374,13 @@ class AdminController extends Controller
         ];
 
         try {
+            if (!\Illuminate\Support\Facades\Schema::hasColumn('products', 'is_special_deal')) {
+                try {
+                    \Illuminate\Support\Facades\Schema::table('products', function ($table) {
+                        $table->boolean('is_special_deal')->default(false);
+                    });
+                } catch (\Throwable $e) {}
+            }
             if (!\Illuminate\Support\Facades\Schema::hasColumn('products', 'gallery')) {
                 try {
                     \Illuminate\Support\Facades\Schema::table('products', function ($table) {
@@ -458,9 +466,20 @@ class AdminController extends Controller
             'scope' => $validated['scope'],
             'is_bestseller' => $request->has('is_bestseller') ? true : false,
             'is_featured' => $request->has('is_featured') ? true : false,
+            'is_special_deal' => $request->has('is_special_deal') ? true : false,
             'description' => $request->input('description', ''),
             'updated_at' => now(),
         ];
+
+        try {
+            if (!\Illuminate\Support\Facades\Schema::hasColumn('products', 'is_special_deal')) {
+                try {
+                    \Illuminate\Support\Facades\Schema::table('products', function ($table) {
+                        $table->boolean('is_special_deal')->default(false);
+                    });
+                } catch (\Throwable $e) {}
+            }
+        } catch (\Throwable $e) {}
 
         // Fetch actual existing columns in products table dynamically
         try {
