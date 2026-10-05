@@ -202,6 +202,7 @@ Route::prefix('api/v1')->group(function () {
     Route::get('/user/wishlist', [ApiController::class, 'getUserWishlist']);
     Route::post('/user/wishlist/toggle', [ApiController::class, 'toggleWishlist']);
     Route::post('/user/delete-account', [ApiController::class, 'deleteAccount']);
+    Route::post('/custom-order/request', [ApiController::class, 'submitCustomOrderRequest']);
 
     // Dedicated Store Manager App API Routes
     Route::post('/manager/login', [ApiController::class, 'managerLogin']);

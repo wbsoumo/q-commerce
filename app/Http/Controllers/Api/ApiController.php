@@ -1599,6 +1599,98 @@ class ApiController extends Controller
             ], 500)->header('Access-Control-Allow-Origin', '*');
         }
     }
+
+    private function ensureCustomOrderRequestsTableExists()
+    {
+        if (!Schema::hasTable('custom_order_requests')) {
+            Schema::create('custom_order_requests', function ($table) {
+                $table->id();
+                $table->unsignedBigInteger('user_id')->nullable()->index();
+                $table->string('user_name')->nullable();
+                $table->string('user_phone')->nullable()->index();
+                $table->string('order_type')->default('Normal Custom Order');
+                $table->string('image_path')->nullable();
+                $table->decimal('latitude', 10, 7)->nullable();
+                $table->decimal('longitude', 10, 7)->nullable();
+                $table->text('address')->nullable();
+                $table->text('remarks')->nullable();
+                $table->enum('status', ['pending', 'approved', 'rejected', 'completed'])->default('pending');
+                $table->timestamps();
+            });
+        }
+    }
+
+    // Submit Custom / Bulk Order Request (Completely separate from normal ordering)
+    public function submitCustomOrderRequest(Request $request)
+    {
+        $this->ensureCustomOrderRequestsTableExists();
+
+        try {
+            $userPhone = trim($request->input('user_phone', ''));
+            $rawPhone = preg_replace('/[^0-9]/', '', $userPhone);
+
+            // Resolve user from database matching phone or token
+            $user = null;
+            if (!empty($userPhone)) {
+                $user = DB::table('users')->where('phone', $userPhone)->orWhere('phone', 'LIKE', "%$rawPhone%")->first();
+            }
+
+            $userId = $user ? $user->id : null;
+            $userName = $user ? $user->name : ($request->input('user_name') ?? 'Customer');
+            $finalPhone = $user ? $user->phone : ($userPhone ?: null);
+
+            $orderType = $request->input('order_type', 'Normal Custom Order');
+            $address = $request->input('address', '');
+            $remarks = $request->input('remarks', '');
+            $latitude = $request->input('latitude');
+            $longitude = $request->input('longitude');
+
+            $imagePath = null;
+            if ($request->hasFile('image')) {
+                $file = $request->file('image');
+                $filename = 'custom_order_' . time() . '_' . rand(1000, 9999) . '.' . $file->getClientOriginalExtension();
+                $uploadDir = public_path('uploads/custom_orders');
+                if (!file_exists($uploadDir)) {
+                    mkdir($uploadDir, 0777, true);
+                }
+                $file->move($uploadDir, $filename);
+                $imagePath = 'uploads/custom_orders/' . $filename;
+            }
+
+            $id = DB::table('custom_order_requests')->insertGetId([
+                'user_id' => $userId,
+                'user_name' => $userName,
+                'user_phone' => $finalPhone,
+                'order_type' => $orderType,
+                'image_path' => $imagePath,
+                'latitude' => is_numeric($latitude) ? (float)$latitude : null,
+                'longitude' => is_numeric($longitude) ? (float)$longitude : null,
+                'address' => $address,
+                'remarks' => $remarks,
+                'status' => 'pending',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Your custom order request has been submitted successfully! We will arrange it for you.',
+                'data' => [
+                    'id' => $id,
+                    'order_type' => $orderType,
+                    'status' => 'pending',
+                    'image_path' => $imagePath,
+                    'created_at' => now()->toDateTimeString(),
+                ]
+            ])->header('Access-Control-Allow-Origin', '*');
+
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to submit custom order request: ' . $e->getMessage()
+            ], 500)->header('Access-Control-Allow-Origin', '*');
+        }
+    }
 }
 
 
