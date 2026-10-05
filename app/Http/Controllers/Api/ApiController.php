@@ -583,7 +583,15 @@ class ApiController extends Controller
     public function getUserOrders(Request $request)
     {
         $rawPhone = $request->query('phone');
-        $phone = !empty($rawPhone) ? trim($rawPhone) : '8016222991';
+        if (empty($rawPhone)) {
+            return response()->json([
+                'status' => 'success',
+                'count' => 0,
+                'data' => []
+            ])->header('Access-Control-Allow-Origin', '*');
+        }
+
+        $phone = trim($rawPhone);
         $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
 
         $query = DB::table('orders');
@@ -599,10 +607,6 @@ class ApiController extends Controller
         }
 
         $orders = $query->orderBy('id', 'desc')->get();
-
-        if ($orders->isEmpty()) {
-            $orders = DB::table('orders')->orderBy('id', 'desc')->take(30)->get();
-        }
 
         foreach ($orders as $ord) {
             $ord->items = DB::table('order_items')
