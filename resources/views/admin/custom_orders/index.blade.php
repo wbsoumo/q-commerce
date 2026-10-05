@@ -10,6 +10,19 @@
   <style>
     .brand-link { background-color: #0c831f !important; }
     .btn-success { background-color: #0c831f; border-color: #0c831f; }
+    .img-preview-thumb {
+      max-height: 55px;
+      max-width: 70px;
+      object-fit: cover;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid #dee2e6;
+      transition: transform 0.2s;
+    }
+    .img-preview-thumb:hover {
+      transform: scale(1.08);
+      border-color: #17a2b8;
+    }
   </style>
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
@@ -129,6 +142,11 @@
               </thead>
               <tbody>
                 @forelse($customOrders as $order)
+                  @php
+                    $imgUrl = $order->image_path 
+                      ? (str_starts_with($order->image_path, 'http') ? $order->image_path : asset(ltrim($order->image_path, '/')))
+                      : null;
+                  @endphp
                   <tr>
                     <td>
                       <span class="font-weight-bold text-primary">#REQ-{{ $order->id }}</span>
@@ -146,10 +164,31 @@
                       </span>
                     </td>
                     <td>
-                      @if($order->image_path)
-                        <a href="{{ asset($order->image_path) }}" target="_blank">
-                          <img src="{{ asset($order->image_path) }}" class="img-thumbnail" style="max-height: 50px; max-width: 60px; object-fit: cover;">
-                        </a>
+                      @if($imgUrl)
+                        <img src="{{ $imgUrl }}" class="img-preview-thumb" data-toggle="modal" data-target="#imageModal{{ $order->id }}" alt="Order List">
+
+                        <!-- Full Image Modal -->
+                        <div class="modal fade" id="imageModal{{ $order->id }}" tabindex="-1" role="dialog" aria-hidden="true">
+                          <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+                            <div class="modal-content">
+                              <div class="modal-header bg-light">
+                                <h5 class="modal-title font-weight-bold">Order Image #REQ-{{ $order->id }}</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                  <span aria-hidden="true">&times;</span>
+                                </button>
+                              </div>
+                              <div class="modal-body text-center bg-dark p-2">
+                                <img src="{{ $imgUrl }}" class="img-fluid rounded" style="max-height: 80vh;" alt="Order Image">
+                              </div>
+                              <div class="modal-footer bg-light justify-content-between">
+                                <a href="{{ $imgUrl }}" target="_blank" class="btn btn-sm btn-info">
+                                  <i class="fas fa-external-link-alt mr-1"></i>Open Full Size
+                                </a>
+                                <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Close</button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       @else
                         <span class="text-muted small"><em>No image</em></span>
                       @endif
@@ -179,10 +218,10 @@
                     </td>
                     <td class="text-center">
                       <div class="dropdown">
-                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle font-weight-bold" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                           Update Status
                         </button>
-                        <div class="dropdown-menu dropdown-menu-right">
+                        <div class="dropdown-menu dropdown-menu-right shadow">
                           <form method="POST" action="/admin/custom-orders/{{ $order->id }}/status">
                             @csrf
                             <input type="hidden" name="status" value="pending">
@@ -236,7 +275,7 @@
   </footer>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.key"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
 </body>
