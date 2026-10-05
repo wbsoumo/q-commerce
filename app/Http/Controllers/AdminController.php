@@ -1155,7 +1155,10 @@ class AdminController extends Controller
 
         // Global Statistics
         $totalCustomersCount = DB::table('customers')->count();
-        $activeCustomersCount = DB::table('customers')->where('status', 'Active')->count();
+        $activeCustomersCount = DB::table('customers')->where(function($q) {
+            $q->where('status', 'Active')->orWhereNull('status');
+        })->count();
+        $deletedCustomersCount = DB::table('customers')->where('status', 'Deleted')->count();
         $vipCustomersCount = DB::table('customers')->where('is_vip', true)->count();
         $totalWalletLiability = (float)DB::table('customers')->sum('wallet_balance');
         $totalLifetimeSpent = (float)DB::table('customers')->sum('total_spent');
@@ -1218,12 +1221,39 @@ class AdminController extends Controller
             'customers',
             'totalCustomersCount',
             'activeCustomersCount',
+            'deletedCustomersCount',
             'vipCustomersCount',
             'totalWalletLiability',
             'totalLifetimeSpent',
             'perPage',
             'sortBy'
         ));
+    }
+
+    // Reactivate Deleted Customer Account
+    public function reactivateCustomer(Request $request, $id)
+    {
+        $customer = DB::table('customers')->where('id', $id)->first();
+        if (!$customer) {
+            return redirect('/admin/customers')->with('error', 'Customer profile not found.');
+        }
+
+        DB::table('customers')->where('id', $id)->update([
+            'status' => 'Active',
+            'updated_at' => now(),
+        ]);
+
+        if (!empty($customer->user_id)) {
+            DB::table('users')->where('id', $customer->user_id)->update([
+                'updated_at' => now(),
+            ]);
+        } elseif (!empty($customer->phone)) {
+            DB::table('users')->where('phone', $customer->phone)->where('role', 'customer')->update([
+                'updated_at' => now(),
+            ]);
+        }
+
+        return redirect()->back()->with('success', "Customer account '{$customer->name}' (Phone: {$customer->phone}) reactivated successfully!");
     }
 
     // Manual Customer Onboarding

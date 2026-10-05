@@ -110,6 +110,17 @@
           </div>
 
           <div class="col-12 col-sm-6 col-lg-3 mb-3">
+            <div class="small-box bg-white border shadow-sm customer-card h-100" style="border-left-color: #ef4444;">
+              <div class="inner pl-3 pt-3">
+                <h3 class="text-danger font-weight-bold mb-0">{{ number_format($deletedCustomersCount ?? 0) }}</h3>
+                <p class="text-muted font-weight-bold mb-2">Deleted Accounts</p>
+              </div>
+              <div class="icon text-danger"><i class="fas fa-user-slash"></i></div>
+              <a href="/admin/customers?status=Deleted" class="small-box-footer bg-light text-danger font-weight-bold">View Deleted <i class="fas fa-arrow-circle-right ml-1"></i></a>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-6 col-lg-3 mb-3">
             <div class="small-box bg-white border shadow-sm customer-card h-100" style="border-left-color: #f59e0b;">
               <div class="inner pl-3 pt-3">
                 <h3 class="text-warning font-weight-bold mb-0" style="color: #d97706 !important;">{{ number_format($vipCustomersCount ?? 0) }}</h3>
@@ -117,17 +128,6 @@
               </div>
               <div class="icon text-warning"><i class="fas fa-crown"></i></div>
               <a href="/admin/customers?vip_status=vip" class="small-box-footer bg-light text-warning font-weight-bold">Filter VIP <i class="fas fa-arrow-circle-right ml-1"></i></a>
-            </div>
-          </div>
-
-          <div class="col-12 col-sm-6 col-lg-3 mb-3">
-            <div class="small-box bg-white border shadow-sm customer-card h-100" style="border-left-color: #3b82f6;">
-              <div class="inner pl-3 pt-3">
-                <h3 class="text-info font-weight-bold mb-0" style="font-size: 24px;">₹{{ number_format($totalWalletLiability ?? 0, 2) }}</h3>
-                <p class="text-muted font-weight-bold mb-2">Total Wallet Liabilities</p>
-              </div>
-              <div class="icon text-info"><i class="fas fa-wallet"></i></div>
-              <a href="/admin/customers?sort_by=highest_wallet" class="small-box-footer bg-light text-info font-weight-bold">Sort Wallet Cash <i class="fas fa-arrow-circle-right ml-1"></i></a>
             </div>
           </div>
         </div>
@@ -147,11 +147,12 @@
               </div>
 
               <div class="col-6 col-sm-3 col-lg-2 mb-2">
-                <select name="status" class="form-control" onchange="this.form.submit()">
+                <select name="status" class="form-control font-weight-bold" onchange="this.form.submit()">
                   <option value="">All Account Statuses</option>
-                  <option value="Active" {{ request('status') == 'Active' ? 'selected' : '' }}>Active</option>
-                  <option value="Blocked" {{ request('status') == 'Blocked' ? 'selected' : '' }}>Blocked</option>
-                  <option value="Suspended" {{ request('status') == 'Suspended' ? 'selected' : '' }}>Suspended</option>
+                  <option value="Active" {{ request('status') == 'Active' ? 'selected' : '' }}>Active Accounts</option>
+                  <option value="Deleted" {{ request('status') == 'Deleted' ? 'selected' : '' }}>Deleted Accounts ({{ $deletedCustomersCount ?? 0 }})</option>
+                  <option value="Blocked" {{ request('status') == 'Blocked' ? 'selected' : '' }}>Blocked Accounts</option>
+                  <option value="Suspended" {{ request('status') == 'Suspended' ? 'selected' : '' }}>Suspended Accounts</option>
                 </select>
               </div>
 
@@ -237,9 +238,13 @@
                     @endif
                   </td>
                   <td class="align-middle text-nowrap">
-                    <span class="badge badge-{{ ($c->status ?? '') === 'Active' ? 'success' : 'danger' }} px-2 py-1">
-                      {{ $c->status ?? 'Active' }}
-                    </span>
+                    @if(($c->status ?? 'Active') === 'Active')
+                      <span class="badge badge-success px-2 py-1">Active</span>
+                    @elseif(($c->status ?? '') === 'Deleted')
+                      <span class="badge badge-danger px-2 py-1"><i class="fas fa-user-slash mr-1"></i>Deleted</span>
+                    @else
+                      <span class="badge badge-warning text-dark px-2 py-1">{{ $c->status }}</span>
+                    @endif
                   </td>
                   <td class="align-middle text-nowrap">
                     @if(!empty($c->is_vip))
@@ -263,19 +268,28 @@
                     ₹{{ number_format($c->total_spent ?? 0, 2) }}
                   </td>
                   <td class="align-middle text-center text-nowrap">
-                    <div class="dropdown">
-                      <button class="btn btn-sm btn-outline-success dropdown-toggle font-weight-bold px-2 py-1" type="button" data-toggle="dropdown" aria-expanded="false">
-                        Actions
-                      </button>
-                      <div class="dropdown-menu dropdown-menu-right shadow-sm">
-                        <a class="dropdown-item font-weight-bold text-dark" href="/admin/customers/{{ $c->id }}">
-                          <i class="fas fa-user-shield text-success mr-2"></i> View 360° Profile
-                        </a>
-                        <a class="dropdown-item font-weight-bold text-dark" href="javascript:void(0);" onclick="openQuickWalletModal({{ $c->id }}, '{{ addslashes($c->name) }}', {{ $c->wallet_balance ?? 0 }})">
-                          <i class="fas fa-wallet text-info mr-2"></i> Quick Wallet Credit / Debit
-                        </a>
+                    @if(($c->status ?? '') === 'Deleted')
+                      <form method="POST" action="/admin/customers/{{ $c->id }}/reactivate" class="d-inline" onsubmit="return confirm('Reactivate this deleted customer account?');">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-success font-weight-bold">
+                          <i class="fas fa-user-check mr-1"></i> Reactivate Account
+                        </button>
+                      </form>
+                    @else
+                      <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-success dropdown-toggle font-weight-bold px-2 py-1" type="button" data-toggle="dropdown" aria-expanded="false">
+                          Actions
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-right shadow-sm">
+                          <a class="dropdown-item font-weight-bold text-dark" href="/admin/customers/{{ $c->id }}">
+                            <i class="fas fa-user-shield text-success mr-2"></i> View 360° Profile
+                          </a>
+                          <a class="dropdown-item font-weight-bold text-dark" href="javascript:void(0);" onclick="openQuickWalletModal({{ $c->id }}, '{{ addslashes($c->name) }}', {{ $c->wallet_balance ?? 0 }})">
+                            <i class="fas fa-wallet text-info mr-2"></i> Quick Wallet Credit / Debit
+                          </a>
+                        </div>
                       </div>
-                    </div>
+                    @endif
                   </td>
                 </tr>
                 @empty
