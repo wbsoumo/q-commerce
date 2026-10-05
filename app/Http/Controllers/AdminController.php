@@ -1188,14 +1188,19 @@ class AdminController extends Controller
         $totalLifetimeSpent = (float)DB::table('customers')->sum('total_spent');
 
         // Build Query with Filters & Search
-        $query = DB::table('customers');
+        $query = DB::table('customers')
+            ->leftJoin('users', function($join) {
+                $join->on('customers.user_id', '=', 'users.id')
+                     ->orOn('customers.phone', '=', 'users.phone');
+            })
+            ->select('customers.*', 'users.account_status as user_account_status', 'users.deleted_at as user_deleted_at');
 
         if ($request->filled('search')) {
             $search = trim($request->search);
             $query->where(function($q) use ($search) {
-                $q->where('name', 'LIKE', "%{$search}%")
-                  ->orWhere('phone', 'LIKE', "%{$search}%")
-                  ->orWhere('email', 'LIKE', "%{$search}%");
+                $q->where('customers.name', 'LIKE', "%{$search}%")
+                  ->orWhere('customers.phone', 'LIKE', "%{$search}%")
+                  ->orWhere('customers.email', 'LIKE', "%{$search}%");
             });
         }
 
@@ -1203,9 +1208,8 @@ class AdminController extends Controller
             if ($request->status === 'Deleted') {
                 $query->where(function($q) {
                     $q->where('customers.status', 'Deleted')
-                      ->orWhereIn('customers.user_id', function($sub) {
-                          $sub->select('id')->from('users')->where('account_status', 'deleted')->orWhereNotNull('deleted_at');
-                      });
+                      ->orWhere('users.account_status', 'deleted')
+                      ->orWhereNotNull('users.deleted_at');
                 });
             } else {
                 $query->where('customers.status', $request->status);

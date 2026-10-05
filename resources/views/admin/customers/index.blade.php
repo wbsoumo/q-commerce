@@ -238,10 +238,10 @@
                     @endif
                   </td>
                   <td class="align-middle text-nowrap">
-                    @if(($c->status ?? 'Active') === 'Active')
-                      <span class="badge badge-success px-2 py-1">Active</span>
-                    @elseif(($c->status ?? '') === 'Deleted')
+                    @if(($c->status ?? '') === 'Deleted' || ($c->user_account_status ?? '') === 'deleted' || !empty($c->user_deleted_at))
                       <span class="badge badge-danger px-2 py-1"><i class="fas fa-user-slash mr-1"></i>Deleted</span>
+                    @elseif(($c->status ?? 'Active') === 'Active')
+                      <span class="badge badge-success px-2 py-1">Active</span>
                     @else
                       <span class="badge badge-warning text-dark px-2 py-1">{{ $c->status }}</span>
                     @endif
@@ -268,7 +268,7 @@
                     ₹{{ number_format($c->total_spent ?? 0, 2) }}
                   </td>
                   <td class="align-middle text-center text-nowrap">
-                    @if(($c->status ?? '') === 'Deleted')
+                    @if(($c->status ?? '') === 'Deleted' || ($c->user_account_status ?? '') === 'deleted' || !empty($c->user_deleted_at))
                       <form method="POST" action="/admin/customers/{{ $c->id }}/reactivate" class="d-inline" onsubmit="return confirm('Reactivate this deleted customer account?');">
                         @csrf
                         <button type="submit" class="btn btn-sm btn-success font-weight-bold">
