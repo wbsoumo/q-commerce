@@ -2385,6 +2385,7 @@ class AdminController extends Controller
             Schema::create('custom_order_requests', function ($table) {
                 $table->id();
                 $table->unsignedBigInteger('user_id')->nullable()->index();
+                $table->unsignedBigInteger('store_id')->nullable()->index();
                 $table->string('user_name')->nullable();
                 $table->string('user_phone')->nullable()->index();
                 $table->string('order_type')->default('Normal Custom Order');
@@ -2395,6 +2396,10 @@ class AdminController extends Controller
                 $table->text('remarks')->nullable();
                 $table->enum('status', ['pending', 'approved', 'rejected', 'completed'])->default('pending');
                 $table->timestamps();
+            });
+        } elseif (!Schema::hasColumn('custom_order_requests', 'store_id')) {
+            Schema::table('custom_order_requests', function ($table) {
+                $table->unsignedBigInteger('store_id')->nullable()->index()->after('user_id');
             });
         }
 
