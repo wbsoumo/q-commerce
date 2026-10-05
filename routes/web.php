@@ -7,6 +7,23 @@ use App\Http\Controllers\ManagerController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Api\ApiController;
 
+// Public Web Legal & Information Pages
+Route::get('/about-us', function () {
+    return view('legal', ['page' => 'about-us', 'title' => 'About Us – SonarbanglaMart']);
+});
+Route::get('/terms-and-conditions', function () {
+    return view('legal', ['page' => 'terms', 'title' => 'Terms & Conditions – SonarbanglaMart']);
+});
+Route::get('/privacy-policy', function () {
+    return view('legal', ['page' => 'privacy', 'title' => 'Privacy Policy – SonarbanglaMart']);
+});
+Route::get('/shopping-policy', function () {
+    return view('legal', ['page' => 'shopping', 'title' => 'Shopping Policy – SonarbanglaMart']);
+});
+Route::get('/refund-policy', function () {
+    return view('legal', ['page' => 'refund', 'title' => 'Refund & Cancellation Policy – SonarbanglaMart']);
+});
+
 // One-Click Database Migrator
 Route::get('/import-db', function () {
     try {
@@ -170,7 +187,6 @@ Route::prefix('api/v1')->group(function () {
     Route::post('/auth/login', [ApiController::class, 'login']);
     Route::post('/user/fcm-token', [ApiController::class, 'registerFcmToken']);
     Route::get('/store/select', [ApiController::class, 'selectStore']);
-
 
     Route::get('/sync-check', [ApiController::class, 'checkSyncStatus']);
     Route::get('/sliders', [ApiController::class, 'getSliders']);
