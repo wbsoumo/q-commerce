@@ -167,11 +167,18 @@
                       </span>
                     </td>
                     <td>
-                      @if(!empty($order->store_name))
-                        <span class="badge badge-success px-2 py-1"><i class="fas fa-store mr-1"></i>{{ $order->store_name }}</span>
-                      @else
-                        <span class="badge badge-secondary px-2 py-1">Unassigned</span>
-                      @endif
+                      <form method="POST" action="/admin/custom-orders/{{ $order->id }}/status">
+                        @csrf
+                        <input type="hidden" name="status" value="{{ $order->status }}">
+                        <select name="store_id" class="form-control form-control-sm font-weight-bold" onchange="this.form.submit()" style="min-width: 140px;">
+                          <option value="" {{ empty($order->store_id) ? 'selected' : '' }}>-- Unassigned --</option>
+                          @foreach($stores as $st)
+                            <option value="{{ $st->id }}" {{ $order->store_id == $st->id ? 'selected' : '' }}>
+                              {{ $st->name }}
+                            </option>
+                          @endforeach
+                        </select>
+                      </form>
                     </td>
                     <td>
                       @if($imgUrl)
