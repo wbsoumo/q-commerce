@@ -30,6 +30,11 @@
           </a>
         </li>
         <li class="nav-item">
+          <a href="/manager/custom-orders" class="nav-link {{ request()->is('manager/custom-orders*') ? 'active' : '' }}">
+            <i class="nav-icon fas fa-file-invoice text-info"></i><p>Custom / Bulk Orders</p>
+          </a>
+        </li>
+        <li class="nav-item">
           <a href="/manager/deliveries" class="nav-link {{ request()->is('manager/deliveries*') ? 'active' : '' }}">
             <i class="nav-icon fas fa-motorcycle text-success"></i><p>Delivery Dispatch</p>
           </a>

@@ -1605,6 +1605,7 @@ class ApiController extends Controller
         if (!Schema::hasTable('custom_order_requests')) {
             Schema::create('custom_order_requests', function ($table) {
                 $table->id();
+                $table->unsignedBigInteger('store_id')->nullable()->index();
                 $table->unsignedBigInteger('user_id')->nullable()->index();
                 $table->string('user_name')->nullable();
                 $table->string('user_phone')->nullable()->index();
@@ -1616,6 +1617,10 @@ class ApiController extends Controller
                 $table->text('remarks')->nullable();
                 $table->enum('status', ['pending', 'approved', 'rejected', 'completed'])->default('pending');
                 $table->timestamps();
+            });
+        } elseif (!Schema::hasColumn('custom_order_requests', 'store_id')) {
+            Schema::table('custom_order_requests', function ($table) {
+                $table->unsignedBigInteger('store_id')->nullable()->index()->after('id');
             });
         }
     }
@@ -1644,6 +1649,38 @@ class ApiController extends Controller
             $remarks = $request->input('remarks', '');
             $latitude = $request->input('latitude');
             $longitude = $request->input('longitude');
+
+            // Resolve Store ID (passed explicitly or dynamically calculated via coordinates)
+            $storeId = $request->input('store_id');
+            if (empty($storeId) && is_numeric($latitude) && is_numeric($longitude)) {
+                $lat = (float)$latitude;
+                $lng = (float)$longitude;
+                $stores = DB::table('stores')->where('is_active', true)->get();
+                $minDist = 999999.0;
+                $nearestStoreId = null;
+
+                foreach ($stores as $s) {
+                    if ($s->latitude === null || $s->longitude === null) continue;
+                    $sLat = (float)$s->latitude;
+                    $sLng = (float)$s->longitude;
+                    $dLat = deg2rad($sLat - $lat);
+                    $dLng = deg2rad($sLng - $lng);
+                    $a = sin($dLat / 2) * sin($dLat / 2) + cos(deg2rad($lat)) * cos(deg2rad($sLat)) * sin($dLng / 2) * sin($dLng / 2);
+                    $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+                    $dist = 6371.0 * $c;
+
+                    if ($dist < $minDist) {
+                        $minDist = $dist;
+                        $nearestStoreId = $s->id;
+                    }
+                }
+                $storeId = $nearestStoreId;
+            }
+
+            if (empty($storeId)) {
+                $firstStore = DB::table('stores')->where('is_active', true)->first();
+                $storeId = $firstStore ? $firstStore->id : 1;
+            }
 
             $imagePath = null;
             if ($request->hasFile('image') || $request->hasFile('file') || $request->hasFile('photo')) {
@@ -1705,6 +1742,7 @@ class ApiController extends Controller
             }
 
             $id = DB::table('custom_order_requests')->insertGetId([
+                'store_id' => $storeId,
                 'user_id' => $userId,
                 'user_name' => $userName,
                 'user_phone' => $finalPhone,

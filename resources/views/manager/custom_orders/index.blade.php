@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Q-Commerce Admin | Custom & Bulk Orders</title>
+  <title>Custom & Bulk Orders | {{ $store->name ?? 'Branch' }}</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
   <style>
-    .brand-link { background-color: #0c831f !important; }
-    .btn-success { background-color: #0c831f; border-color: #0c831f; }
+    .brand-banner { background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); }
+    .manager-sidebar { background-color: #1e293b !important; }
     .img-preview-thumb {
       max-height: 55px;
       max-width: 70px;
@@ -29,36 +29,36 @@
 <div class="wrapper">
 
   <!-- Navbar -->
-  <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+  <nav class="main-header navbar navbar-expand navbar-white navbar-light border-bottom shadow-sm">
     <ul class="navbar-nav">
       <li class="nav-item"><a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a></li>
-      <li class="nav-item d-none d-sm-inline-block"><a href="/admin" class="nav-link">Dashboard</a></li>
-      <li class="nav-item d-none d-sm-inline-block"><a href="/admin/custom-orders" class="nav-link font-weight-bold text-success">Custom & Bulk Orders</a></li>
+      <li class="nav-item d-none d-sm-inline-block">
+        <a href="#" class="nav-link active font-weight-bold text-primary">
+          <i class="fas fa-store mr-1"></i> {{ $store->name ?? 'Store Branch' }} Manager Portal
+        </a>
+      </li>
     </ul>
     <ul class="navbar-nav ml-auto">
       <li class="nav-item">
-        <form method="POST" action="/logout">
+        <form action="/logout" method="POST" class="d-inline">
           @csrf
-          <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-sign-out-alt mr-1"></i>Logout</button>
+          <button type="submit" class="btn btn-outline-danger btn-sm font-weight-bold"><i class="fas fa-sign-out-alt mr-1"></i> Logout</button>
         </form>
       </li>
     </ul>
   </nav>
 
-  @include('admin.layouts.sidebar')
+  @include('manager.layouts.sidebar')
 
   <div class="content-wrapper">
     <div class="content-header">
-      <div class="container-fluid">
-        <div class="row mb-2 align-items-center">
-          <div class="col-sm-6">
-            <h1 class="m-0 font-weight-bold text-dark">
-              <i class="fas fa-file-invoice text-info mr-2"></i>Custom & Bulk Order Requests
-            </h1>
-          </div>
-          <div class="col-sm-6 text-right">
-            <span class="badge badge-info px-3 py-2" style="font-size: 14px;">Total Requests: {{ $customOrders->total() }}</span>
-          </div>
+      <div class="container-fluid d-flex justify-content-between align-items-center">
+        <div>
+          <h1 class="m-0 font-weight-bold text-dark"><i class="fas fa-file-invoice text-info mr-2"></i>Custom & Bulk Order Requests</h1>
+          <p class="text-muted mb-0"><i class="fas fa-store text-primary mr-1"></i> {{ $store->name ?? 'Branch' }}</p>
+        </div>
+        <div>
+          <span class="badge badge-info px-3 py-2" style="font-size: 14px;">Total Branch Requests: {{ $customOrders->total() }}</span>
         </div>
       </div>
     </div>
@@ -110,10 +110,10 @@
 
               <!-- Search Input -->
               <div class="col-md-5">
-                <form method="GET" action="/admin/custom-orders">
+                <form method="GET" action="/manager/custom-orders">
                   <input type="hidden" name="status" value="{{ request('status', 'all') }}">
                   <div class="input-group">
-                    <input type="text" name="search" class="form-control form-control-sm" placeholder="Search by name, phone, type, address..." value="{{ request('search') }}">
+                    <input type="text" name="search" class="form-control form-control-sm" placeholder="Search by customer name, phone, address..." value="{{ request('search') }}">
                     <div class="input-group-append">
                       <button type="submit" class="btn btn-sm btn-info">
                         <i class="fas fa-search"></i>
@@ -133,7 +133,6 @@
                   <th>Date & Time</th>
                   <th>Customer Details</th>
                   <th>Order Type</th>
-                  <th>Assigned Store</th>
                   <th>Image / List</th>
                   <th>Delivery Address</th>
                   <th>Remarks / Requirements</th>
@@ -167,28 +166,21 @@
                       </span>
                     </td>
                     <td>
-                      @if(!empty($order->store_name))
-                        <span class="badge badge-success px-2 py-1"><i class="fas fa-store mr-1"></i>{{ $order->store_name }}</span>
-                      @else
-                        <span class="badge badge-secondary px-2 py-1">Unassigned</span>
-                      @endif
-                    </td>
-                    <td>
                       @if($imgUrl)
                         <div class="d-flex align-items-center">
                           <img src="{{ $imgUrl }}" 
                                class="img-preview-thumb mr-2" 
                                data-toggle="modal" 
-                               data-target="#imageModal{{ $order->id }}" 
+                               data-target="#imageModalMgr{{ $order->id }}" 
                                alt="Order List"
                                onerror="this.onerror=null; this.src='{{ $adminFallbackUrl }}';">
-                          <button type="button" class="btn btn-xs btn-outline-info font-weight-bold" data-toggle="modal" data-target="#imageModal{{ $order->id }}">
+                          <button type="button" class="btn btn-xs btn-outline-info font-weight-bold" data-toggle="modal" data-target="#imageModalMgr{{ $order->id }}">
                             <i class="fas fa-eye mr-1"></i>View Photo
                           </button>
                         </div>
 
                         <!-- Full Image Modal -->
-                        <div class="modal fade" id="imageModal{{ $order->id }}" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div class="modal fade" id="imageModalMgr{{ $order->id }}" tabindex="-1" role="dialog" aria-hidden="true">
                           <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
                             <div class="modal-content">
                               <div class="modal-header bg-light">
@@ -246,23 +238,23 @@
                           Update Status
                         </button>
                         <div class="dropdown-menu dropdown-menu-right shadow">
-                          <form method="POST" action="/admin/custom-orders/{{ $order->id }}/status">
+                          <form method="POST" action="/manager/custom-orders/{{ $order->id }}/status">
                             @csrf
                             <input type="hidden" name="status" value="pending">
                             <button type="submit" class="dropdown-item text-warning font-weight-bold"><i class="fas fa-hourglass-half mr-2"></i>Mark Pending</button>
                           </form>
-                          <form method="POST" action="/admin/custom-orders/{{ $order->id }}/status">
+                          <form method="POST" action="/manager/custom-orders/{{ $order->id }}/status">
                             @csrf
                             <input type="hidden" name="status" value="approved">
                             <button type="submit" class="dropdown-item text-success font-weight-bold"><i class="fas fa-check mr-2"></i>Approve Request</button>
                           </form>
-                          <form method="POST" action="/admin/custom-orders/{{ $order->id }}/status">
+                          <form method="POST" action="/manager/custom-orders/{{ $order->id }}/status">
                             @csrf
                             <input type="hidden" name="status" value="completed">
                             <button type="submit" class="dropdown-item text-primary font-weight-bold"><i class="fas fa-flag-checkered mr-2"></i>Mark Completed</button>
                           </form>
                           <div class="dropdown-divider"></div>
-                          <form method="POST" action="/admin/custom-orders/{{ $order->id }}/status">
+                          <form method="POST" action="/manager/custom-orders/{{ $order->id }}/status">
                             @csrf
                             <input type="hidden" name="status" value="rejected">
                             <button type="submit" class="dropdown-item text-danger font-weight-bold"><i class="fas fa-times mr-2"></i>Reject Request</button>
@@ -275,8 +267,8 @@
                   <tr>
                     <td colspan="9" class="text-center py-5 text-muted">
                       <i class="fas fa-inbox fa-3x mb-3 d-block text-secondary"></i>
-                      <h5>No Custom or Bulk Order Requests Found</h5>
-                      <p class="small">When users request custom items from the app, they will appear here.</p>
+                      <h5>No Custom / Bulk Orders for {{ $store->name ?? 'this Branch' }}</h5>
+                      <p class="small">When users in your store's coverage area request custom items, they will appear here.</p>
                     </td>
                   </tr>
                 @endforelse
@@ -295,7 +287,7 @@
   </div>
 
   <footer class="main-footer text-sm">
-    <strong>Copyright &copy; {{ date('Y') }} <a href="#">SonarbanglaMart</a>.</strong> All rights reserved.
+    <strong>Copyright &copy; {{ date('Y') }} <a href="#">{{ $store->name ?? 'SonarbanglaMart' }}</a>.</strong> All rights reserved.
   </footer>
 </div>
 

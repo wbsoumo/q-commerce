@@ -2398,25 +2398,29 @@ class AdminController extends Controller
             });
         }
 
-        $query = DB::table('custom_order_requests');
+        $query = DB::table('custom_order_requests')
+            ->leftJoin('stores', 'custom_order_requests.store_id', '=', 'stores.id')
+            ->select('custom_order_requests.*', 'stores.name as store_name');
 
         if ($request->has('status') && !empty($request->status) && $request->status !== 'all') {
-            $query->where('status', $request->status);
+            $query->where('custom_order_requests.status', $request->status);
         }
 
         if ($request->has('search') && !empty($request->search)) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
-                $q->where('user_name', 'LIKE', "%$search%")
-                  ->orWhere('user_phone', 'LIKE', "%$search%")
-                  ->orWhere('order_type', 'LIKE', "%$search%")
-                  ->orWhere('address', 'LIKE', "%$search%");
+                $q->where('custom_order_requests.user_name', 'LIKE', "%$search%")
+                  ->orWhere('custom_order_requests.user_phone', 'LIKE', "%$search%")
+                  ->orWhere('custom_order_requests.order_type', 'LIKE', "%$search%")
+                  ->orWhere('custom_order_requests.address', 'LIKE', "%$search%")
+                  ->orWhere('stores.name', 'LIKE', "%$search%");
             });
         }
 
-        $customOrders = $query->orderBy('id', 'desc')->paginate(15);
+        $customOrders = $query->orderBy('custom_order_requests.id', 'desc')->paginate(15);
+        $stores = DB::table('stores')->where('is_active', true)->get();
 
-        return view('admin.custom_orders.index', compact('customOrders'));
+        return view('admin.custom_orders.index', compact('customOrders', 'stores'));
     }
 
     // Update Status for Custom Order Request
@@ -2432,10 +2436,16 @@ class AdminController extends Controller
             return back()->with('error', 'Custom order request not found.');
         }
 
-        DB::table('custom_order_requests')->where('id', $id)->update([
+        $updateData = [
             'status' => $status,
             'updated_at' => now(),
-        ]);
+        ];
+
+        if ($request->filled('store_id')) {
+            $updateData['store_id'] = $request->input('store_id');
+        }
+
+        DB::table('custom_order_requests')->where('id', $id)->update($updateData);
 
         // Trigger Push Notification to user's device
         if (!empty($order->user_phone)) {
