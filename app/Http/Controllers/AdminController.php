@@ -1134,7 +1134,13 @@ class AdminController extends Controller
             $registeredUsers = DB::table('users')->where('role', 'customer')->get();
             foreach ($registeredUsers as $u) {
                 if ($u->phone) {
-                    $exists = DB::table('customers')->where('phone', $u->phone)->orWhere('user_id', $u->id)->first();
+                    $rawDigits = preg_replace('/[^0-9]/', '', $u->phone);
+                    $exists = DB::table('customers')
+                        ->where('user_id', $u->id)
+                        ->orWhere('phone', $u->phone)
+                        ->orWhere('phone', 'LIKE', "%{$rawDigits}%")
+                        ->first();
+
                     $isDeleted = (isset($u->account_status) && strtolower($u->account_status) === 'deleted') || !empty($u->deleted_at);
                     $targetStatus = $isDeleted ? 'Deleted' : 'Active';
 
@@ -1156,6 +1162,14 @@ class AdminController extends Controller
                             'status' => 'Deleted',
                             'updated_at' => now(),
                         ]);
+                    } elseif (!$isDeleted && $exists->status === 'Deleted') {
+                        // Keep synced if user in users table is active
+                        if (isset($u->account_status) && strtolower($u->account_status) === 'active' && empty($u->deleted_at)) {
+                            DB::table('customers')->where('id', $exists->id)->update([
+                                'status' => 'Active',
+                                'updated_at' => now(),
+                            ]);
+                        }
                     }
                 }
             }
@@ -1166,7 +1180,9 @@ class AdminController extends Controller
         $activeCustomersCount = DB::table('customers')->where(function($q) {
             $q->where('status', 'Active')->orWhereNull('status');
         })->count();
-        $deletedCustomersCount = DB::table('customers')->where('status', 'Deleted')->count();
+        $deletedCustomersCount = DB::table('customers')->where('status', 'Deleted')->orWhereIn('user_id', function($sub) {
+            $sub->select('id')->from('users')->where('account_status', 'deleted')->orWhereNotNull('deleted_at');
+        })->count();
         $vipCustomersCount = DB::table('customers')->where('is_vip', true)->count();
         $totalWalletLiability = (float)DB::table('customers')->sum('wallet_balance');
         $totalLifetimeSpent = (float)DB::table('customers')->sum('total_spent');
@@ -1184,7 +1200,16 @@ class AdminController extends Controller
         }
 
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            if ($request->status === 'Deleted') {
+                $query->where(function($q) {
+                    $q->where('customers.status', 'Deleted')
+                      ->orWhereIn('customers.user_id', function($sub) {
+                          $sub->select('id')->from('users')->where('account_status', 'deleted')->orWhereNotNull('deleted_at');
+                      });
+                });
+            } else {
+                $query->where('customers.status', $request->status);
+            }
         }
 
         if ($request->filled('vip_status')) {
