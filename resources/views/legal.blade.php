@@ -119,8 +119,7 @@ li{margin-bottom:8px}
   <p>If you have any questions, concerns, or requests regarding this Privacy Policy or data protection, please contact us at:</p>
   <p><strong>SonarbanglaMart Support & Grievance Officer</strong><br>
   Email: <a href="mailto:support@sbmartquick.com">support@sbmartquick.com</a><br>
-  Website: <a href="https://sbmartquick.com">https://sbmartquick.com</a><br>
-  Official Address: Krishnanagar Main Hub, Nadia, West Bengal, India - 741101</p>
+  Website: <a href="https://sbmartquick.com">https://sbmartquick.com</a></p>
  @elseif($page == 'shopping')
   <h1>Shopping Policy</h1>
   <p>Learn about our order placement, fulfillment, and delivery standards at SonarbanglaMart.</p>
