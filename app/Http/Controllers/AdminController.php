@@ -2452,8 +2452,9 @@ class AdminController extends Controller
 
         DB::table('custom_order_requests')->where('id', $id)->update($updateData);
 
-        // Trigger Push Notification to user's device
-        if (!empty($order->user_phone)) {
+        // Trigger Push Notification to user's device ONLY on status changes (not on store re-assignment)
+        $statusChanged = ($order->status !== $status);
+        if ($statusChanged && !empty($order->user_phone)) {
             try {
                 $title = "Custom Order Update";
                 $body = "Your custom order request #REQ-{$id} status is now " . ucfirst($status) . ".";
