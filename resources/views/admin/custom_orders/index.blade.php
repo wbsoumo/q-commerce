@@ -143,9 +143,11 @@
               <tbody>
                 @forelse($customOrders as $order)
                   @php
+                    $rawPath = ltrim($order->image_path ?? '', '/');
                     $imgUrl = $order->image_path 
-                      ? (str_starts_with($order->image_path, 'http') ? $order->image_path : asset(ltrim($order->image_path, '/')))
+                      ? (str_starts_with($order->image_path, 'http') ? $order->image_path : asset($rawPath))
                       : null;
+                    $adminFallbackUrl = $rawPath ? "https://admin.sbmartquick.com/" . $rawPath : null;
                   @endphp
                   <tr>
                     <td>
@@ -165,7 +167,17 @@
                     </td>
                     <td>
                       @if($imgUrl)
-                        <img src="{{ $imgUrl }}" class="img-preview-thumb" data-toggle="modal" data-target="#imageModal{{ $order->id }}" alt="Order List">
+                        <div class="d-flex align-items-center">
+                          <img src="{{ $imgUrl }}" 
+                               class="img-preview-thumb mr-2" 
+                               data-toggle="modal" 
+                               data-target="#imageModal{{ $order->id }}" 
+                               alt="Order List"
+                               onerror="this.onerror=null; this.src='{{ $adminFallbackUrl }}';">
+                          <button type="button" class="btn btn-xs btn-outline-info font-weight-bold" data-toggle="modal" data-target="#imageModal{{ $order->id }}">
+                            <i class="fas fa-eye mr-1"></i>View Photo
+                          </button>
+                        </div>
 
                         <!-- Full Image Modal -->
                         <div class="modal fade" id="imageModal{{ $order->id }}" tabindex="-1" role="dialog" aria-hidden="true">
@@ -178,7 +190,11 @@
                                 </button>
                               </div>
                               <div class="modal-body text-center bg-dark p-2">
-                                <img src="{{ $imgUrl }}" class="img-fluid rounded" style="max-height: 80vh;" alt="Order Image">
+                                <img src="{{ $imgUrl }}" 
+                                     class="img-fluid rounded" 
+                                     style="max-height: 80vh;" 
+                                     alt="Order Image"
+                                     onerror="this.onerror=null; this.src='{{ $adminFallbackUrl }}';">
                               </div>
                               <div class="modal-footer bg-light justify-content-between">
                                 <a href="{{ $imgUrl }}" target="_blank" class="btn btn-sm btn-info">
@@ -190,7 +206,7 @@
                           </div>
                         </div>
                       @else
-                        <span class="text-muted small"><em>No image</em></span>
+                        <span class="text-muted small"><em>No image attached</em></span>
                       @endif
                     </td>
                     <td style="max-width: 200px;">

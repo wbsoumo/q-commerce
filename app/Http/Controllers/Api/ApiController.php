@@ -1651,12 +1651,29 @@ class ApiController extends Controller
                 $ext = $file->getClientOriginalExtension() ?: 'jpg';
                 $filename = 'custom_order_' . time() . '_' . rand(1000, 9999) . '.' . $ext;
                 
-                $uploadDir = public_path('uploads/custom_orders');
-                if (!file_exists($uploadDir)) {
-                    @mkdir($uploadDir, 0777, true);
+                $primaryDir = public_path('uploads/custom_orders');
+                if (!file_exists($primaryDir)) {
+                    @mkdir($primaryDir, 0777, true);
                 }
-                $file->move($uploadDir, $filename);
+                $file->move($primaryDir, $filename);
                 $imagePath = 'uploads/custom_orders/' . $filename;
+
+                // Sync to secondary public directories if different
+                $secondaryDirs = array_diff([
+                    base_path('public/uploads/custom_orders'),
+                    base_path('public_html/uploads/custom_orders'),
+                    base_path('uploads/custom_orders'),
+                ], [$primaryDir]);
+
+                foreach ($secondaryDirs as $secDir) {
+                    try {
+                        if (!file_exists($secDir)) {
+                            @mkdir($secDir, 0777, true);
+                        }
+                        @copy($primaryDir . '/' . $filename, $secDir . '/' . $filename);
+                    } catch (\Throwable $e) {}
+                }
+
             } elseif ($request->input('image') && is_string($request->input('image')) && strlen($request->input('image')) > 20) {
                 $rawImage = $request->input('image');
                 $ext = 'jpg';
@@ -1668,11 +1685,21 @@ class ApiController extends Controller
                 $decodedData = base64_decode($rawImage);
                 if ($decodedData !== false) {
                     $filename = 'custom_order_' . time() . '_' . rand(1000, 9999) . '.' . $ext;
-                    $uploadDir = public_path('uploads/custom_orders');
-                    if (!file_exists($uploadDir)) {
-                        @mkdir($uploadDir, 0777, true);
+                    $targetDirs = array_unique([
+                        public_path('uploads/custom_orders'),
+                        base_path('public/uploads/custom_orders'),
+                        base_path('public_html/uploads/custom_orders'),
+                        base_path('uploads/custom_orders'),
+                    ]);
+
+                    foreach ($targetDirs as $tDir) {
+                        try {
+                            if (!file_exists($tDir)) {
+                                @mkdir($tDir, 0777, true);
+                            }
+                            @file_put_contents($tDir . '/' . $filename, $decodedData);
+                        } catch (\Throwable $e) {}
                     }
-                    file_put_contents($uploadDir . '/' . $filename, $decodedData);
                     $imagePath = 'uploads/custom_orders/' . $filename;
                 }
             }
