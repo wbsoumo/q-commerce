@@ -1896,7 +1896,6 @@ class ApiController extends Controller
             ], 500)->header('Access-Control-Allow-Origin', '*');
         }
     }
-    }
 }
 
 
