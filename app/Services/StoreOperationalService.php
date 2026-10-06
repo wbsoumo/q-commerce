@@ -48,7 +48,7 @@ class StoreOperationalService
             ];
         }
 
-        $now = Carbon::now();
+        $now = Carbon::now('Asia/Kolkata');
 
         // 3. Check Holidays
         if (!empty($store->holidays)) {
