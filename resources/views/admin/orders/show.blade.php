@@ -110,9 +110,13 @@
                   @php
                     $mrpTotal = $order->mrp_total ?? 0;
                     if ($mrpTotal <= 0) {
-                        $mrpTotal = array_reduce($items, function($sum, $it) {
-                            $mrp = !empty($it->mrp) && $it->mrp > $it->price ? $it->mrp : ($it->price * 1.15);
-                            return $sum + ($mrp * $it->quantity);
+                        $itemList = is_array($items) ? $items : (method_exists($items, 'all') ? $items->all() : (array)$items);
+                        $mrpTotal = array_reduce($itemList, function($sum, $it) {
+                            $itObj = (object)$it;
+                            $price = (float)($itObj->price ?? 0);
+                            $qty = (int)($itObj->quantity ?? 1);
+                            $mrp = (!empty($itObj->mrp) && (float)$itObj->mrp > $price) ? (float)$itObj->mrp : ($price * 1.15);
+                            return $sum + ($mrp * $qty);
                         }, 0);
                     }
                     $discountAmt = $order->discount_amount ?? max(0, $mrpTotal - $order->subtotal);
