@@ -224,7 +224,7 @@ Route::prefix('api/v1')->group(function () {
     Route::post('/manager/orders/update-status', [ApiController::class, 'updateManagerOrderStatus']);
 
     Route::get('/git-pull-deploy', function () {
-        $output = shell_exec('cd ' . base_path() . ' && git reset --hard origin/main && git pull origin main 2>&1');
+        $output = shell_exec('cd ' . base_path() . ' && git checkout -- . && git reset --hard origin/main && git pull origin main 2>&1');
         
         try {
             $jsonPath = storage_path('app/firebase-service-account.json');
