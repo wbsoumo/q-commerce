@@ -454,6 +454,26 @@ class ApiController extends Controller
                     $orderInsert['is_scheduled_for_tomorrow'] = $isScheduledTomorrow;
                 }
 
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('orders', 'bill_details')) {
+                    try {
+                        \Illuminate\Support\Facades\Schema::table('orders', function ($table) {
+                            $table->json('bill_details')->nullable()->after('payable_amount');
+                        });
+                    } catch (\Throwable $e) {}
+                }
+                if (\Illuminate\Support\Facades\Schema::hasColumn('orders', 'bill_details')) {
+                    $orderInsert['bill_details'] = json_encode([
+                        'subtotal' => $subtotal,
+                        'delivery_fee' => $deliveryFee,
+                        'handling_fee' => $handlingFee,
+                        'discount_amount' => $discountAmount,
+                        'grand_total' => $grandTotal,
+                        'wallet_paid' => $walletPaid,
+                        'payable_amount' => $payableAmount,
+                        'mrp_total' => (float)$request->input('mrp_total', $checkoutResult['mrp_total'] ?? ($subtotal * 1.15)),
+                    ]);
+                }
+
                 $orderId = DB::table('orders')->insertGetId($orderInsert);
 
                 // 1b. Insert Store Pickup Record if Pickup Order and table exists
@@ -783,6 +803,22 @@ class ApiController extends Controller
                 } catch (\Throwable $e) {
                     $ord->is_rated = false;
                 }
+
+                try {
+                    if (!empty($ord->bill_details)) {
+                        $ord->bill_details = is_string($ord->bill_details) ? json_decode($ord->bill_details, true) : $ord->bill_details;
+                    } else {
+                        $ord->bill_details = [
+                            'subtotal' => (float)($ord->subtotal ?? 0),
+                            'delivery_fee' => (float)($ord->delivery_fee ?? 0),
+                            'handling_fee' => (float)($ord->handling_fee ?? 2.00),
+                            'discount_amount' => (float)($ord->discount_amount ?? $ord->discount ?? 0),
+                            'grand_total' => (float)($ord->grand_total ?? 0),
+                            'wallet_paid' => (float)($ord->wallet_paid ?? 0),
+                            'payable_amount' => (float)($ord->payable_amount ?? $ord->grand_total ?? 0),
+                        ];
+                    }
+                } catch (\Throwable $e) {}
             }
 
             return response()->json([
