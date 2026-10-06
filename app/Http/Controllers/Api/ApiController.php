@@ -604,115 +604,122 @@ class ApiController extends Controller
     // Get Real-Time User Orders & Live Lifecycle Tracking for Mobile App
     public function getUserOrders(Request $request)
     {
-        $rawPhone = $request->query('phone');
-        if (empty($rawPhone)) {
+        try {
+            $rawPhone = $request->query('phone');
+            if (empty($rawPhone)) {
+                return response()->json([
+                    'status' => 'success',
+                    'count' => 0,
+                    'data' => []
+                ])->header('Access-Control-Allow-Origin', '*');
+            }
+
+            $phone = trim($rawPhone);
+            $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
+
+            $query = DB::table('orders');
+            if (!empty($cleanPhone)) {
+                $query->where(function($q) use ($cleanPhone, $phone) {
+                    $q->where('user_phone', 'LIKE', "%$cleanPhone%")
+                      ->orWhere('receiver_phone', 'LIKE', "%$cleanPhone%");
+                    if (!empty($phone)) {
+                        $q->orWhere('user_phone', $phone)
+                          ->orWhere('receiver_phone', $phone);
+                    }
+                });
+            }
+
+            $orders = $query->orderBy('id', 'desc')->get();
+
+            foreach ($orders as $ord) {
+                try {
+                    $ord->items = DB::table('order_items')
+                        ->leftJoin('products', 'order_items.product_id', '=', 'products.id')
+                        ->select(
+                            'order_items.*',
+                            DB::raw('COALESCE(order_items.product_name, products.name, "Item") as product_name'),
+                            DB::raw('COALESCE(products.image, "") as product_image'),
+                            'products.unit'
+                        )
+                        ->where('order_items.order_id', $ord->id)
+                        ->get();
+                } catch (\Throwable $e) {
+                    $ord->items = [];
+                }
+
+                try {
+                    $store = DB::table('stores')->where('id', $ord->store_id ?? 1)->first();
+                    if (!$store) {
+                        $store = DB::table('stores')->first();
+                    }
+
+                    $ord->store_name = $store->name ?? 'Sonarbangla Mart (Krishnanagar Store)';
+                    $ord->store_address = $store->address ?? 'Holding 42, Main Road, Krishnanagar, Nadia - 741101';
+                    $ord->store_phone = $store->phone ?? '8016222991';
+                    $ord->store_lat = (float)($store->latitude ?? 23.4013);
+                    $ord->store_lng = (float)($store->longitude ?? 88.5010);
+                } catch (\Throwable $e) {
+                    $ord->store_name = 'Sonarbangla Mart';
+                    $ord->store_address = 'Krishnanagar Store';
+                    $ord->store_phone = '8016222991';
+                    $ord->store_lat = 23.4013;
+                    $ord->store_lng = 88.5010;
+                }
+
+                try {
+                    $ord->status_history = Schema::hasTable('order_status_histories')
+                        ? DB::table('order_status_histories')->where('order_id', $ord->id)->orderBy('created_at', 'asc')->get()
+                        : [];
+                } catch (\Throwable $e) {
+                    $ord->status_history = [];
+                }
+
+                try {
+                    $pickupRow = Schema::hasTable('store_pickup_orders')
+                        ? DB::table('store_pickup_orders')->where('order_id', $ord->id)->first()
+                        : null;
+
+                    $ord->pickup_details = [
+                        'store_name' => $ord->store_name,
+                        'store_address' => $ord->store_address,
+                        'store_phone' => $ord->store_phone,
+                        'store_lat' => $ord->store_lat,
+                        'store_lng' => $ord->store_lng,
+                        'pickup_date' => $pickupRow->pickup_date ?? $ord->pickup_date ?? date('Y-m-d'),
+                        'pickup_slot_time' => $pickupRow->pickup_slot_time ?? $ord->pickup_time ?? '10:00 AM - 11:00 AM',
+                        'pickup_status' => $pickupRow->pickup_status ?? 'Scheduled',
+                    ];
+                } catch (\Throwable $e) {
+                    $ord->pickup_details = null;
+                }
+
+                try {
+                    $ord->delivery_details = ($ord->order_type ?? 'delivery') === 'pickup'
+                        ? null
+                        : (Schema::hasTable('deliveries') && Schema::hasTable('delivery_partners')
+                            ? DB::table('deliveries')
+                                ->leftJoin('delivery_partners', 'deliveries.delivery_partner_id', '=', 'delivery_partners.id')
+                                ->select('deliveries.*', 'delivery_partners.name as rider_name', 'delivery_partners.phone as rider_phone')
+                                ->where('deliveries.order_id', $ord->id)
+                                ->first()
+                            : null);
+                } catch (\Throwable $e) {
+                    $ord->delivery_details = null;
+                }
+            }
+
             return response()->json([
                 'status' => 'success',
-                'count' => 0,
-                'data' => []
-            ])->header('Access-Control-Allow-Origin', '*');
+                'data' => $orders,
+            ])->header('Access-Control-Allow-Origin', '*')
+              ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
+              ->header('Access-Control-Allow-Headers', '*');
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500)->header('Access-Control-Allow-Origin', '*');
         }
-
-        $phone = trim($rawPhone);
-        $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
-
-        $query = DB::table('orders');
-        if (!empty($cleanPhone)) {
-            $query->where(function($q) use ($cleanPhone, $phone) {
-                $q->where('user_phone', 'LIKE', "%$cleanPhone%")
-                  ->orWhere('receiver_phone', 'LIKE', "%$cleanPhone%");
-                if (!empty($phone)) {
-                    $q->orWhere('user_phone', $phone)
-                      ->orWhere('receiver_phone', $phone);
-                }
-            });
-        }
-
-        $orders = $query->orderBy('id', 'desc')->get();
-
-        foreach ($orders as $ord) {
-            try {
-                $ord->items = DB::table('order_items')
-                    ->leftJoin('products', 'order_items.product_id', '=', 'products.id')
-                    ->select(
-                        'order_items.*',
-                        DB::raw('COALESCE(order_items.product_name, products.name, "Item") as product_name'),
-                        DB::raw('COALESCE(products.image, "") as product_image'),
-                        'products.unit'
-                    )
-                    ->where('order_items.order_id', $ord->id)
-                    ->get();
-            } catch (\Throwable $e) {
-                $ord->items = [];
-            }
-
-            try {
-                $store = DB::table('stores')->where('id', $ord->store_id ?? 1)->first();
-                if (!$store) {
-                    $store = DB::table('stores')->first();
-                }
-
-                $ord->store_name = $store->name ?? 'Sonarbangla Mart (Krishnanagar Store)';
-                $ord->store_address = $store->address ?? 'Holding 42, Main Road, Krishnanagar, Nadia - 741101';
-                $ord->store_phone = $store->phone ?? '8016222991';
-                $ord->store_lat = (float)($store->latitude ?? 23.4013);
-                $ord->store_lng = (float)($store->longitude ?? 88.5010);
-            } catch (\Throwable $e) {
-                $ord->store_name = 'Sonarbangla Mart';
-                $ord->store_address = 'Krishnanagar Store';
-                $ord->store_phone = '8016222991';
-                $ord->store_lat = 23.4013;
-                $ord->store_lng = 88.5010;
-            }
-
-            try {
-                $ord->status_history = Schema::hasTable('order_status_histories')
-                    ? DB::table('order_status_histories')->where('order_id', $ord->id)->orderBy('created_at', 'asc')->get()
-                    : [];
-            } catch (\Throwable $e) {
-                $ord->status_history = [];
-            }
-
-            try {
-                $pickupRow = Schema::hasTable('store_pickup_orders')
-                    ? DB::table('store_pickup_orders')->where('order_id', $ord->id)->first()
-                    : null;
-
-                $ord->pickup_details = [
-                    'store_name' => $ord->store_name,
-                    'store_address' => $ord->store_address,
-                    'store_phone' => $ord->store_phone,
-                    'store_lat' => $ord->store_lat,
-                    'store_lng' => $ord->store_lng,
-                    'pickup_date' => $pickupRow->pickup_date ?? $ord->pickup_date ?? date('Y-m-d'),
-                    'pickup_slot_time' => $pickupRow->pickup_slot_time ?? $ord->pickup_time ?? '10:00 AM - 11:00 AM',
-                    'pickup_status' => $pickupRow->pickup_status ?? 'Scheduled',
-                ];
-            } catch (\Throwable $e) {
-                $ord->pickup_details = null;
-            }
-
-            try {
-                $ord->delivery_details = ($ord->order_type ?? 'delivery') === 'pickup'
-                    ? null
-                    : (Schema::hasTable('deliveries') && Schema::hasTable('delivery_partners')
-                        ? DB::table('deliveries')
-                            ->leftJoin('delivery_partners', 'deliveries.delivery_partner_id', '=', 'delivery_partners.id')
-                            ->select('deliveries.*', 'delivery_partners.name as rider_name', 'delivery_partners.phone as rider_phone')
-                            ->where('deliveries.order_id', $ord->id)
-                            ->first()
-                        : null);
-            } catch (\Throwable $e) {
-                $ord->delivery_details = null;
-            }
-        }
-
-        return response()->json([
-            'status' => 'success',
-            'data' => $orders,
-        ])->header('Access-Control-Allow-Origin', '*')
-          ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
-          ->header('Access-Control-Allow-Headers', '*');
     }
 
     // Get Active Public Coupons List (Private coupons hidden from list, valid via typing code)
