@@ -346,8 +346,12 @@ class ApiController extends Controller
             ]));
 
             $orderType = $request->input('order_type', 'delivery');
-            $deliveryFee = $orderType === 'pickup' ? 0.00 : $checkoutResult['delivery_fee'];
-            $grandTotal = $checkoutResult['subtotal'] + $deliveryFee;
+            $deliveryFee = $request->has('delivery_fee') ? (float)$request->input('delivery_fee') : ($orderType === 'pickup' ? 0.00 : (float)$checkoutResult['delivery_fee']);
+            $handlingFee = $request->has('handling_fee') ? (float)$request->input('handling_fee') : 2.00;
+            $subtotal = (float)$checkoutResult['subtotal'];
+            $discountAmount = (float)$request->input('discount_amount', 0.00);
+
+            $grandTotal = max(0.00, round($subtotal + $deliveryFee + $handlingFee - $discountAmount, 2));
 
             WalletService::ensureSchema();
 
@@ -356,9 +360,9 @@ class ApiController extends Controller
                 $orderTmpNum = ($orderType === 'pickup' ? 'PICK-' : 'ORD-') . strtoupper(uniqid());
                 $walletPaid = WalletService::deductWalletForOrder($validatedData['user_phone'], $orderTmpNum, $grandTotal);
             }
-            $payableAmount = max(0.00, $grandTotal - $walletPaid);
+            $payableAmount = max(0.00, round($grandTotal - $walletPaid, 2));
 
-            return DB::transaction(function() use ($validatedData, $checkoutResult, $request, $orderType, $deliveryFee, $grandTotal, $walletPaid, $payableAmount) {
+            return DB::transaction(function() use ($validatedData, $checkoutResult, $request, $orderType, $subtotal, $deliveryFee, $handlingFee, $discountAmount, $grandTotal, $walletPaid, $payableAmount) {
                 $orderNumber = ($orderType === 'pickup' ? 'PICK-' : 'ORD-') . strtoupper(uniqid());
 
                 // 1. Insert Order Record
@@ -388,7 +392,7 @@ class ApiController extends Controller
                     'delivery_address' => $orderType === 'pickup' ? 'Self Pickup at Store' : $validatedData['delivery_address'],
                     'latitude' => $reqLat ?? 23.4126,
                     'longitude' => $reqLng ?? 88.4292,
-                    'subtotal' => $checkoutResult['subtotal'],
+                    'subtotal' => $subtotal,
                     'delivery_fee' => $deliveryFee,
                     'grand_total' => $grandTotal,
                     'wallet_paid' => $walletPaid,
@@ -405,14 +409,37 @@ class ApiController extends Controller
                     'updated_at' => now(),
                 ];
 
-                if (\Illuminate\Support\Facades\Schema::hasColumn('orders', 'mrp_total')) {
-                    $orderInsert['mrp_total'] = $request->input('mrp_total', $checkoutResult['mrp_total'] ?? ($checkoutResult['subtotal'] * 1.15));
-                }
-                if (\Illuminate\Support\Facades\Schema::hasColumn('orders', 'discount_amount')) {
-                    $orderInsert['discount_amount'] = $request->input('discount_amount', $checkoutResult['discount_amount'] ?? 0);
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('orders', 'handling_fee')) {
+                    try {
+                        \Illuminate\Support\Facades\Schema::table('orders', function ($table) {
+                            $table->decimal('handling_fee', 8, 2)->default(2.00)->after('delivery_fee');
+                        });
+                    } catch (\Throwable $e) {}
                 }
                 if (\Illuminate\Support\Facades\Schema::hasColumn('orders', 'handling_fee')) {
-                    $orderInsert['handling_fee'] = $request->input('handling_fee', 2.00);
+                    $orderInsert['handling_fee'] = $handlingFee;
+                }
+
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('orders', 'mrp_total')) {
+                    try {
+                        \Illuminate\Support\Facades\Schema::table('orders', function ($table) {
+                            $table->decimal('mrp_total', 10, 2)->nullable()->after('subtotal');
+                        });
+                    } catch (\Throwable $e) {}
+                }
+                if (\Illuminate\Support\Facades\Schema::hasColumn('orders', 'mrp_total')) {
+                    $orderInsert['mrp_total'] = (float)$request->input('mrp_total', $checkoutResult['mrp_total'] ?? ($subtotal * 1.15));
+                }
+
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('orders', 'discount_amount')) {
+                    try {
+                        \Illuminate\Support\Facades\Schema::table('orders', function ($table) {
+                            $table->decimal('discount_amount', 10, 2)->default(0.00)->after('mrp_total');
+                        });
+                    } catch (\Throwable $e) {}
+                }
+                if (\Illuminate\Support\Facades\Schema::hasColumn('orders', 'discount_amount')) {
+                    $orderInsert['discount_amount'] = $discountAmount;
                 }
 
                 $orderId = DB::table('orders')->insertGetId($orderInsert);
