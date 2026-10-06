@@ -706,6 +706,14 @@ class ApiController extends Controller
                 } catch (\Throwable $e) {
                     $ord->delivery_details = null;
                 }
+
+                try {
+                    $ord->is_rated = Schema::hasTable('order_ratings')
+                        ? DB::table('order_ratings')->where('order_id', $ord->id)->exists()
+                        : false;
+                } catch (\Throwable $e) {
+                    $ord->is_rated = false;
+                }
             }
 
             return response()->json([
