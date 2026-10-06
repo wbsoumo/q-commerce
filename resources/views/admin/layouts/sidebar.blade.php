@@ -63,8 +63,13 @@
             </a>
           </li>
           <li class="nav-item">
-            <a href="/admin/products" class="nav-link {{ request()->is('admin/products*') ? 'active bg-success' : '' }}">
+            <a href="/admin/products" class="nav-link {{ request()->is('admin/products') || request()->is('admin/products/*') && !request()->is('admin/product-ordering*') ? 'active bg-success' : '' }}">
               <i class="nav-icon fas fa-boxes text-light"></i><p>Products</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/admin/product-ordering" class="nav-link {{ request()->is('admin/product-ordering*') ? 'active bg-success' : '' }}">
+              <i class="nav-icon fas fa-sort-amount-down text-warning"></i><p>Product Ordering</p>
             </a>
           </li>
           <li class="nav-item">

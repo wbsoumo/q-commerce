@@ -124,6 +124,10 @@ Route::middleware(['admin.only'])->group(function () {
     Route::get('/admin/products/{id}/variants', [AdminController::class, 'productVariants']);
     Route::post('/admin/products/{id}/variants/store', [AdminController::class, 'storeProductVariant']);
 
+    // Product Ordering by Category
+    Route::get('/admin/product-ordering', [AdminController::class, 'productOrdering']);
+    Route::post('/admin/product-ordering/update', [AdminController::class, 'updateProductOrdering']);
+
     // WordPress Media Library APIs
     Route::get('/admin/media/library', [AdminController::class, 'getMediaLibrary']);
     Route::post('/admin/media/upload', [AdminController::class, 'uploadMedia']);

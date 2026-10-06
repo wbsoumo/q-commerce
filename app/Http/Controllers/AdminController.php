@@ -166,6 +166,65 @@ class AdminController extends Controller
         ));
     }
 
+    public function productOrdering(Request $request)
+    {
+        $categories = DB::table('categories')->where('is_active', true)->orderBy('display_order', 'asc')->get();
+        $selectedCategoryId = $request->query('category_id');
+
+        $products = [];
+        $selectedCategoryName = '';
+
+        if ($selectedCategoryId) {
+            $cat = DB::table('categories')->where('id', $selectedCategoryId)->first();
+            if ($cat) {
+                $selectedCategoryName = $cat->name;
+            }
+
+            $query = DB::table('products')->where('category_id', $selectedCategoryId);
+
+            if (\Illuminate\Support\Facades\Schema::hasColumn('products', 'sort_order')) {
+                $query->orderBy('sort_order', 'asc')->orderBy('id', 'desc');
+            } else {
+                $query->orderBy('id', 'desc');
+            }
+
+            $products = $query->get();
+        }
+
+        return view('admin.products.ordering', compact(
+            'categories',
+            'selectedCategoryId',
+            'selectedCategoryName',
+            'products'
+        ));
+    }
+
+    public function updateProductOrdering(Request $request)
+    {
+        $request->validate([
+            'category_id' => 'required',
+            'sort_order' => 'required|array',
+        ]);
+
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('products', 'sort_order')) {
+            \Illuminate\Support\Facades\Schema::table('products', function (\Illuminate\Database\Schema\Blueprint $table) {
+                $table->integer('sort_order')->default(0)->after('category_id');
+            });
+        }
+
+        foreach ($request->sort_order as $productId => $orderVal) {
+            DB::table('products')
+                ->where('id', $productId)
+                ->update([
+                    'sort_order' => (int)$orderVal,
+                    'updated_at' => now(),
+                ]);
+        }
+
+        return redirect()->to('/admin/product-ordering?category_id=' . $request->category_id)
+            ->with('success', 'Product display sequence successfully updated and saved!');
+    }
+
     // Single Product Delete Endpoint
     public function deleteProduct($id)
     {

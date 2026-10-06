@@ -262,6 +262,12 @@ class ApiController extends Controller
             $query->where('products.is_special_deal', true);
         }
 
+        if (Schema::hasColumn('products', 'sort_order')) {
+            $query->orderBy('products.sort_order', 'asc')->orderBy('products.id', 'desc');
+        } else {
+            $query->orderBy('products.id', 'desc');
+        }
+
         // Left join store product overrides & categories
         $products = $query
             ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
