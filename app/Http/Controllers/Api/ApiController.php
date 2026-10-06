@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
 use App\Services\StoreOperationalService;
 use App\Services\CheckoutValidationService;
 use App\Services\InventoryService;
+use App\Services\WalletService;
 use Exception;
 
 class ApiController extends Controller
@@ -257,6 +258,10 @@ class ApiController extends Controller
             $query->where('products.updated_at', '>', $updatedSince);
         }
 
+        if ($request->query('special_deals') || $request->query('is_special_deal')) {
+            $query->where('products.is_special_deal', true);
+        }
+
         // Left join store product overrides & categories
         $products = $query
             ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
@@ -338,7 +343,16 @@ class ApiController extends Controller
             $deliveryFee = $orderType === 'pickup' ? 0.00 : $checkoutResult['delivery_fee'];
             $grandTotal = $checkoutResult['subtotal'] + $deliveryFee;
 
-            return DB::transaction(function() use ($validatedData, $checkoutResult, $request, $orderType, $deliveryFee, $grandTotal) {
+            WalletService::ensureSchema();
+
+            $walletPaid = 0.00;
+            if ($request->input('use_wallet', false)) {
+                $orderTmpNum = ($orderType === 'pickup' ? 'PICK-' : 'ORD-') . strtoupper(uniqid());
+                $walletPaid = WalletService::deductWalletForOrder($validatedData['user_phone'], $orderTmpNum, $grandTotal);
+            }
+            $payableAmount = max(0.00, $grandTotal - $walletPaid);
+
+            return DB::transaction(function() use ($validatedData, $checkoutResult, $request, $orderType, $deliveryFee, $grandTotal, $walletPaid, $payableAmount) {
                 $orderNumber = ($orderType === 'pickup' ? 'PICK-' : 'ORD-') . strtoupper(uniqid());
 
                 // 1. Insert Order Record
@@ -353,6 +367,8 @@ class ApiController extends Controller
                     'subtotal' => $checkoutResult['subtotal'],
                     'delivery_fee' => $deliveryFee,
                     'grand_total' => $grandTotal,
+                    'wallet_paid' => $walletPaid,
+                    'payable_amount' => $payableAmount,
                     'payment_method' => $request->input('payment_method', 'PhonePe UPI'),
                     'order_type' => $orderType,
                     'pickup_date' => $request->input('pickup_date'),
@@ -874,10 +890,13 @@ class ApiController extends Controller
             $balance = (float)($customer->wallet_balance ?? 0.00);
         }
 
+        $transactions = WalletService::getTransactions($rawPhone);
+
         return response()->json([
             'status' => 'success',
             'wallet_balance' => round($balance, 2),
             'currency' => '₹',
+            'transactions' => $transactions,
         ])->header('Access-Control-Allow-Origin', '*')
           ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
           ->header('Access-Control-Allow-Headers', '*');

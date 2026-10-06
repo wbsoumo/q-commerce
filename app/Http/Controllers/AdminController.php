@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use App\Services\WalletService;
 
 class AdminController extends Controller
 {
@@ -1056,6 +1057,12 @@ class AdminController extends Controller
 
         if ($order) {
             DB::table('orders')->where('id', $id)->update(['status' => $newStatus, 'updated_at' => now()]);
+
+            if ($newStatus === 'Cancelled' || $newStatus === 'Canceled') {
+                try {
+                    WalletService::refundWalletForOrder($order);
+                } catch (\Throwable $e) {}
+            }
 
             DB::table('order_status_histories')->insert([
                 'order_id' => $id,

@@ -107,7 +107,13 @@
                 <div class="text-right mt-3">
                   <p class="mb-1">Subtotal: <strong>₹{{ $order->subtotal ?? $order->grand_total }}</strong></p>
                   <p class="mb-1">Delivery Fee: <strong>₹{{ $order->delivery_fee ?? 0 }}</strong></p>
-                  <h4 class="text-success font-weight-bold">Grand Total: ₹{{ $order->grand_total }}</h4>
+                  @if(($order->wallet_paid ?? 0) > 0)
+                    <p class="mb-1 text-success"><i class="fas fa-wallet mr-1"></i> Paid via SB Mart Wallet: <strong>-₹{{ number_format($order->wallet_paid, 2) }}</strong></p>
+                  @endif
+                  <p class="mb-1 text-muted">Order Grand Total: <strong>₹{{ number_format($order->grand_total, 2) }}</strong></p>
+                  <h4 class="text-success font-weight-bold mt-2">
+                    Collectable Amount: ₹{{ number_format(($order->payable_amount ?? null) !== null ? $order->payable_amount : ($order->grand_total - ($order->wallet_paid ?? 0)), 2) }}
+                  </h4>
                 </div>
               </div>
             </div>

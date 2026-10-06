@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
+use App\Services\WalletService;
 
 class ManagerController extends Controller
 {
@@ -374,6 +375,12 @@ class ManagerController extends Controller
         $riderId = $request->input('delivery_partner_id');
 
         DB::table('orders')->where('id', $id)->update(['status' => $newStatus, 'updated_at' => now()]);
+
+        if ($newStatus === 'Cancelled' || $newStatus === 'Canceled') {
+            try {
+                WalletService::refundWalletForOrder($order);
+            } catch (\Throwable $e) {}
+        }
 
         if (!empty($riderId)) {
             $existingDelivery = DB::table('deliveries')->where('order_id', $id)->first();
