@@ -54,6 +54,11 @@
               <i class="nav-icon fas fa-motorcycle text-light"></i><p>Deliveries</p>
             </a>
           </li>
+          <li class="nav-item">
+            <a href="/admin/ratings" class="nav-link {{ request()->is('admin/ratings*') ? 'active bg-success' : '' }}">
+              <i class="nav-icon fas fa-star text-warning"></i><p>Ratings & Reviews</p>
+            </a>
+          </li>
 
           <!-- Priority 3: Catalog & Inventory Management -->
           <li class="nav-header text-uppercase text-muted small font-weight-bold">Catalog & Inventory</li>

@@ -1814,6 +1814,58 @@ class ApiController extends Controller
             ], 500)->header('Access-Control-Allow-Origin', '*');
         }
     }
+
+    // Rating & Review Submission API
+    public function submitRating(Request $request)
+    {
+        try {
+            if (!Schema::hasTable('order_ratings')) {
+                Schema::create('order_ratings', function ($table) {
+                    $table->id();
+                    $table->unsignedBigInteger('order_id')->nullable();
+                    $table->string('user_phone')->nullable();
+                    $table->integer('product_rating')->default(5);
+                    $table->text('product_remarks')->nullable();
+                    $table->integer('delivery_rating')->default(5);
+                    $table->text('delivery_remarks')->nullable();
+                    $table->unsignedBigInteger('store_id')->default(1);
+                    $table->timestamps();
+                });
+            }
+
+            $orderId = $request->input('order_id');
+            $userPhone = $request->input('user_phone', '8016222991');
+            $productRating = (int)$request->input('product_rating', 5);
+            $productRemarks = $request->input('product_remarks', '');
+            $deliveryRating = (int)$request->input('delivery_rating', 5);
+            $deliveryRemarks = $request->input('delivery_remarks', '');
+            $storeId = (int)$request->input('store_id', 1);
+
+            $id = DB::table('order_ratings')->insertGetId([
+                'order_id' => $orderId,
+                'user_phone' => $userPhone,
+                'product_rating' => $productRating,
+                'product_remarks' => $productRemarks,
+                'delivery_rating' => $deliveryRating,
+                'delivery_remarks' => $deliveryRemarks,
+                'store_id' => $storeId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Thank you! Your product and delivery rating has been submitted successfully.',
+                'rating_id' => $id,
+            ])->header('Access-Control-Allow-Origin', '*');
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Rating submission failed: ' . $e->getMessage()
+            ], 500)->header('Access-Control-Allow-Origin', '*');
+        }
+    }
+    }
 }
 
 

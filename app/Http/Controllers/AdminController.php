@@ -225,6 +225,44 @@ class AdminController extends Controller
             ->with('success', 'Product display sequence successfully updated and saved!');
     }
 
+    public function ratings(Request $request)
+    {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('order_ratings')) {
+            \Illuminate\Support\Facades\Schema::create('order_ratings', function ($table) {
+                $table->id();
+                $table->unsignedBigInteger('order_id')->nullable();
+                $table->string('user_phone')->nullable();
+                $table->integer('product_rating')->default(5);
+                $table->text('product_remarks')->nullable();
+                $table->integer('delivery_rating')->default(5);
+                $table->text('delivery_remarks')->nullable();
+                $table->unsignedBigInteger('store_id')->default(1);
+                $table->timestamps();
+            });
+        }
+
+        $query = DB::table('order_ratings')
+            ->leftJoin('stores', 'order_ratings.store_id', '=', 'stores.id')
+            ->select('order_ratings.*', 'stores.name as store_name');
+
+        if ($request->filled('type')) {
+            if ($request->type === 'product') {
+                $query->whereNotNull('order_ratings.product_remarks')->where('order_ratings.product_remarks', '!=', '');
+            } elseif ($request->type === 'delivery') {
+                $query->whereNotNull('order_ratings.delivery_remarks')->where('order_ratings.delivery_remarks', '!=', '');
+            }
+        }
+
+        if ($request->filled('store_id')) {
+            $query->where('order_ratings.store_id', $request->store_id);
+        }
+
+        $ratings = $query->orderBy('order_ratings.id', 'desc')->get();
+        $stores = DB::table('stores')->where('is_active', true)->get();
+
+        return view('admin.ratings.index', compact('ratings', 'stores'));
+    }
+
     // Single Product Delete Endpoint
     public function deleteProduct($id)
     {

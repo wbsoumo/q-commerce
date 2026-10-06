@@ -128,6 +128,9 @@ Route::middleware(['admin.only'])->group(function () {
     Route::get('/admin/product-ordering', [AdminController::class, 'productOrdering']);
     Route::post('/admin/product-ordering/update', [AdminController::class, 'updateProductOrdering']);
 
+    // Ratings & Reviews Management
+    Route::get('/admin/ratings', [AdminController::class, 'ratings']);
+
     // WordPress Media Library APIs
     Route::get('/admin/media/library', [AdminController::class, 'getMediaLibrary']);
     Route::post('/admin/media/upload', [AdminController::class, 'uploadMedia']);
@@ -212,6 +215,7 @@ Route::prefix('api/v1')->group(function () {
     Route::post('/user/wishlist/toggle', [ApiController::class, 'toggleWishlist']);
     Route::post('/user/delete-account', [ApiController::class, 'deleteAccount']);
     Route::post('/custom-order/request', [ApiController::class, 'submitCustomOrderRequest']);
+    Route::post('/ratings/submit', [ApiController::class, 'submitRating']);
 
     // Dedicated Store Manager App API Routes
     Route::post('/manager/login', [ApiController::class, 'managerLogin']);
