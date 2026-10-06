@@ -594,6 +594,16 @@ class ApiController extends Controller
                             'store_lat' => (float)($store->latitude ?? 23.4013),
                             'store_lng' => (float)($store->longitude ?? 88.5010),
                         ],
+                        'bill_details' => [
+                            'subtotal' => $subtotal,
+                            'delivery_fee' => $deliveryFee,
+                            'handling_fee' => $handlingFee,
+                            'discount_amount' => $discountAmount,
+                            'grand_total' => $grandTotal,
+                            'wallet_paid' => $walletPaid,
+                            'payable_amount' => $payableAmount,
+                            'mrp_total' => (float)$request->input('mrp_total', $checkoutResult['mrp_total'] ?? ($subtotal * 1.15)),
+                        ],
                         'items' => array_map(function($it) {
                             $p = isset($it['product_id']) ? DB::table('products')->where('id', $it['product_id'])->first() : null;
                             $it['product_name'] = $it['name'] ?? $p->name ?? 'Item';
