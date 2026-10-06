@@ -217,6 +217,8 @@ Route::prefix('api/v1')->group(function () {
     Route::get('/user/wallet', [ApiController::class, 'getUserWallet']);
     Route::get('/user/wishlist', [ApiController::class, 'getUserWishlist']);
     Route::post('/user/wishlist/toggle', [ApiController::class, 'toggleWishlist']);
+    Route::get('/user/profile', [ApiController::class, 'getUserProfile']);
+    Route::post('/user/profile/update', [ApiController::class, 'updateUserProfile']);
     Route::post('/user/delete-account', [ApiController::class, 'deleteAccount']);
     Route::post('/custom-order/request', [ApiController::class, 'submitCustomOrderRequest']);
     Route::post('/ratings/submit', [ApiController::class, 'submitRating']);

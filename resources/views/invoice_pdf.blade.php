@@ -59,10 +59,14 @@
             <div class="info-box">
                 <div class="info-title">Fulfilled By (Store)</div>
                 <div class="info-detail">
-                    <strong>{{ $store->name ?? 'SonarbanglaMart Krishnanagar Hub' }}</strong><br>
-                    {{ $store->address ?? 'Holding 42, Main Road, Krishnanagar, Nadia' }}<br>
-                    Contact: +91 {{ $store->phone ?? '6294530380' }}<br>
-                    GSTIN: 19ABCDE1234F1ZH (Registered)
+                    <strong>{{ $store->name ?? 'SonarbanglaMart Hub' }}</strong><br>
+                    {{ $store->address ?? '' }}<br>
+                    @if(!empty($store->store_phone ?? $store->phone ?? ''))
+                    Contact: +91 {{ $store->store_phone ?? $store->phone }}<br>
+                    @endif
+                    @if(!empty($store->gstin))
+                    GSTIN: <strong>{{ $store->gstin }}</strong>
+                    @endif
                 </div>
             </div>
             <div class="info-box">
@@ -71,6 +75,9 @@
                     <strong>{{ $order->user_name ?? 'Customer' }}</strong><br>
                     Phone: {{ $order->user_phone }}<br>
                     Address: {{ $order->delivery_address }}<br>
+                    @if(!empty($order->user_gstin ?? $customerGst ?? ''))
+                    GSTIN: <strong>{{ $order->user_gstin ?? $customerGst }}</strong><br>
+                    @endif
                     Payment Mode: <strong>{{ $order->payment_method ?? 'Cash on Delivery' }}</strong>
                 </div>
             </div>

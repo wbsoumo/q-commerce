@@ -70,17 +70,21 @@
                   </div>
 
                   <div class="row">
-                    <div class="col-md-4 form-group">
+                    <div class="col-md-3 form-group">
                       <label>City <span class="text-danger">*</span></label>
                       <input type="text" name="city" class="form-control" value="Krishnanagar" required>
                     </div>
-                    <div class="col-md-4 form-group">
+                    <div class="col-md-3 form-group">
                       <label>Pincode <span class="text-danger">*</span></label>
                       <input type="text" name="pincode" class="form-control" value="741101" required>
                     </div>
-                    <div class="col-md-4 form-group">
+                    <div class="col-md-3 form-group">
                       <label>Contact Phone</label>
                       <input type="text" name="store_phone" class="form-control" placeholder="+91 9876543210">
+                    </div>
+                    <div class="col-md-3 form-group">
+                      <label>Store GST Number <small class="text-muted">(Optional)</small></label>
+                      <input type="text" name="gstin" class="form-control" placeholder="e.g. 19ABCDE1234F1ZH">
                     </div>
                   </div>
                 </div>

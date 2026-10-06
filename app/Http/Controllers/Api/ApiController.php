@@ -442,6 +442,26 @@ class ApiController extends Controller
                     $orderInsert['discount_amount'] = $discountAmount;
                 }
 
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('orders', 'user_gstin')) {
+                    try {
+                        \Illuminate\Support\Facades\Schema::table('orders', function ($table) {
+                            $table->string('user_gstin')->nullable()->after('receiver_phone');
+                        });
+                    } catch (\Throwable $e) {}
+                }
+                $userGst = $request->input('user_gstin') ?? $request->input('gst_number');
+                if (empty($userGst) && !empty($validatedData['user_phone'])) {
+                    $existingUser = DB::table('users')->where('phone', $validatedData['user_phone'])->first();
+                    $userGst = $existingUser->gst_number ?? null;
+                    if (empty($userGst)) {
+                        $existingCustomer = DB::table('customers')->where('phone', $validatedData['user_phone'])->first();
+                        $userGst = $existingCustomer->gst_number ?? null;
+                    }
+                }
+                if (\Illuminate\Support\Facades\Schema::hasColumn('orders', 'user_gstin') && !empty($userGst)) {
+                    $orderInsert['user_gstin'] = strtoupper($userGst);
+                }
+
                 $isScheduledTomorrow = $request->boolean('is_scheduled_for_tomorrow');
                 if (!\Illuminate\Support\Facades\Schema::hasColumn('orders', 'is_scheduled_for_tomorrow')) {
                     try {
@@ -2181,11 +2201,16 @@ class ApiController extends Controller
                 ], 404)->header('Access-Control-Allow-Origin', '*');
             }
 
+            \Illuminate\Support\Facades\URL::forceRootUrl('https://sbmartquick.com');
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+
             $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
                 'invoice.download',
                 now()->addHours(24),
                 ['orderNumber' => $orderNumber]
             );
+
+            $url = str_replace('admin.sbmartquick.com', 'sbmartquick.com', $url);
 
             return response()->json([
                 'status' => 'success',
@@ -2196,6 +2221,115 @@ class ApiController extends Controller
                 'status' => 'error',
                 'message' => 'Failed to generate signed URL: ' . $e->getMessage()
             ], 500)->header('Access-Control-Allow-Origin', '*');
+        }
+    }
+
+    // Update User Profile / GST Number
+    public function updateUserProfile(Request $request)
+    {
+        try {
+            if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'gst_number')) {
+                \Illuminate\Support\Facades\Schema::table('users', function ($table) {
+                    $table->string('gst_number')->nullable();
+                });
+            }
+            if (!\Illuminate\Support\Facades\Schema::hasColumn('customers', 'gst_number')) {
+                \Illuminate\Support\Facades\Schema::table('customers', function ($table) {
+                    $table->string('gst_number')->nullable();
+                });
+            }
+
+            $phone = trim($request->input('phone', ''));
+            $name = trim($request->input('name', ''));
+            $gstNumber = trim($request->input('gst_number', ''));
+
+            if (empty($phone)) {
+                return response()->json(['status' => 'error', 'message' => 'Phone number is required.'], 400);
+            }
+
+            $phoneDigits = preg_replace('/[^0-9]/', '', $phone);
+            $cleanPhone = (strlen($phoneDigits) === 10) ? '+91' . $phoneDigits : '+' . $phoneDigits;
+
+            $updateData = ['updated_at' => now()];
+            if ($request->has('name') && !empty($name)) {
+                $updateData['name'] = $name;
+            }
+            if ($request->has('gst_number')) {
+                $updateData['gst_number'] = strtoupper($gstNumber);
+            }
+
+            DB::table('users')
+                ->where('phone', $cleanPhone)
+                ->orWhere('phone', $phoneDigits)
+                ->orWhere('phone', $phone)
+                ->update($updateData);
+
+            DB::table('customers')
+                ->where('phone', $cleanPhone)
+                ->orWhere('phone', $phoneDigits)
+                ->orWhere('phone', $phone)
+                ->update($updateData);
+
+            $updatedUser = DB::table('users')
+                ->where('phone', $cleanPhone)
+                ->orWhere('phone', $phoneDigits)
+                ->orWhere('phone', $phone)
+                ->first();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Profile updated successfully.',
+                'user' => [
+                    'name' => $updatedUser->name ?? $name,
+                    'phone' => $updatedUser->phone ?? $phone,
+                    'email' => $updatedUser->email ?? '',
+                    'gst_number' => $updatedUser->gst_number ?? $gstNumber,
+                ]
+            ])->header('Access-Control-Allow-Origin', '*');
+        } catch (\Throwable $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    // Fetch User Profile / GST Details
+    public function getUserProfile(Request $request)
+    {
+        try {
+            if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'gst_number')) {
+                \Illuminate\Support\Facades\Schema::table('users', function ($table) {
+                    $table->string('gst_number')->nullable();
+                });
+            }
+            $phone = trim($request->query('phone', ''));
+            if (empty($phone)) {
+                return response()->json(['status' => 'error', 'message' => 'Phone required.'], 400);
+            }
+            $phoneDigits = preg_replace('/[^0-9]/', '', $phone);
+            $user = DB::table('users')
+                ->where('phone', $phone)
+                ->orWhere('phone', '+91' . $phoneDigits)
+                ->orWhere('phone', $phoneDigits)
+                ->first();
+
+            if (!$user) {
+                $user = DB::table('customers')
+                    ->where('phone', $phone)
+                    ->orWhere('phone', '+91' . $phoneDigits)
+                    ->orWhere('phone', $phoneDigits)
+                    ->first();
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'user' => [
+                    'name' => $user->name ?? '',
+                    'phone' => $user->phone ?? $phone,
+                    'email' => $user->email ?? '',
+                    'gst_number' => $user->gst_number ?? '',
+                ]
+            ])->header('Access-Control-Allow-Origin', '*');
+        } catch (\Throwable $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
 }

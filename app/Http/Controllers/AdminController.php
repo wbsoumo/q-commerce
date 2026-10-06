@@ -67,7 +67,15 @@ class AdminController extends Controller
             'manager_password' => 'required|string|min:6',
         ]);
 
-        $storeId = DB::table('stores')->insertGetId([
+        if (!Schema::hasColumn('stores', 'gstin')) {
+            try {
+                Schema::table('stores', function ($table) {
+                    $table->string('gstin')->nullable()->after('phone');
+                });
+            } catch (\Throwable $e) {}
+        }
+
+        $storeData = [
             'name' => $validated['name'],
             'code' => $validated['code'],
             'address' => $validated['address'],
@@ -78,7 +86,13 @@ class AdminController extends Controller
             'is_active' => true,
             'created_at' => now(),
             'updated_at' => now(),
-        ]);
+        ];
+
+        if (Schema::hasColumn('stores', 'gstin')) {
+            $storeData['gstin'] = $request->input('gstin');
+        }
+
+        $storeId = DB::table('stores')->insertGetId($storeData);
 
         // Create Store Manager Account
         DB::table('users')->insert([
@@ -804,6 +818,16 @@ class AdminController extends Controller
 
         $updateData['banner_title'] = $request->input('banner_title', 'Mega Diwali Sale');
         $updateData['banner_subtitle'] = $request->input('banner_subtitle');
+
+        if (!Schema::hasColumn('stores', 'gstin')) {
+            Schema::table('stores', function ($table) {
+                $table->string('gstin')->nullable();
+            });
+        }
+
+        if ($request->has('gstin')) {
+            $updateData['gstin'] = $request->input('gstin');
+        }
 
         if ($request->has('delivery_radius_km')) {
             $updateData['delivery_radius_km'] = (float)$request->input('delivery_radius_km', 5.00);
@@ -2770,6 +2794,16 @@ class AdminController extends Controller
         $items = DB::table('order_items')->where('order_id', $order->id)->get();
         $store = DB::table('stores')->where('id', $order->store_id)->first();
 
-        return view('invoice_pdf', compact('order', 'items', 'store'));
+        $customerGst = $order->user_gstin ?? null;
+        if (empty($customerGst) && !empty($order->user_phone)) {
+            $user = DB::table('users')->where('phone', $order->user_phone)->first();
+            $customerGst = $user->gst_number ?? null;
+            if (empty($customerGst)) {
+                $customer = DB::table('customers')->where('phone', $order->user_phone)->first();
+                $customerGst = $customer->gst_number ?? null;
+            }
+        }
+
+        return view('invoice_pdf', compact('order', 'items', 'store', 'customerGst'));
     }
 }

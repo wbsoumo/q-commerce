@@ -58,6 +58,10 @@
                   <label>Closing Time</label>
                   <input type="time" name="closing_time" class="form-control" value="{{ $store->closing_time ?? '23:00' }}" required>
                 </div>
+                <div class="col-md-4 form-group">
+                  <label>Store GST Number <small class="text-muted">(Optional)</small></label>
+                  <input type="text" name="gstin" class="form-control" value="{{ $store->gstin ?? '' }}" placeholder="e.g. 19ABCDE1234F1ZH">
+                </div>
               </div>
 
               <!-- Interactive Location & Delivery Radius Slider Map -->
