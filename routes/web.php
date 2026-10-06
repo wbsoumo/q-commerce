@@ -223,6 +223,10 @@ Route::prefix('api/v1')->group(function () {
     Route::post('/support/tickets', [ApiController::class, 'createSupportTicket']);
     Route::get('/support/tickets', [ApiController::class, 'getUserSupportTickets']);
     Route::get('/stores', [ApiController::class, 'getAllStores']);
+    Route::get('/invoice/signed-url', [ApiController::class, 'getSignedInvoiceUrl']);
+
+// Cryptographically Signed Public Web Invoice Download
+Route::get('/invoice/download/{orderNumber}', [AdminController::class, 'downloadInvoiceWeb'])->name('invoice.download')->middleware('signed');
 
     // Dedicated Store Manager App API Routes
     Route::post('/manager/login', [ApiController::class, 'managerLogin']);

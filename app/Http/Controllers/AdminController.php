@@ -2754,4 +2754,22 @@ class AdminController extends Controller
 
         return back()->with('success', "Support ticket {$ticket->ticket_number} updated to " . ucfirst(str_replace('_', ' ', $status)) . ".");
     }
+
+    // Public / Signed Secure Web Invoice Generator
+    public function downloadInvoiceWeb(Request $request, $orderNumber)
+    {
+        if (!$request->hasValidSignature()) {
+            abort(403, 'Security Verification Failed: This invoice link is invalid, tampered with, or expired.');
+        }
+
+        $order = DB::table('orders')->where('order_number', $orderNumber)->first();
+        if (!$order) {
+            abort(404, 'Invoice Error: Order not found.');
+        }
+
+        $items = DB::table('order_items')->where('order_id', $order->id)->get();
+        $store = DB::table('stores')->where('id', $order->store_id)->first();
+
+        return view('invoice_pdf', compact('order', 'items', 'store'));
+    }
 }

@@ -2114,6 +2114,44 @@ class ApiController extends Controller
             ], 500)->header('Access-Control-Allow-Origin', '*');
         }
     }
+
+    // Generate Signed Invoice Download URL API
+    public function getSignedInvoiceUrl(Request $request)
+    {
+        try {
+            $orderNumber = $request->query('order_number');
+            if (empty($orderNumber)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Order number parameter is required.'
+                ], 422)->header('Access-Control-Allow-Origin', '*');
+            }
+
+            $order = DB::table('orders')->where('order_number', $orderNumber)->first();
+            if (!$order) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Order not found.'
+                ], 404)->header('Access-Control-Allow-Origin', '*');
+            }
+
+            $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+                'invoice.download',
+                now()->addHours(24),
+                ['orderNumber' => $orderNumber]
+            );
+
+            return response()->json([
+                'status' => 'success',
+                'url' => $url
+            ])->header('Access-Control-Allow-Origin', '*');
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to generate signed URL: ' . $e->getMessage()
+            ], 500)->header('Access-Control-Allow-Origin', '*');
+        }
+    }
 }
 
 
