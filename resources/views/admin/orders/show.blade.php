@@ -76,7 +76,16 @@
                     <span class="text-muted">Store Hours: {{ $order->pickup_details->store_opening_time ?? '06:00 AM' }} - {{ $order->pickup_details->store_closing_time ?? '11:00 PM' }}</span>
                   </div>
                 @else
-                  <p><strong>Delivery Address:</strong> {{ $order->delivery_address }}</p>
+                  <p class="mb-2"><strong>Delivery Address:</strong> {{ $order->delivery_address }}</p>
+                  @if(!empty($order->latitude) && !empty($order->longitude))
+                    <p class="mb-3">
+                      <strong>Customer Location (GPS):</strong>
+                      <span class="badge badge-light border p-1"><i class="fas fa-map-marker-alt text-danger mr-1"></i> Lat: {{ $order->latitude }}, Lng: {{ $order->longitude }}</span>
+                      <a href="https://www.google.com/maps?q={{ $order->latitude }},{{ $order->longitude }}" target="_blank" class="btn btn-xs btn-outline-danger ml-2 font-weight-bold">
+                        <i class="fas fa-external-link-alt mr-1"></i> Open Location in Google Maps 🗺️
+                      </a>
+                    </p>
+                  @endif
                 @endif
 
                 <p><strong>Payment Method:</strong> {{ $order->payment_method }}</p>
@@ -98,8 +107,27 @@
                   </tbody>
                 </table>
                 <div class="text-right mt-3">
-                  <p class="mb-1">Subtotal: <strong>₹{{ $order->subtotal }}</strong></p>
-                  <p class="mb-1">Delivery Fee: <strong>₹{{ $order->delivery_fee }}</strong></p>
+                  @php
+                    $mrpTotal = $order->mrp_total ?? 0;
+                    if ($mrpTotal <= 0) {
+                        $mrpTotal = array_reduce($items, function($sum, $it) {
+                            $mrp = !empty($it->mrp) && $it->mrp > $it->price ? $it->mrp : ($it->price * 1.15);
+                            return $sum + ($mrp * $it->quantity);
+                        }, 0);
+                    }
+                    $discountAmt = $order->discount_amount ?? max(0, $mrpTotal - $order->subtotal);
+                  @endphp
+                  @if($mrpTotal > 0)
+                    <p class="mb-1">MRP Total: <strong>₹{{ number_format($mrpTotal, 2) }}</strong></p>
+                  @endif
+                  @if($discountAmt > 0)
+                    <p class="mb-1 text-success">Product Discount: <strong>-₹{{ number_format($discountAmt, 2) }}</strong></p>
+                  @endif
+                  <p class="mb-1">Item Subtotal: <strong>₹{{ number_format($order->subtotal, 2) }}</strong></p>
+                  @if(($order->handling_fee ?? 0) > 0)
+                    <p class="mb-1">Handling Fee: <strong>₹{{ number_format($order->handling_fee, 2) }}</strong></p>
+                  @endif
+                  <p class="mb-1">Delivery Fee: <strong>₹{{ number_format($order->delivery_fee, 2) }}</strong></p>
                   @if(($order->wallet_paid ?? 0) > 0)
                     <p class="mb-1 text-success"><i class="fas fa-wallet mr-1"></i> Paid via SB Mart Wallet: <strong>-₹{{ number_format($order->wallet_paid, 2) }}</strong></p>
                   @endif

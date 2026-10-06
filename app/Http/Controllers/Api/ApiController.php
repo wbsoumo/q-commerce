@@ -362,7 +362,7 @@ class ApiController extends Controller
                 $orderNumber = ($orderType === 'pickup' ? 'PICK-' : 'ORD-') . strtoupper(uniqid());
 
                 // 1. Insert Order Record
-                $orderId = DB::table('orders')->insertGetId([
+                $orderInsert = [
                     'order_number' => $orderNumber,
                     'store_id' => $checkoutResult['store_id'],
                     'user_name' => $validatedData['user_name'],
@@ -385,7 +385,19 @@ class ApiController extends Controller
                     'status' => 'Pending',
                     'created_at' => now(),
                     'updated_at' => now(),
-                ]);
+                ];
+
+                if (\Illuminate\Support\Facades\Schema::hasColumn('orders', 'mrp_total')) {
+                    $orderInsert['mrp_total'] = $request->input('mrp_total', $checkoutResult['mrp_total'] ?? ($checkoutResult['subtotal'] * 1.15));
+                }
+                if (\Illuminate\Support\Facades\Schema::hasColumn('orders', 'discount_amount')) {
+                    $orderInsert['discount_amount'] = $request->input('discount_amount', $checkoutResult['discount_amount'] ?? 0);
+                }
+                if (\Illuminate\Support\Facades\Schema::hasColumn('orders', 'handling_fee')) {
+                    $orderInsert['handling_fee'] = $request->input('handling_fee', 2.00);
+                }
+
+                $orderId = DB::table('orders')->insertGetId($orderInsert);
 
                 // 1b. Insert Store Pickup Record if Pickup Order and table exists
                 if ($orderType === 'pickup' && \Illuminate\Support\Facades\Schema::hasTable('store_pickup_orders')) {
