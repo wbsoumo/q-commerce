@@ -362,14 +362,32 @@ class ApiController extends Controller
                 $orderNumber = ($orderType === 'pickup' ? 'PICK-' : 'ORD-') . strtoupper(uniqid());
 
                 // 1. Insert Order Record
+                $reqLat = $request->input('latitude');
+                $reqLng = $request->input('longitude');
+                $storeObj = DB::table('stores')->where('id', $checkoutResult['store_id'])->first();
+
+                // If lat/lng missing or matching store lat/lng, attempt lookup in user_addresses table
+                if (empty($reqLat) || empty($reqLng) || ($storeObj && (string)$reqLat === (string)$storeObj->latitude && (string)$reqLng === (string)$storeObj->longitude)) {
+                    $savedUserAddr = DB::table('user_addresses')
+                        ->where('user_phone', $validatedData['user_phone'])
+                        ->whereNotNull('latitude')
+                        ->where('latitude', '!=', 0)
+                        ->orderBy('id', 'desc')
+                        ->first();
+                    if ($savedUserAddr && !empty($savedUserAddr->latitude) && !empty($savedUserAddr->longitude)) {
+                        $reqLat = $savedUserAddr->latitude;
+                        $reqLng = $savedUserAddr->longitude;
+                    }
+                }
+
                 $orderInsert = [
                     'order_number' => $orderNumber,
                     'store_id' => $checkoutResult['store_id'],
                     'user_name' => $validatedData['user_name'],
                     'user_phone' => $validatedData['user_phone'],
                     'delivery_address' => $orderType === 'pickup' ? 'Self Pickup at Store' : $validatedData['delivery_address'],
-                    'latitude' => $request->input('latitude', 23.4126),
-                    'longitude' => $request->input('longitude', 88.4292),
+                    'latitude' => $reqLat ?? 23.4126,
+                    'longitude' => $reqLng ?? 88.4292,
                     'subtotal' => $checkoutResult['subtotal'],
                     'delivery_fee' => $deliveryFee,
                     'grand_total' => $grandTotal,
