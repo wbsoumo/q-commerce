@@ -222,6 +222,7 @@ Route::prefix('api/v1')->group(function () {
     Route::post('/ratings/submit', [ApiController::class, 'submitRating']);
     Route::post('/support/tickets', [ApiController::class, 'createSupportTicket']);
     Route::get('/support/tickets', [ApiController::class, 'getUserSupportTickets']);
+    Route::get('/stores', [ApiController::class, 'getAllStores']);
 
     // Dedicated Store Manager App API Routes
     Route::post('/manager/login', [ApiController::class, 'managerLogin']);

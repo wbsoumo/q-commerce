@@ -2080,6 +2080,28 @@ class ApiController extends Controller
             ], 500)->header('Access-Control-Allow-Origin', '*');
         }
     }
+
+    // Fetch All Active Stores API
+    public function getAllStores()
+    {
+        try {
+            $stores = DB::table('stores')
+                ->where('is_active', true)
+                ->select('id', 'name', 'code', 'address', 'latitude', 'longitude')
+                ->orderBy('id', 'asc')
+                ->get();
+
+            return response()->json([
+                'status' => 'success',
+                'stores' => $stores
+            ])->header('Access-Control-Allow-Origin', '*');
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch stores: ' . $e->getMessage()
+            ], 500)->header('Access-Control-Allow-Origin', '*');
+        }
+    }
 }
 
 
