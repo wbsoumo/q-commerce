@@ -233,6 +233,13 @@ Route::prefix('api/v1')->group(function () {
         $output = shell_exec('cd ' . base_path() . ' && git checkout -- . && git reset --hard origin/main && git pull origin main 2>&1');
         
         try {
+            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+            $output .= "\nMigration output: " . \Illuminate\Support\Facades\Artisan::output();
+        } catch (\Exception $e) {
+            $output .= "\nMigration Warning: " . $e->getMessage();
+        }
+
+        try {
             $jsonPath = storage_path('app/firebase-service-account.json');
             $b64Path = storage_path('app/firebase-service-account.b64');
             $jsonContent = null;
