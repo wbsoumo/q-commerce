@@ -26,8 +26,9 @@ class CheckoutValidationService
             throw new Exception("Selected store does not exist.");
         }
 
+        $isScheduledTomorrow = !empty($data['is_scheduled_for_tomorrow']);
         $opStatus = StoreOperationalService::checkStoreStatus($store);
-        if (!$opStatus['is_operational']) {
+        if (!$opStatus['is_operational'] && !$isScheduledTomorrow) {
             throw new Exception("Store Unavailable: " . $opStatus['reason']);
         }
 
