@@ -257,6 +257,11 @@
                         🛵 Home Delivery
                       </span>
                     @endif
+                    @if(!empty($order->is_scheduled_for_tomorrow))
+                      <span class="badge badge-warning text-dark px-2 py-1 rounded font-weight-bold d-block mt-1">
+                        ⏰ Scheduled for Tomorrow
+                      </span>
+                    @endif
                   </td>
                   <td>
                     @if(isset($order->order_type) && $order->order_type === 'pickup')

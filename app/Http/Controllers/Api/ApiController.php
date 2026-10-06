@@ -442,6 +442,18 @@ class ApiController extends Controller
                     $orderInsert['discount_amount'] = $discountAmount;
                 }
 
+                $isScheduledTomorrow = $request->boolean('is_scheduled_for_tomorrow');
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('orders', 'is_scheduled_for_tomorrow')) {
+                    try {
+                        \Illuminate\Support\Facades\Schema::table('orders', function ($table) {
+                            $table->boolean('is_scheduled_for_tomorrow')->default(false)->after('status');
+                        });
+                    } catch (\Throwable $e) {}
+                }
+                if (\Illuminate\Support\Facades\Schema::hasColumn('orders', 'is_scheduled_for_tomorrow')) {
+                    $orderInsert['is_scheduled_for_tomorrow'] = $isScheduledTomorrow;
+                }
+
                 $orderId = DB::table('orders')->insertGetId($orderInsert);
 
                 // 1b. Insert Store Pickup Record if Pickup Order and table exists

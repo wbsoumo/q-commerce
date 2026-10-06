@@ -69,7 +69,12 @@
               <tbody>
                 @forelse($orders as $ord)
                 <tr>
-                  <td class="font-weight-bold align-middle">#{{ $ord->order_number }}</td>
+                  <td class="font-weight-bold align-middle">
+                    #{{ $ord->order_number }}
+                    @if(!empty($ord->is_scheduled_for_tomorrow))
+                      <span class="badge badge-warning text-dark text-xs d-block mt-1">⏰ Scheduled for Tomorrow</span>
+                    @endif
+                  </td>
                   <td class="align-middle">{{ $ord->user_phone ?? 'N/A' }}</td>
                   <td class="align-middle text-success font-weight-bold">₹{{ $ord->grand_total }}</td>
                   <td class="align-middle"><span class="badge badge-light border">{{ $ord->payment_method ?? 'COD' }}</span></td>
