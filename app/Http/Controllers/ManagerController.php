@@ -617,4 +617,83 @@ class ManagerController extends Controller
 
         return back()->with('success', "Custom order request #REQ-$id status updated to " . ucfirst($status) . " and user notified.");
     }
+
+    // Store Manager Support Tickets View
+    public function supportTickets(Request $request)
+    {
+        $store = $this->getStoreData();
+        if (!$store) return redirect('/manager/login');
+        $storeId = $store->id;
+
+        if (!Schema::hasTable('support_tickets')) {
+            Schema::create('support_tickets', function ($table) {
+                $table->id();
+                $table->string('ticket_number')->unique()->index();
+                $table->string('user_phone')->index();
+                $table->string('user_name')->nullable();
+                $table->unsignedBigInteger('store_id')->nullable()->index();
+                $table->unsignedBigInteger('order_id')->nullable()->index();
+                $table->string('order_number')->nullable();
+                $table->string('category');
+                $table->string('sub_category')->nullable();
+                $table->text('description')->nullable();
+                $table->enum('status', ['pending', 'in_progress', 'resolved', 'closed'])->default('pending');
+                $table->text('admin_remarks')->nullable();
+                $table->timestamps();
+            });
+        }
+
+        $query = DB::table('support_tickets')
+            ->where(function($q) use ($storeId) {
+                $q->where('store_id', $storeId)
+                  ->orWhereNull('store_id');
+            });
+
+        if ($request->has('status') && !empty($request->status) && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('search') && !empty($request->search)) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('ticket_number', 'LIKE', "%$search%")
+                  ->orWhere('user_name', 'LIKE', "%$search%")
+                  ->orWhere('user_phone', 'LIKE', "%$search%")
+                  ->orWhere('category', 'LIKE', "%$search%")
+                  ->orWhere('sub_category', 'LIKE', "%$search%");
+            });
+        }
+
+        $tickets = $query->orderBy('id', 'desc')->paginate(15);
+
+        return view('manager.support_tickets.index', compact('tickets', 'store'));
+    }
+
+    // Store Manager Update Support Ticket Status & Remarks
+    public function updateSupportTicketStatus(Request $request, $id)
+    {
+        $store = $this->getStoreData();
+        if (!$store) return redirect('/manager/login');
+
+        $status = $request->input('status');
+        $remarks = $request->input('admin_remarks');
+
+        if (!in_array($status, ['pending', 'in_progress', 'resolved', 'closed'])) {
+            return back()->with('error', 'Invalid status specified.');
+        }
+
+        $ticket = DB::table('support_tickets')->where('id', $id)->first();
+        if (!$ticket) {
+            return back()->with('error', 'Support ticket not found.');
+        }
+
+        DB::table('support_tickets')->where('id', $id)->update([
+            'status' => $status,
+            'admin_remarks' => $remarks,
+            'store_id' => $store->id,
+            'updated_at' => now(),
+        ]);
+
+        return back()->with('success', "Support ticket {$ticket->ticket_number} updated to " . ucfirst(str_replace('_', ' ', $status)) . ".");
+    }
 }

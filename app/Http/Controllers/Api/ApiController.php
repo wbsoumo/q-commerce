@@ -1961,6 +1961,125 @@ class ApiController extends Controller
             ], 500)->header('Access-Control-Allow-Origin', '*');
         }
     }
+
+    // Support Ticket Submission API
+    public function createSupportTicket(Request $request)
+    {
+        try {
+            if (!Schema::hasTable('support_tickets')) {
+                Schema::create('support_tickets', function ($table) {
+                    $table->id();
+                    $table->string('ticket_number')->unique()->index();
+                    $table->string('user_phone')->index();
+                    $table->string('user_name')->nullable();
+                    $table->unsignedBigInteger('store_id')->nullable()->index();
+                    $table->unsignedBigInteger('order_id')->nullable()->index();
+                    $table->string('order_number')->nullable();
+                    $table->string('category');
+                    $table->string('sub_category')->nullable();
+                    $table->text('description')->nullable();
+                    $table->enum('status', ['pending', 'in_progress', 'resolved', 'closed'])->default('pending');
+                    $table->text('admin_remarks')->nullable();
+                    $table->timestamps();
+                });
+            }
+
+            $userPhone = $request->input('user_phone') ?? $request->input('phone');
+            if (empty($userPhone)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Phone number is required.'
+                ], 422)->header('Access-Control-Allow-Origin', '*');
+            }
+
+            $userName = $request->input('user_name') ?? $request->input('name', 'Customer');
+            $category = $request->input('category', 'General Support');
+            $subCategory = $request->input('sub_category');
+            $description = $request->input('description');
+            $storeId = $request->input('store_id');
+            $orderId = $request->input('order_id');
+            $orderNumber = $request->input('order_number');
+
+            $ticketNumber = 'TKT-' . rand(10000, 99999);
+            while (DB::table('support_tickets')->where('ticket_number', $ticketNumber)->exists()) {
+                $ticketNumber = 'TKT-' . rand(10000, 99999);
+            }
+
+            $ticketId = DB::table('support_tickets')->insertGetId([
+                'ticket_number' => $ticketNumber,
+                'user_phone' => $userPhone,
+                'user_name' => $userName,
+                'store_id' => $storeId,
+                'order_id' => $orderId,
+                'order_number' => $orderNumber,
+                'category' => $category,
+                'sub_category' => $subCategory,
+                'description' => $description,
+                'status' => 'pending',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Support ticket created successfully. An executive will call you shortly.',
+                'ticket' => [
+                    'id' => $ticketId,
+                    'ticket_number' => $ticketNumber,
+                    'category' => $category,
+                    'sub_category' => $subCategory,
+                    'status' => 'pending',
+                    'created_at' => now()->toDateTimeString(),
+                ]
+            ])->header('Access-Control-Allow-Origin', '*');
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to create support ticket: ' . $e->getMessage()
+            ], 500)->header('Access-Control-Allow-Origin', '*');
+        }
+    }
+
+    // Fetch User Support Tickets API
+    public function getUserSupportTickets(Request $request)
+    {
+        try {
+            if (!Schema::hasTable('support_tickets')) {
+                return response()->json([
+                    'status' => 'success',
+                    'data' => []
+                ])->header('Access-Control-Allow-Origin', '*');
+            }
+
+            $userPhone = $request->query('phone') ?? $request->query('user_phone');
+            if (empty($userPhone)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Phone parameter is required.'
+                ], 422)->header('Access-Control-Allow-Origin', '*');
+            }
+
+            $tickets = DB::table('support_tickets')
+                ->leftJoin('stores', 'support_tickets.store_id', '=', 'stores.id')
+                ->select(
+                    'support_tickets.*',
+                    'stores.name as store_name'
+                )
+                ->where('support_tickets.user_phone', $userPhone)
+                ->orderBy('support_tickets.id', 'desc')
+                ->get();
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $tickets
+            ])->header('Access-Control-Allow-Origin', '*');
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch support tickets: ' . $e->getMessage()
+            ], 500)->header('Access-Control-Allow-Origin', '*');
+        }
+    }
 }
 
 

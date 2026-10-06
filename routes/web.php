@@ -70,6 +70,8 @@ Route::middleware(['store.manager'])->group(function () {
     Route::post('/manager/orders/{id}/status', [ManagerController::class, 'updateOrderStatus']);
     Route::get('/manager/custom-orders', [ManagerController::class, 'customOrders'])->name('manager.custom-orders');
     Route::post('/manager/custom-orders/{id}/status', [ManagerController::class, 'updateCustomOrderStatus']);
+    Route::get('/manager/support-tickets', [ManagerController::class, 'supportTickets'])->name('manager.support-tickets');
+    Route::post('/manager/support-tickets/{id}/status', [ManagerController::class, 'updateSupportTicketStatus']);
 
     Route::get('/manager/deliveries', [ManagerController::class, 'deliveries'])->name('manager.deliveries');
     Route::post('/manager/deliveries/assign', [ManagerController::class, 'assignRider']);
@@ -155,6 +157,8 @@ Route::middleware(['admin.only'])->group(function () {
     Route::post('/admin/orders/{id}/update-status', [AdminController::class, 'updateOrderStatus']);
     Route::get('/admin/custom-orders', [AdminController::class, 'customOrders']);
     Route::post('/admin/custom-orders/{id}/status', [AdminController::class, 'updateCustomOrderStatus']);
+    Route::get('/admin/support-tickets', [AdminController::class, 'supportTickets']);
+    Route::post('/admin/support-tickets/{id}/status', [AdminController::class, 'updateSupportTicketStatus']);
     Route::get('/admin/customers', [AdminController::class, 'customers']);
     Route::post('/admin/customers/store', [AdminController::class, 'storeCustomer']);
     Route::get('/admin/customers/{id}', [AdminController::class, 'showCustomer']);
@@ -216,6 +220,8 @@ Route::prefix('api/v1')->group(function () {
     Route::post('/user/delete-account', [ApiController::class, 'deleteAccount']);
     Route::post('/custom-order/request', [ApiController::class, 'submitCustomOrderRequest']);
     Route::post('/ratings/submit', [ApiController::class, 'submitRating']);
+    Route::post('/support/tickets', [ApiController::class, 'createSupportTicket']);
+    Route::get('/support/tickets', [ApiController::class, 'getUserSupportTickets']);
 
     // Dedicated Store Manager App API Routes
     Route::post('/manager/login', [ApiController::class, 'managerLogin']);

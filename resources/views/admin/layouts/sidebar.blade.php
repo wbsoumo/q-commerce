@@ -45,6 +45,12 @@
             </a>
           </li>
           <li class="nav-item">
+            <a href="/admin/support-tickets" class="nav-link {{ request()->is('admin/support-tickets*') ? 'active bg-success' : '' }}">
+              <i class="nav-icon fas fa-headset text-success"></i>
+              <p>Support Tickets</p>
+            </a>
+          </li>
+          <li class="nav-item">
             <a href="/admin/customers" class="nav-link {{ request()->is('admin/customers*') ? 'active bg-success' : '' }}">
               <i class="nav-icon fas fa-users text-light"></i><p>Customers</p>
             </a>
