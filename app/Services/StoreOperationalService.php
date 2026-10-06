@@ -68,7 +68,16 @@ class StoreOperationalService
             $open = Carbon::createFromTimeString($store->opening_time)->format('H:i:s');
             $close = Carbon::createFromTimeString($store->closing_time)->format('H:i:s');
 
-            if ($currentTime < $open || $currentTime > $close) {
+            $isOpen = false;
+            if ($open < $close) {
+                // Normal daytime shift (e.g. 06:00 AM to 10:00 PM)
+                $isOpen = ($currentTime >= $open && $currentTime <= $close);
+            } else {
+                // Overnight shift crossing midnight (e.g. 06:00 AM to 02:00 AM next day)
+                $isOpen = ($currentTime >= $open || $currentTime <= $close);
+            }
+
+            if (!$isOpen) {
                 return [
                     'is_operational' => false,
                     'reason' => "Store is closed. Operating hours are from " . date('h:i A', strtotime($open)) . " to " . date('h:i A', strtotime($close)) . "."
