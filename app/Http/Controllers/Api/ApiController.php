@@ -571,15 +571,13 @@ class ApiController extends Controller
                     ]);
                 }
 
-                // Fast return response; dispatch store manager FCM notification asynchronously
+                // Fast return response; dispatch store manager FCM notification asynchronously via dedicated manager API method
                 try {
-                    \App\Services\FcmNotificationService::sendNotification(
+                    \App\Services\FcmNotificationService::sendManagerOrderNotification(
+                        $orderId,
+                        $checkoutResult['store_id'],
                         "🚨 NEW ORDER #{$orderNumber}",
-                        "New order received: ₹{$grandTotal} ({$validatedData['user_name']})",
-                        'store_managers',
-                        null,
-                        null,
-                        $orderId
+                        "New order received: ₹{$grandTotal} ({$validatedData['user_name']})"
                     );
                 } catch (\Throwable $th) {}
 
@@ -2331,6 +2329,24 @@ class ApiController extends Controller
         } catch (\Throwable $e) {
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
+    }
+
+    // Dedicated API Endpoint for Manager Order Push Alerts
+    public function sendManagerOrderNotificationApi(Request $request)
+    {
+        $orderId = $request->input('order_id');
+        $storeId = (int)$request->input('store_id', 1);
+        $title = $request->input('title', '🚨 NEW ORDER ALERT');
+        $body = $request->input('body', 'New order received for your store.');
+
+        $result = \App\Services\FcmNotificationService::sendManagerOrderNotification(
+            $orderId,
+            $storeId,
+            $title,
+            $body
+        );
+
+        return response()->json($result)->header('Access-Control-Allow-Origin', '*');
     }
 }
 

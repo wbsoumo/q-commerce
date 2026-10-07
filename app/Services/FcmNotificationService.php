@@ -38,35 +38,19 @@ class FcmNotificationService
                 ->pluck('fcm_token')
                 ->toArray();
         } elseif ($targetType === 'store_managers') {
-            $managers = DB::table('users')->whereIn('role', ['store_manager', 'admin'])->get();
-            $targets = [];
-            foreach ($managers as $m) {
-                if (!empty($m->phone)) {
-                    $digits = preg_replace('/[^0-9]/', '', $m->phone);
-                    $targets[] = $m->phone;
-                    $targets[] = $digits;
-                    $targets[] = (strlen($digits) === 10) ? '+91' . $digits : '+' . $digits;
+            $managerPhones = DB::table('users')->where('role', 'store_manager')->pluck('phone')->toArray();
+            if (!empty($managerPhones)) {
+                $phoneVariations = [];
+                foreach ($managerPhones as $mPhone) {
+                    $digits = preg_replace('/[^0-9]/', '', $mPhone);
+                    $phoneVariations[] = $mPhone;
+                    $phoneVariations[] = $digits;
+                    $phoneVariations[] = (strlen($digits) === 10) ? '+91' . $digits : '+' . $digits;
                 }
-                if (!empty($m->email)) {
-                    $targets[] = $m->email;
-                }
-                $targets[] = (string)$m->id;
-            }
-
-            $tokens = DB::table('fcm_tokens')
-                ->where(function($q) use ($targets) {
-                    if (!empty($targets)) {
-                        $q->whereIn('user_phone', array_unique($targets));
-                    }
-                    $q->orWhere('user_phone', 'LIKE', '%manager%')
-                      ->orWhere('user_phone', 'LIKE', '%@%');
-                })
-                ->pluck('fcm_token')
-                ->toArray();
-
-            // If no specific manager token found, fallback to all active device FCM tokens
-            if (empty($tokens)) {
-                $tokens = DB::table('fcm_tokens')->pluck('fcm_token')->toArray();
+                $tokens = DB::table('fcm_tokens')
+                    ->whereIn('user_phone', array_unique($phoneVariations))
+                    ->pluck('fcm_token')
+                    ->toArray();
             }
         } else {
             $tokens = DB::table('fcm_tokens')
@@ -217,5 +201,129 @@ class FcmNotificationService
             error_log("FCM OAuth Error: " . $e->getMessage());
         }
         return null;
+    }
+
+    /**
+     * Dedicated Separate API method for Store Manager App Order Push Notifications
+     */
+    public static function sendManagerOrderNotification($orderId, $storeId, $title, $body)
+    {
+        $settings = DB::table('fcm_settings')->first();
+        $serviceAccountRaw = $settings->service_account_json ?? null;
+        $serviceAccount = !empty($serviceAccountRaw) ? json_decode($serviceAccountRaw, true) : null;
+
+        $managers = DB::table('users')
+            ->whereIn('role', ['store_manager', 'admin'])
+            ->where(function($q) use ($storeId) {
+                $q->where('store_id', $storeId)
+                  ->orWhereNull('store_id');
+            })
+            ->get();
+
+        $targets = [];
+        foreach ($managers as $m) {
+            if (!empty($m->phone)) {
+                $digits = preg_replace('/[^0-9]/', '', $m->phone);
+                $targets[] = $m->phone;
+                $targets[] = $digits;
+                $targets[] = (strlen($digits) === 10) ? '+91' . $digits : '+' . $digits;
+            }
+            if (!empty($m->email)) {
+                $targets[] = $m->email;
+            }
+            $targets[] = (string)$m->id;
+        }
+
+        $tokens = DB::table('fcm_tokens')
+            ->where(function($q) use ($targets) {
+                if (!empty($targets)) {
+                    $q->whereIn('user_phone', array_unique($targets));
+                }
+                $q->orWhere('user_phone', 'LIKE', '%manager%')
+                  ->orWhere('user_phone', 'LIKE', '%@%');
+            })
+            ->pluck('fcm_token')
+            ->toArray();
+
+        if (empty($tokens)) {
+            $tokens = DB::table('fcm_tokens')->pluck('fcm_token')->toArray();
+        }
+
+        $tokens = array_values(array_unique(array_filter($tokens)));
+        if (empty($tokens)) {
+            return ['status' => 'warning', 'message' => 'No manager tokens found.'];
+        }
+
+        $payloadData = [
+            'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+            'screen' => 'manager_orders',
+            'order_id' => (string)$orderId,
+            'store_id' => (string)$storeId,
+        ];
+
+        $sentCount = 0;
+        $responseData = [];
+
+        if ($serviceAccount && isset($serviceAccount['client_email'], $serviceAccount['private_key'], $serviceAccount['project_id'])) {
+            $accessToken = self::getOAuthToken($serviceAccount);
+            $pId = $serviceAccount['project_id'];
+
+            if ($accessToken) {
+                $endpoint = "https://fcm.googleapis.com/v1/projects/{$pId}/messages:send";
+
+                foreach ($tokens as $token) {
+                    $message = [
+                        'message' => [
+                            'token' => $token,
+                            'notification' => [
+                                'title' => $title,
+                                'body' => $body,
+                            ],
+                            'data' => $payloadData,
+                            'android' => [
+                                'priority' => 'high',
+                                'notification' => [
+                                    'sound' => 'swiggy_new_order',
+                                    'channel_id' => 'high_importance_channel',
+                                    'notification_priority' => 'PRIORITY_MAX',
+                                    'visibility' => 'PUBLIC',
+                                    'default_sound' => false,
+                                    'default_vibrate_timings' => true,
+                                ],
+                            ],
+                        ]
+                    ];
+
+                    $response = Http::withHeaders([
+                        'Authorization' => 'Bearer ' . $accessToken,
+                        'Content-Type' => 'application/json',
+                    ])->post($endpoint, $message);
+
+                    if ($response->successful()) {
+                        $sentCount++;
+                    }
+                    $responseData[] = $response->json();
+                }
+            }
+        }
+
+        DB::table('notification_logs')->insert([
+            'title' => $title,
+            'body' => $body,
+            'image_url' => null,
+            'target_type' => 'manager_app_order_alert',
+            'target_phone' => 'store_id_' . $storeId,
+            'order_id' => (string)$orderId,
+            'status' => ($sentCount > 0) ? 'sent' : 'queued',
+            'response_data' => json_encode($responseData),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return [
+            'status' => 'success',
+            'sent_count' => $sentCount,
+            'total_tokens' => count($tokens),
+        ];
     }
 }
