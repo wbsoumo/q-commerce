@@ -68,7 +68,7 @@ class NotificationController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'body' => 'required|string',
-            'target_type' => 'required|in:all,specific_user',
+            'target_type' => 'required|in:all,store_managers,specific_user',
         ]);
 
         $title = $request->input('title');
