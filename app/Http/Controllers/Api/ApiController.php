@@ -1354,6 +1354,7 @@ class ApiController extends Controller
         try {
             $storeId = (int)$request->input('store_id', $request->query('store_id', 1));
             $status = $request->query('status');
+            $orderType = $request->query('order_type');
 
             $query = DB::table('orders');
 
@@ -1366,6 +1367,10 @@ class ApiController extends Controller
 
             if (!empty($status) && strtolower($status) !== 'all') {
                 $query->where('status', $status);
+            }
+
+            if (!empty($orderType) && strtolower($orderType) !== 'all') {
+                $query->where('order_type', strtolower($orderType));
             }
 
             $orders = $query->orderBy('id', 'desc')->get();
@@ -1447,7 +1452,7 @@ class ApiController extends Controller
         }
     }
 
-    // 3. Fetch Delivery Partners List for Manager App (Safe Query with Fallback)
+    // 3. Fetch Delivery Partners List for Manager App (Store-specific filtering)
     public function getManagerRiders(Request $request)
     {
         try {
@@ -1459,7 +1464,7 @@ class ApiController extends Controller
             $storeCol = in_array('store_id', $columns) ? 'store_id' : (in_array('assigned_store_id', $columns) ? 'assigned_store_id' : null);
             $activeCol = in_array('is_active', $columns) ? 'is_active' : (in_array('status', $columns) ? 'status' : null);
 
-            if ($storeCol) {
+            if ($storeCol && $storeId > 0) {
                 $query->where(function ($q) use ($storeCol, $storeId) {
                     $q->where($storeCol, $storeId)
                       ->orWhereNull($storeCol);
@@ -1475,10 +1480,6 @@ class ApiController extends Controller
             }
 
             $riders = $query->get();
-
-            if ($riders->isEmpty()) {
-                $riders = DB::table('delivery_partners')->get();
-            }
 
             return response()->json([
                 'status' => 'success',
