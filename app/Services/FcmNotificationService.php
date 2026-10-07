@@ -208,9 +208,22 @@ class FcmNotificationService
      */
     public static function sendManagerOrderNotification($orderId, $storeId, $title, $body)
     {
-        $settings = DB::table('fcm_settings')->first();
-        $serviceAccountRaw = $settings->service_account_json ?? null;
-        $serviceAccount = !empty($serviceAccountRaw) ? json_decode($serviceAccountRaw, true) : null;
+        // Manager App (SB Mart Ops) specific Firebase Service Account
+        $managerServiceAccount = [
+            "type" => "service_account",
+            "project_id" => "sbmartops",
+            "private_key_id" => "95934a17f6e2879738bd5eb798d28435d47a59fa",
+            "private_key" => "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDJ2y+WckftCE4H\nVlyAu2/qVzotyGeLLflUCyiy0xp12+EDYi3cxZAr27/f1u1/0lOhdsiR8PI446zl\nOyTJDkZS3TIoVzAPSrFClZG8udrJWQU72NGnudpOUeK3llXNPak8rhzZT8pJKO4T\nQE/HiH2EQ6aq/BiN+pIye3iQw8Ni+6nLHy7NiIVZy/ghLD9KYqn7Vfvd5j2PSMYX\nc/gHi1GX86gcgzfWyUuKS9GflZjACwjeqS3Enb0cpDzKfPmuMGdaF+u0yW9X/Mku\n+qSffFVEL6CqZ5o9KyZ9OErvwrjTphqQZo1cv4NStwpFWTj1HJjr1n4pUQNsfzaI\nyZoAxmAhAgMBAAECggEABsf9Rkbv5vpOHML9oo7UHgGbgRQ9c5iHdW0BNgNk3SwW\nLWtBR9cUln9FvTsBiYzC+yamwE225XWzRj7WvTEPPb4T7vUBi/yiDdmWfB+bm64I\n609yY6RuaA5/g6liQoiIGfNuIVgj3zynxYUgk6nLMFlRd7xhBXazLfel6j8ZXkba\nFvssKnQF13CmHTL1RjtvaL2s8wUv97dovd2iaRuPG/+I/zcofIP0KAepkyG4Js9X\n9qtKIsMPx32tSi3QOTsV/QO+6GajwaLfhV9inezARnLLXAbxddneVDD+Uc0f6ri9\nOiyEiXm62vIBNk6MAq32rKw+V1D0iAlw/+IfHEtmrQKBgQD43zoG2f0XJ00upfVL\ndgbIWqT/YoK5Pi+JkwIPmdgzYwdJ/vCsl3n8X0gpbEieylF0A+6LIKAObNVNbZcL\nWO65I2HcEFMTO4AxfRl2MoAxxEjpnQIA2wmii5W7IMdcqw9Y59mt36ShNPyf7bcy\ngHqw65JFS15ft5hgI0tat9piAwKBgQDPozsu0P0nBYRhoExUtCVGB9FiuTs/iBeE\nOjepFpziVmnKb5FCxKBuI1KJrsBJ70WuWyU0hYrk7FW5T7898BmAT9uMsvjNfJLI\nbKr1m8Mt3Rt825iCiitC+keJPlJ7r+VnSJ0lfMOPhU6l/oQu2rmzmmFAKoAMWwYc\ngvlsKFgOCwKBgQCG18RD9BaaVfQOw2LNuSxhoCNoMELuBZCSNPHX7B5lcVGAuT5D\n9Wrl3+Zkc0RBrRNHDd5QyaOPTU6hPjCpuEzYSSB7sOiiMgn6RnLmROSKknSDB0wP\nlJ560LCXDGKYhiKxpCWgfN1hbyk1qgIpvc08UNcW7og6ymooJNduVtFfawKBgDRN\nLY8xXVMC9MGSmyeK6Qim13tCpUXvhdzsvTB+Xa41jhhL2g8zcCXOB/BecFkvSCIP\nG2QLb10SmtU+3TFA1WuYsfjS7BD2nBKYLMgJIDThSRc+SUA4hYUtfe94H1bAi8xk\nYhEbSDdSoOj3H1yeA8DV1kFPc0mpc/SimSlBUEzZAoGBAOjdNicXA8PHFvMzoojW\nd3PgByBMtR+Lpglbf+mcbEglNVrEgg2P/7/IUPc2pTN30OxeKEcp6zNfymXO/uWT\nqcpOPuAkuwUWDVN6vFQfR60JsTgDse9bDFZpAYFTWgJKKg+4fSEJxOtQI2ruhoiP\nW/gOOvdGsecsyu9vjBjDtWda\n-----END PRIVATE KEY-----\n",
+            "client_email" => "firebase-adminsdk-fbsvc@sbmartops.iam.gserviceaccount.com",
+            "client_id" => "114809931680734876454",
+            "auth_uri" => "https://accounts.google.com/o/oauth2/auth",
+            "token_uri" => "https://oauth2.googleapis.com/token",
+            "auth_provider_x509_cert_url" => "https://www.googleapis.com/oauth2/v1/certs",
+            "client_x509_cert_url" => "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40sbmartops.iam.gserviceaccount.com",
+            "universe_domain" => "googleapis.com"
+        ];
+
+        $serviceAccount = $managerServiceAccount;
 
         $managers = DB::table('users')
             ->whereIn('role', ['store_manager', 'admin'])
