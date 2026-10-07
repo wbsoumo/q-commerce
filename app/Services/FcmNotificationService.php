@@ -245,14 +245,8 @@ class FcmNotificationService
             ->pluck('fcm_token')
             ->toArray();
 
-        if (empty($tokens)) {
-            $tokens = DB::table('fcm_tokens')->pluck('fcm_token')->toArray();
-        }
-
+        // STRICT SECURITY: Remove any fallback to ALL user tokens so customers NEVER receive manager alerts!
         $tokens = array_values(array_unique(array_filter($tokens)));
-        if (empty($tokens)) {
-            return ['status' => 'warning', 'message' => 'No manager tokens found.'];
-        }
 
         $payloadData = [
             'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
@@ -271,6 +265,7 @@ class FcmNotificationService
             if ($accessToken) {
                 $endpoint = "https://fcm.googleapis.com/v1/projects/{$pId}/messages:send";
 
+                // 1. Send to individual manager tokens if available
                 foreach ($tokens as $token) {
                     $message = [
                         'message' => [
@@ -303,6 +298,42 @@ class FcmNotificationService
                         $sentCount++;
                     }
                     $responseData[] = $response->json();
+                }
+
+                // 2. ALSO Broadcast to FCM Topic 'store_managers' and 'store_manager_{storeId}'
+                $managerTopics = ['store_managers', "store_manager_{$storeId}"];
+                foreach ($managerTopics as $topic) {
+                    $topicMessage = [
+                        'message' => [
+                            'topic' => $topic,
+                            'notification' => [
+                                'title' => $title,
+                                'body' => $body,
+                            ],
+                            'data' => $payloadData,
+                            'android' => [
+                                'priority' => 'high',
+                                'notification' => [
+                                    'sound' => 'swiggy_new_order',
+                                    'channel_id' => 'high_importance_channel',
+                                    'notification_priority' => 'PRIORITY_MAX',
+                                    'visibility' => 'PUBLIC',
+                                    'default_sound' => false,
+                                    'default_vibrate_timings' => true,
+                                ],
+                            ],
+                        ]
+                    ];
+
+                    $topicResp = Http::withHeaders([
+                        'Authorization' => 'Bearer ' . $accessToken,
+                        'Content-Type' => 'application/json',
+                    ])->post($endpoint, $topicMessage);
+
+                    if ($topicResp->successful()) {
+                        $sentCount++;
+                    }
+                    $responseData[] = $topicResp->json();
                 }
             }
         }
