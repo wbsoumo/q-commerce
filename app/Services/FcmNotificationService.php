@@ -38,19 +38,35 @@ class FcmNotificationService
                 ->pluck('fcm_token')
                 ->toArray();
         } elseif ($targetType === 'store_managers') {
-            $managerPhones = DB::table('users')->where('role', 'store_manager')->pluck('phone')->toArray();
-            if (!empty($managerPhones)) {
-                $phoneVariations = [];
-                foreach ($managerPhones as $mPhone) {
-                    $digits = preg_replace('/[^0-9]/', '', $mPhone);
-                    $phoneVariations[] = $mPhone;
-                    $phoneVariations[] = $digits;
-                    $phoneVariations[] = (strlen($digits) === 10) ? '+91' . $digits : '+' . $digits;
+            $managers = DB::table('users')->whereIn('role', ['store_manager', 'admin'])->get();
+            $targets = [];
+            foreach ($managers as $m) {
+                if (!empty($m->phone)) {
+                    $digits = preg_replace('/[^0-9]/', '', $m->phone);
+                    $targets[] = $m->phone;
+                    $targets[] = $digits;
+                    $targets[] = (strlen($digits) === 10) ? '+91' . $digits : '+' . $digits;
                 }
-                $tokens = DB::table('fcm_tokens')
-                    ->whereIn('user_phone', array_unique($phoneVariations))
-                    ->pluck('fcm_token')
-                    ->toArray();
+                if (!empty($m->email)) {
+                    $targets[] = $m->email;
+                }
+                $targets[] = (string)$m->id;
+            }
+
+            $tokens = DB::table('fcm_tokens')
+                ->where(function($q) use ($targets) {
+                    if (!empty($targets)) {
+                        $q->whereIn('user_phone', array_unique($targets));
+                    }
+                    $q->orWhere('user_phone', 'LIKE', '%manager%')
+                      ->orWhere('user_phone', 'LIKE', '%@%');
+                })
+                ->pluck('fcm_token')
+                ->toArray();
+
+            // If no specific manager token found, fallback to all active device FCM tokens
+            if (empty($tokens)) {
+                $tokens = DB::table('fcm_tokens')->pluck('fcm_token')->toArray();
             }
         } else {
             $tokens = DB::table('fcm_tokens')
