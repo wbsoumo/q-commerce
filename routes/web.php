@@ -43,53 +43,6 @@ Route::get('/sbmart.apk', function () {
     return abort(404);
 });
 
-// One-Click Order Cleaner
-Route::get('/clear-all-orders', function () {
-    try {
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        DB::table('order_items')->truncate();
-        DB::table('order_status_histories')->truncate();
-        DB::table('deliveries')->truncate();
-        DB::table('coupon_redemptions')->truncate();
-        DB::table('custom_order_requests')->truncate();
-        DB::table('orders')->truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'All previous test orders and related history items have been successfully deleted!'
-        ]);
-    } catch (\Throwable $e) {
-        return response()->json([
-            'status' => 'error',
-            'message' => $e->getMessage()
-        ], 500);
-    }
-});
-
-// One-Click Database Migrator
-Route::get('/import-db', function () {
-    try {
-        $dumpPath = base_path('qcommerce_full_dump.sql');
-        if (!file_exists($dumpPath)) {
-            return response()->json(['status' => 'error', 'message' => 'Dump file not found on server.'], 404);
-        }
-
-        $sql = file_get_contents($dumpPath);
-        DB::unprepared($sql);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Database successfully imported! All tables and data have been created in mfopoagr_qcom.'
-        ]);
-    } catch (\Throwable $e) {
-        return response()->json([
-            'status' => 'error',
-            'message' => $e->getMessage()
-        ], 500);
-    }
-});
-
 // Authentication Routes
 Route::get('/admin/login', [AuthController::class, 'showAdminLogin'])->name('admin.login');
 Route::post('/admin/login', [AuthController::class, 'processAdminLogin']);
@@ -136,6 +89,30 @@ Route::get('/', function () {
 // Separate Super Admin-Only Routes
 Route::middleware(['admin.only'])->group(function () {
     Route::get('/admin', [AdminController::class, 'dashboard']);
+
+    // Admin-Only Utility Tools
+    Route::get('/admin/clear-all-orders', function () {
+        try {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+            DB::table('order_items')->truncate();
+            DB::table('order_status_histories')->truncate();
+            DB::table('deliveries')->truncate();
+            DB::table('coupon_redemptions')->truncate();
+            DB::table('custom_order_requests')->truncate();
+            DB::table('orders')->truncate();
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'All previous test orders and related history items have been successfully deleted!'
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    });
 
     // Stores Management
     Route::get('/admin/stores', [AdminController::class, 'stores']);
