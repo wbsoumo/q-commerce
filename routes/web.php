@@ -43,6 +43,30 @@ Route::get('/sbmart.apk', function () {
     return abort(404);
 });
 
+// One-Click Order Cleaner
+Route::get('/clear-all-orders', function () {
+    try {
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        DB::table('order_items')->truncate();
+        DB::table('order_status_histories')->truncate();
+        DB::table('deliveries')->truncate();
+        DB::table('coupon_redemptions')->truncate();
+        DB::table('custom_order_requests')->truncate();
+        DB::table('orders')->truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'All previous test orders and related history items have been successfully deleted!'
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ], 500);
+    }
+});
+
 // One-Click Database Migrator
 Route::get('/import-db', function () {
     try {
