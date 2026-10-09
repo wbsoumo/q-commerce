@@ -24,6 +24,25 @@ Route::get('/refund-policy', function () {
     return view('legal', ['page' => 'refund', 'title' => 'Refund & Cancellation Policy – SonarbanglaMart']);
 });
 
+// Direct APK Download Routes
+Route::get('/SBMartQuick-Universal.apk', function () {
+    $path = public_path('SBMartQuick-Universal.apk');
+    if (file_exists($path)) {
+        return response()->download($path, 'SBMartQuick-Universal.apk', ['Content-Type' => 'application/vnd.android.package-archive']);
+    }
+    return abort(404);
+});
+Route::get('/sbmart.apk', function () {
+    $path = public_path('sbmart.apk');
+    if (!file_exists($path)) {
+        $path = public_path('SBMartQuick-Universal.apk');
+    }
+    if (file_exists($path)) {
+        return response()->download($path, 'SBMartQuick-Universal.apk', ['Content-Type' => 'application/vnd.android.package-archive']);
+    }
+    return abort(404);
+});
+
 // One-Click Database Migrator
 Route::get('/import-db', function () {
     try {
