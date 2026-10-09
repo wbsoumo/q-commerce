@@ -93,8 +93,6 @@ Route::get('/import-db', function () {
 // Authentication Routes
 Route::get('/admin/login', [AuthController::class, 'showAdminLogin'])->name('admin.login');
 Route::post('/admin/login', [AuthController::class, 'processAdminLogin']);
-Route::get('/admin/register', [AuthController::class, 'showAdminRegister']);
-Route::post('/admin/register', [AuthController::class, 'processAdminRegister']);
 Route::get('/manager/login', [AuthController::class, 'showManagerLogin'])->name('manager.login');
 Route::post('/manager/login', [AuthController::class, 'processManagerLogin']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');

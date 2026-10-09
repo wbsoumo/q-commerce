@@ -71,9 +71,6 @@
         <a href="/manager/login" class="btn btn-outline-primary btn-sm font-weight-bold btn-block">
           <i class="fas fa-store mr-1"></i> Switch to Store Manager Login
         </a>
-        <a href="/admin/register" class="btn btn-warning btn-sm font-weight-bold btn-block mt-2">
-          <i class="fas fa-key mr-1"></i> Quick Reset / Register Admin Account
-        </a>
       </div>
     </div>
   </div>
