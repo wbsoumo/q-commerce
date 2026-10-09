@@ -43,13 +43,13 @@
       <form action="/admin/login" method="POST">
         @csrf
         <div class="input-group mb-3">
-          <input type="email" name="email" class="form-control" placeholder="Admin Email (admin@blinkit.com)" value="admin@blinkit.com" required autofocus>
+          <input type="email" name="email" class="form-control" placeholder="Admin Email" required autofocus>
           <div class="input-group-append">
             <div class="input-group-text"><span class="fas fa-envelope"></span></div>
           </div>
         </div>
         <div class="input-group mb-3">
-          <input type="password" name="password" class="form-control" placeholder="Password (admin123)" value="admin123" required>
+          <input type="password" name="password" class="form-control" placeholder="Password" required>
           <div class="input-group-append">
             <div class="input-group-text"><span class="fas fa-lock"></span></div>
           </div>
@@ -66,11 +66,6 @@
           </div>
         </div>
       </form>
-
-      <div class="p-3 bg-light rounded border text-center mt-3">
-        <small class="text-muted d-block font-weight-bold mb-1">Default Admin Credentials:</small>
-        <code class="text-success font-weight-bold">admin@blinkit.com</code> / <code class="text-dark">admin123</code>
-      </div>
 
       <div class="text-center mt-3">
         <a href="/manager/login" class="btn btn-outline-primary btn-sm font-weight-bold btn-block">
