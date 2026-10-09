@@ -76,12 +76,17 @@
 
                   <div class="row mt-3">
                     <div class="col-md-6 form-group">
-                      <label>Latitude</label>
-                      <input type="text" name="latitude" id="latInput" class="form-control" value="{{ $store->latitude ?? 23.4013 }}" readonly required>
+                      <label class="font-weight-bold">Latitude</label>
+                      <input type="text" name="latitude" id="latInput" class="form-control font-weight-bold" value="{{ $store->latitude ?? 23.4013 }}" placeholder="e.g. 23.4013" required>
                     </div>
                     <div class="col-md-6 form-group">
-                      <label>Longitude</label>
-                      <input type="text" name="longitude" id="lngInput" class="form-control" value="{{ $store->longitude ?? 88.5010 }}" readonly required>
+                      <label class="font-weight-bold">Longitude</label>
+                      <input type="text" name="longitude" id="lngInput" class="form-control font-weight-bold" value="{{ $store->longitude ?? 88.5010 }}" placeholder="e.g. 88.5010" required>
+                    </div>
+                    <div class="col-12 form-group mb-2">
+                      <button type="button" id="detectLocBtn" class="btn btn-outline-success btn-sm btn-block font-weight-bold shadow-sm">
+                        <i class="fas fa-crosshairs mr-1"></i> Detect & Pin Entered Location on Map
+                      </button>
                     </div>
                   </div>
 
@@ -323,6 +328,34 @@
     map.on('click', function(e) {
       marker.setLatLng(e.latlng);
       updateMapLocation(e.latlng.lat, e.latlng.lng);
+    });
+
+    function detectAndPinLocation() {
+      var latVal = parseFloat($('#latInput').val());
+      var lngVal = parseFloat($('#lngInput').val());
+      if (!isNaN(latVal) && !isNaN(lngVal) && latVal >= -90 && latVal <= 90 && lngVal >= -180 && lngVal <= 180) {
+        var newLatLng = new L.LatLng(latVal, lngVal);
+        marker.setLatLng(newLatLng);
+        circle.setLatLng(newLatLng);
+        map.flyTo(newLatLng, 15);
+      } else {
+        alert('Please enter valid numerical Latitude and Longitude values.');
+      }
+    }
+
+    $('#detectLocBtn').on('click', function() {
+      detectAndPinLocation();
+    });
+
+    $('#latInput, #lngInput').on('change', function() {
+      var latVal = parseFloat($('#latInput').val());
+      var lngVal = parseFloat($('#lngInput').val());
+      if (!isNaN(latVal) && !isNaN(lngVal) && latVal >= -90 && latVal <= 90 && lngVal >= -180 && lngVal <= 180) {
+        var newLatLng = new L.LatLng(latVal, lngVal);
+        marker.setLatLng(newLatLng);
+        circle.setLatLng(newLatLng);
+        map.panTo(newLatLng);
+      }
     });
 
     // Sliding effect Event Listener for Delivery Radius
