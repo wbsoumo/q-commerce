@@ -577,6 +577,45 @@ footer {
 </footer>
 
 <script>
+let autoScrollTimer = null;
+
+function scrollScreenshots(amount) {
+  const grid = document.getElementById('shotsGrid');
+  if (grid) grid.scrollBy({ left: amount, behavior: 'smooth' });
+}
+
+function startAutoScroll() {
+  const grid = document.getElementById('shotsGrid');
+  if (!grid) return;
+  if (autoScrollTimer) clearInterval(autoScrollTimer);
+  autoScrollTimer = setInterval(function() {
+    const maxScroll = grid.scrollWidth - grid.clientWidth;
+    const scrollStep = 258; // 230px card + 28px gap
+    if (grid.scrollLeft >= maxScroll - 20) {
+      grid.scrollTo({ left: 0, behavior: 'smooth' });
+    } else {
+      grid.scrollBy({ left: scrollStep, behavior: 'smooth' });
+    }
+  }, 3000);
+}
+
+function stopAutoScroll() {
+  if (autoScrollTimer) clearInterval(autoScrollTimer);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  startAutoScroll();
+  const grid = document.getElementById('shotsGrid');
+  if (grid) {
+    grid.addEventListener('mouseenter', stopAutoScroll);
+    grid.addEventListener('mouseleave', startAutoScroll);
+    grid.addEventListener('touchstart', stopAutoScroll, {passive: true});
+    grid.addEventListener('touchend', function() {
+      setTimeout(startAutoScroll, 4000);
+    }, {passive: true});
+  }
+});
+
 function showPlayStoreToast(e) {
   if (e) e.preventDefault();
   let toast = document.getElementById('playstore-toast');
