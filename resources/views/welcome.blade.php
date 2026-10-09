@@ -239,11 +239,56 @@ h1 span { display: block; color: var(--g); }
   font-weight: 600;
 }
 
-.screenshots-grid {
+.screenshots-container-wrapper {
+  position: relative;
+  width: 100%;
+}
+.scroll-btn {
+  position: absolute;
+  top: 45%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--gd);
+  color: #fff;
+  border: none;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  place-items: center;
+  font-size: 20px;
+  box-shadow: 0 8px 20px rgba(10,44,16,.4);
+  cursor: pointer;
+  z-index: 10;
+  transition: all .2s ease;
+  opacity: .9;
+}
+.scroll-btn:hover { background: var(--g); transform: translateY(-50%) scale(1.1); opacity: 1; }
+.scroll-left { left: -15px; }
+.scroll-right { right: -15px; }
+
+.screenshots-grid {
+  display: flex;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
   gap: 28px;
-  justify-content: center;
+  padding: 20px 15px 40px;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+  -webkit-overflow-scrolling: touch;
+}
+.screenshots-grid::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+.shot-card {
+  flex: 0 0 auto;
+  width: 230px;
+  scroll-snap-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: transform .4s ease;
 }
 .shot-card {
   display: flex;
@@ -416,7 +461,10 @@ footer {
       <p>Seamless ordering, instant delivery tracking, and everyday savings</p>
     </div>
 
-    <div class="screenshots-grid">
+    <div class="screenshots-container-wrapper">
+      <button class="scroll-btn scroll-left" onclick="scrollScreenshots(-300)" aria-label="Scroll left">&#10094;</button>
+      <button class="scroll-btn scroll-right" onclick="scrollScreenshots(300)" aria-label="Scroll right">&#10095;</button>
+      <div class="screenshots-grid" id="shotsGrid">
       <div class="shot-card">
         <div class="mini-frame">
           <div class="mini-screen">
@@ -476,6 +524,7 @@ footer {
           <p>Manage addresses & SB Mart Money</p>
         </div>
       </div>
+    </div>
     </div>
   </section>
 </main>
