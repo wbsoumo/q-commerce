@@ -370,14 +370,30 @@ class ApiController extends Controller
                 $reqLng = $request->input('longitude');
                 $storeObj = DB::table('stores')->where('id', $checkoutResult['store_id'])->first();
 
-                // If lat/lng missing or matching store lat/lng, attempt lookup in user_addresses table
-                if (empty($reqLat) || empty($reqLng) || ($storeObj && (string)$reqLat === (string)$storeObj->latitude && (string)$reqLng === (string)$storeObj->longitude)) {
+                // If delivery order and lat/lng missing or matching store lat/lng, attempt lookup in user_addresses table
+                $isStoreCoords = false;
+                if ($storeObj && !empty($reqLat) && !empty($reqLng)) {
+                    $isStoreCoords = (abs((float)$reqLat - (float)$storeObj->latitude) < 0.0001 && abs((float)$reqLng - (float)$storeObj->longitude) < 0.0001);
+                }
+
+                if ($orderType === 'delivery' && (empty($reqLat) || empty($reqLng) || $isStoreCoords)) {
                     $savedUserAddr = DB::table('user_addresses')
                         ->where('user_phone', $validatedData['user_phone'])
+                        ->where('address_details', $validatedData['delivery_address'])
                         ->whereNotNull('latitude')
                         ->where('latitude', '!=', 0)
                         ->orderBy('id', 'desc')
                         ->first();
+
+                    if (!$savedUserAddr) {
+                        $savedUserAddr = DB::table('user_addresses')
+                            ->where('user_phone', $validatedData['user_phone'])
+                            ->whereNotNull('latitude')
+                            ->where('latitude', '!=', 0)
+                            ->orderBy('id', 'desc')
+                            ->first();
+                    }
+
                     if ($savedUserAddr && !empty($savedUserAddr->latitude) && !empty($savedUserAddr->longitude)) {
                         $reqLat = $savedUserAddr->latitude;
                         $reqLng = $savedUserAddr->longitude;
