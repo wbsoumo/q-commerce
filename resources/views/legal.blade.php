@@ -53,8 +53,8 @@ li{margin-bottom:8px}
   <p>Prices listed in the app reflect current local store availability and applicable Taxes (GST). Promotional offers and coupons are non-transferable and subject to terms.</p>
  @elseif($page == 'privacy')
   <h1>Privacy Policy</h1>
-  <p><strong>Effective Date:</strong> October 5, 2026 | <strong>Last Updated:</strong> October 5, 2026</p>
-  <p>Welcome to <strong>SonarbanglaMart</strong> (accessible at <a href="https://sbmartquick.com">https://sbmartquick.com</a> and through our Android mobile application). SonarbanglaMart Quick Commerce Private Limited ("SonarbanglaMart", "we", "us", or "our") is dedicated to safeguarding your personal data, privacy, and security in full compliance with applicable Indian data protection laws and Google Play Developer Policies.</p>
+  <p><strong>Effective Date:</strong> October 5, 2026 | <strong>Last Updated:</strong> October 12, 2026</p>
+  <p>Welcome to <strong>SB Mart Quick / SonarbanglaMart</strong> (accessible at <a href="https://sbmartquick.com">https://sbmartquick.com</a> and through our Android mobile application "SB Mart Quick"). SonarbanglaMart Quick Commerce Private Limited ("SB Mart Quick", "SonarbanglaMart", "we", "us", or "our") is dedicated to safeguarding your personal data, privacy, and security in full compliance with applicable Indian data protection laws and Google Play Developer Policies.</p>
 
   <h2>1. Information We Collect</h2>
   <p>We collect information directly provided by you, automatically gathered from your device, and generated during your use of our services:</p>
