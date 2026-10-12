@@ -109,7 +109,7 @@ li{margin-bottom:8px}
   <p>We retain your personal information for as long as your account remains active. As mandated by Google Play User Data policies, users have full control over their account data:</p>
   <ul>
    <li><strong>In-App Account Deletion:</strong> You can delete your account anytime in the app under <em>Profile &rarr; Account Privacy &rarr; Delete your account</em>. Requiring current password confirmation, your account status will be set to <code>deleted</code>, personal data soft-deleted, FCM tokens purged, and local device storage cleared instantly.</li>
-   <li><strong>Web Deletion Request:</strong> You may also request account and data deletion by emailing our Data Protection Officer at <a href="mailto:support@sbmartquick.com">support@sbmartquick.com</a>. Requests are processed within 24 hours.</li>
+   <li><strong>Web Deletion Request:</strong> You may also submit an account deletion request anytime via our official <a href="/delete-account">Web Account Deletion Portal</a> or by emailing our Data Protection Officer at <a href="mailto:support@sbmartquick.com">support@sbmartquick.com</a>. Requests are verified and processed within 24 to 48 hours.</li>
   </ul>
 
   <h2>7. Children's Privacy</h2>

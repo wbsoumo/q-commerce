@@ -546,6 +546,7 @@ footer {
         <li><a href="/about-us">About Us</a></li>
         <li><a href="/terms-and-conditions">Terms & Conditions</a></li>
         <li><a href="/privacy-policy">Privacy Policy</a></li>
+        <li><a href="/delete-account">Delete Account Request</a></li>
         <li><a href="/shopping-policy">Shopping Policy</a></li>
         <li><a href="/refund-policy">Refund & Cancellation</a></li>
       </ul>

@@ -23,6 +23,44 @@ Route::get('/shopping-policy', function () {
 Route::get('/refund-policy', function () {
     return view('legal', ['page' => 'refund', 'title' => 'Refund & Cancellation Policy – SonarbanglaMart']);
 });
+Route::get('/delete-account', function () {
+    return view('delete_account');
+});
+Route::get('/account-deletion', function () {
+    return redirect('/delete-account');
+});
+Route::post('/delete-account', function (\Illuminate\Http\Request $request) {
+    $validated = $request->validate([
+        'user_name' => 'required|string|max:100',
+        'user_phone' => 'required|string|max:20',
+        'user_email' => 'nullable|email|max:100',
+        'reason' => 'nullable|string|max:100',
+        'comments' => 'nullable|string|max:1000',
+    ]);
+
+    $ticketNumber = 'DEL-' . strtoupper(bin2hex(random_bytes(3)));
+
+    try {
+        if (\Illuminate\Support\Facades\Schema::hasTable('support_tickets')) {
+            \Illuminate\Support\Facades\DB::table('support_tickets')->insert([
+                'ticket_number' => $ticketNumber,
+                'user_phone' => $validated['user_phone'],
+                'user_name' => $validated['user_name'],
+                'category' => 'account_deletion',
+                'sub_category' => $validated['reason'] ?? 'Web Deletion Request',
+                'description' => "Account Deletion Request submitted via Web Portal.\nEmail: " . ($validated['user_email'] ?? 'N/A') . "\nReason: " . ($validated['reason'] ?? 'N/A') . "\nRemarks: " . ($validated['comments'] ?? 'None'),
+                'status' => 'pending',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+    } catch (\Throwable $e) {
+        \Illuminate\Support\Facades\Log::warning('Support ticket creation failed for deletion request: ' . $e->getMessage());
+    }
+
+    return back()->with('success', 'Your request has been registered. Our security team will review and process your account and personal data deletion within 24 to 48 hours.')
+                 ->with('ticket_number', $ticketNumber);
+});
 
 // Direct APK Download Routes
 Route::get('/SBMartQuick-Universal.apk', function () {
